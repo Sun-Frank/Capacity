@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAPICS - 产能评估系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #F0F0F0;
+      --foreground: #121212;
+      --muted: #E0E0E0;
+      --muted-foreground: #525252;
+      --accent: #121212;
+      --accent-foreground: #FFFFFF;
+      --border: #121212;
+      --border-light: #E0E0E0;
+      --ring: #121212;
+      --primary-red: #D02020;
+      --primary-blue: #1040C0;
+      --primary-yellow: #F0C020;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Outfit', sans-serif;
+      --font-mono: 'Outfit', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 17px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.7;
+      font-weight: 500;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* Dot Grid Pattern - Bauhaus Style */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: radial-gradient(var(--foreground) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      opacity: 0.05;
+    }
+
+    a {
+      color: var(--foreground);
+      text-decoration: none;
+      border-bottom: 1px solid var(--foreground);
+      transition: all 0.1s;
+    }
+
+    a:hover {
+      background: var(--foreground);
+      color: var(--background);
+    }
+
+    button {
+      font-family: var(--font-body);
+      cursor: pointer;
+    }
+
+    input, textarea, select {
+      font-family: var(--font-body);
+    }
+
+    /* Typography - Bauhaus Style */
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+    }
+
+    h1 { font-size: 4rem; }
+    h2 { font-size: 2.5rem; }
+    h3 { font-size: 1.75rem; }
+    h4 { font-size: 1.25rem; font-weight: 700; }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* App Layout */
+    #app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #app:has(.login-page) {
+      display: block;
+    }
+
+    /* Sidebar - Bauhaus Style */
+    .sidebar {
+      width: 280px;
+      background: var(--foreground);
+      border-right: 4px solid var(--border);
+      padding: 2rem 0;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 0 2rem 2rem;
+      border-bottom: 4px solid var(--primary-yellow);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: white;
+    }
+
+    .sidebar-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--primary-yellow);
+      margin-top: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 1.5rem 0;
+    }
+
+    .nav-item {
+      padding: 0;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 1rem 2rem;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: none;
+      color: rgba(255,255,255,0.7);
+      transition: all 0.15s ease-out;
+      position: relative;
+      border-left: 4px solid transparent;
+    }
+
+    .nav-link:hover {
+      background: var(--primary-yellow);
+      color: var(--foreground);
+      border-left-color: var(--primary-yellow);
+    }
+
+    .nav-link.active {
+      background: var(--primary-red);
+      color: white;
+      border-left-color: var(--primary-yellow);
+    }
+
+    .nav-section {
+      padding: 0.5rem 2rem;
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--primary-yellow);
+      margin-top: 1rem;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      min-height: 100vh;
+      background: var(--background);
+    }
+
+    /* Top Bar */
+    .topbar {
+      height: 80px;
+      background: white;
+      border-bottom: 4px solid var(--foreground);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      position: sticky;
+      top: 0;
+      background: var(--background);
+      z-index: 100;
+    }
+
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+
+    .topbar-user {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .topbar-user span {
+      color: var(--muted-foreground);
+    }
+
+    .btn {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.75rem 1.5rem;
+      border: 3px solid var(--foreground);
+      background: transparent;
+      color: var(--foreground);
+      cursor: pointer;
+      box-shadow: 4px 4px 0px 0px var(--foreground);
+      transition: all 0.15s ease-out;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0px 0px var(--foreground);
+    }
+
+    .btn:active {
+      transform: translateX(2px) translateY(2px);
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: var(--primary-red);
+      color: white;
+      border-color: var(--foreground);
+      box-shadow: 4px 4px 0px 0px var(--foreground);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-red);
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: var(--primary-blue);
+      color: white;
+      border-color: var(--foreground);
+      box-shadow: 4px 4px 0px 0px var(--foreground);
+    }
+
+    .btn-yellow {
+      background: var(--primary-yellow);
+      color: var(--foreground);
+      border-color: var(--foreground);
+      box-shadow: 4px 4px 0px 0px var(--foreground);
+    }
+
+    /* Page Content */
+    .page {
+      padding: 3rem;
+    }
+
+    .page-header {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 4px solid var(--foreground);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Cards - Bauhaus Style */
+    .card {
+      background: white;
+      border: 4px solid var(--foreground);
+      padding: 2rem;
+      box-shadow: 8px 8px 0px 0px var(--foreground);
+      transition: all 0.15s ease-out;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 12px 12px 0px 0px var(--foreground);
+    }
+
+    .card:hover .card-label,
+    .card:hover .card-value {
+      color: var(--foreground);
+    }
+
+    .card-label {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted-foreground);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-value {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 900;
+      line-height: 0.9;
+      text-transform: uppercase;
+    }
+
+    .card-unit {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      margin-top: 0.5rem;
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      gap: 2rem;
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Table - Bauhaus Style */
+    .table-wrapper {
+      border: 4px solid var(--foreground);
+      overflow-x: auto;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      text-align: left;
+      padding: 1rem 1.5rem;
+      background: var(--foreground);
+      color: white;
+      border-bottom: 4px solid var(--foreground);
+    }
+
+    td {
+      padding: 1rem 1.5rem;
+      border-bottom: 2px solid var(--border-light);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: var(--primary-yellow);
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      border: 3px solid var(--foreground);
+      background: white;
+      color: var(--foreground);
+      transition: all 0.15s ease-out;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-blue);
+      box-shadow: 4px 4px 0px 0px var(--primary-blue);
+    }
+
+    .form-input::placeholder {
+      color: var(--muted-foreground);
+      font-weight: 400;
+    }
+
+    /* Tabs - Bauhaus Style */
+    .tabs {
+      display: flex;
+      border-bottom: 4px solid var(--border);
+      margin-bottom: 2rem;
+    }
+
+    .tab {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 1rem 2rem;
+      background: transparent;
+      border: none;
+      border-bottom: 4px solid transparent;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: all 0.15s ease-out;
+      position: relative;
+      margin-bottom: -4px;
+    }
+
+    .tab:hover {
+      color: var(--foreground);
+      background: var(--primary-yellow);
+    }
+
+    .tab.active {
+      color: var(--foreground);
+      border-bottom-color: var(--primary-red);
+      background: var(--primary-yellow);
+    }
+
+    /* Login Page - Bauhaus Style */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: var(--background);
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .login-title {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      line-height: 0.9;
+      margin-bottom: 1rem;
+    }
+
+    .login-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted-foreground);
+    }
+
+    .login-form {
+      background: white;
+      border: 4px solid var(--foreground);
+      padding: 3rem;
+      box-shadow: 12px 12px 0px 0px var(--foreground);
+    }
+
+    .login-footer {
+      margin-top: 2rem;
+      text-align: center;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+    }
+
+    /* Dashboard */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 3rem;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 4px solid var(--foreground);
+      margin-bottom: 3rem;
+      background: white;
+    }
+
+    .stat-card {
+      padding: 2.5rem;
+      border-right: 4px solid var(--foreground);
+      background: white;
+      transition: all 0.15s ease-out;
+    }
+
+    .stat-card:last-child {
+      border-right: none;
+    }
+
+    .stat-card:hover {
+      background: var(--primary-yellow);
+    }
+
+    .stat-card:hover .stat-label,
+    .stat-card:hover .stat-unit {
+      color: var(--foreground);
+    }
+
+    .stat-label {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted-foreground);
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 4rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      line-height: 0.9;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-unit {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--muted-foreground);
+    }
+
+    /* Version Badge */
+    .version-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 0.25rem 0.75rem;
+      background: var(--foreground);
+      color: var(--background);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Section Divider */
+    .section-divider {
+      height: 4px;
+      background: var(--foreground);
+      margin: 3rem 0;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      border: 1px dashed var(--border-light);
+    }
+
+    .empty-state-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state-text {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+    }
+
+    /* Notification - Bauhaus Style */
+    .notification {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      padding: 1rem 2rem;
+      background: var(--primary-yellow);
+      color: var(--foreground);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: 4px solid var(--foreground);
+      box-shadow: 6px 6px 0px 0px var(--foreground);
+      z-index: 1000;
+      animation: slideIn 0.2s ease-out;
+    }
+
+    .notification.error {
+      background: var(--primary-red);
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .stat-card:nth-child(2) {
+        border-right: none;
+      }
+      .stat-card:nth-child(1),
+      .stat-card:nth-child(2) {
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .main-content {
+        margin-left: 0;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .stat-card {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .stat-card:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Login Page -->
+    <div v-if="currentPage === 'login'" class="login-page">
+      <div class="login-container">
+        <div class="login-header">
+          <h1 class="login-title">CAPICS</h1>
+          <p class="login-subtitle">产能评估系统</p>
+        </div>
+        <form class="login-form" @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label class="form-label">用户名</label>
+            <input type="text" class="form-input" v-model="loginForm.username" placeholder="Enter username" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码</label>
+            <input type="password" class="form-input" v-model="loginForm.password" placeholder="Enter password" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+        </form>
+        <div class="login-footer">
+          Minimalist Monochrome Design · 2026
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div v-else class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">CAPICS</div>
+        <div class="sidebar-subtitle">产能评估系统</div>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-section">生产管理</li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'dashboard'}" @click="currentPage = 'dashboard'">仪表盘</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'products'}" @click="currentPage = 'products'">产品主数据</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'mrp'}" @click="currentPage = 'mrp'">MRP计划</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'routing'}" @click="currentPage = 'routing'">工艺路线</a></li>
+        <li class="nav-section">生产线</li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'lines'}" @click="currentPage = 'lines'">生产线配置</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'realtime'}" @click="currentPage = 'realtime'">实时配置</a></li>
+        <li class="nav-section">分析</li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'capacity'}" @click="currentPage = 'capacity'">产能计算</a></li>
+        <li class="nav-item"><a href="#" class="nav-link" :class="{active: currentPage === 'cws'}" @click="currentPage = 'cws'">CWS人力核算</a></li>
+      </ul>
+    </div>
+
+    <div v-if="currentPage !== 'login'" class="main-content">
+      <div class="topbar">
+        <div class="topbar-title">{{ pageTitle }}</div>
+        <div class="topbar-user">
+          <span>{{ currentUser }}</span>
+          <button class="btn" @click="handleLogout">退出</button>
+        </div>
+      </div>
+
+      <!-- Dashboard -->
+      <div v-if="currentPage === 'dashboard'" class="page">
+        <div class="dashboard-header">
+          <div>
+            <h1 class="page-title">仪表盘</h1>
+            <p class="page-subtitle">产能评估系统总览</p>
+          </div>
+          <div class="dashboard-actions">
+            <select class="form-input" v-model="selectedVersion" @change="loadDashboardData" style="width: auto;">
+              <option v-for="v in versions" :key="v" :value="v">{{ v }}</option>
+            </select>
+            <button class="btn btn-primary" @click="refreshData">刷新数据</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">产品总数</div>
+            <div class="stat-value">{{ stats.totalProducts }}</div>
+            <div class="stat-unit">编码族: {{ stats.totalFamilies }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">MRP计划</div>
+            <div class="stat-value">{{ stats.totalMrpPlans }}</div>
+            <div class="stat-unit">版本: {{ selectedVersion }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">生产线</div>
+            <div class="stat-value">{{ stats.totalLines }}</div>
+            <div class="stat-unit">活跃配置</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">工艺路线</div>
+            <div class="stat-value">{{ stats.totalRoutings }}</div>
+            <div class="stat-unit">BOM定义</div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <h2 style="margin-bottom: 2rem;">近期MRP计划</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>物料号</th>
+                <th>描述</th>
+                <th>数量</th>
+                <th>发布日期</th>
+                <th>版本</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="plan in recentPlans" :key="plan.id">
+                <td>{{ plan.itemNumber }}</td>
+                <td>{{ plan.description }}</td>
+                <td>{{ plan.quantityScheduled }}</td>
+                <td>{{ plan.releaseDate }}</td>
+                <td><span class="version-badge">{{ plan.version }}</span></td>
+              </tr>
+              <tr v-if="recentPlans.length === 0">
+                <td colspan="5" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Products Page -->
+      <div v-if="currentPage === 'products'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">产品主数据</h1>
+          <p class="page-subtitle">管理编码族和产品主数据</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab" :class="{active: productTab === 'families'}" @click="productTab = 'families'">编码族</button>
+          <button class="tab" :class="{active: productTab === 'products'}" @click="productTab = 'products'">产品列表</button>
+        </div>
+
+        <div v-if="productTab === 'families'">
+          <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
+            <button class="btn btn-primary" @click="showImportModal('family')">导入编码族</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>编码族</th>
+                  <th>生产线</th>
+                  <th>编码规则</th>
+                  <th>周期时间(秒)</th>
+                  <th>OEE(%)</th>
+                  <th>人数</th>
+                  <th>版本</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="f in families" :key="f.familyCode + f.lineCode">
+                  <td>{{ f.familyCode }}</td>
+                  <td>{{ f.lineCode }}</td>
+                  <td>{{ f.codingRule }}</td>
+                  <td>{{ f.cycleTime }}</td>
+                  <td>{{ f.oee }}</td>
+                  <td>{{ f.workerCount }}</td>
+                  <td>{{ f.version }}</td>
+                </tr>
+                <tr v-if="families.length === 0">
+                  <td colspan="7" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="productTab === 'products'">
+          <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
+            <button class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>物料号</th>
+                  <th>生产线</th>
+                  <th>编码族</th>
+                  <th>描述</th>
+                  <th>CT(秒)</th>
+                  <th>OEE(%)</th>
+                  <th>人数</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in products" :key="p.itemNumber + p.lineCode">
+                  <td>{{ p.itemNumber }}</td>
+                  <td>{{ p.lineCode }}</td>
+                  <td>{{ p.familyCode }}</td>
+                  <td>{{ p.description }}</td>
+                  <td>{{ p.cycleTime }}</td>
+                  <td>{{ p.oee }}</td>
+                  <td>{{ p.workerCount }}</td>
+                </tr>
+                <tr v-if="products.length === 0">
+                  <td colspan="7" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MRP Page -->
+      <div v-if="currentPage === 'mrp'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">MRP计划管理</h1>
+          <p class="page-subtitle">物料需求计划</p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab" :class="{active: mrpTab === 'plans'}" @click="mrpTab = 'plans'">计划列表</button>
+          <button class="tab" :class="{active: mrpTab === 'weekly'}" @click="mrpTab = 'weekly'">周报表</button>
+          <button class="tab" :class="{active: mrpTab === 'monthly'}" @click="loadMonthlyReport">月报表</button>
+        </div>
+
+        <div v-if="mrpTab === 'plans'">
+          <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
+            <select v-model="selectedCreatedBy" @change="onCreatedByChange" class="form-input" style="width: auto;">
+              <option value="">选择导入人</option>
+              <option v-for="cb in createdBys" :key="cb" :value="cb">{{ cb }}</option>
+            </select>
+            <select v-model="selectedFileName" @change="onFileNameChange" class="form-input" style="width: auto;" :disabled="!selectedCreatedBy">
+              <option value="">选择文件</option>
+              <option v-for="fn in fileNames" :key="fn" :value="fn">{{ fn }}</option>
+            </select>
+            <select v-model="selectedVersion" class="form-input" style="width: auto;" :disabled="!selectedFileName">
+              <option value="">选择版本</option>
+              <option v-for="v in versions" :key="v" :value="v">{{ v }}</option>
+            </select>
+            <button class="btn btn-primary" @click="loadMrpPlans">查询</button>
+            <button class="btn" @click="showImportModal('mrp')">导入MRP</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>物料号</th>
+                  <th>描述</th>
+                  <th>工厂</th>
+                  <th>生产线</th>
+                  <th>发布日期</th>
+                  <th>数量</th>
+                  <th>版本</th>
+                  <th>文件</th>
+                  <th>导入人</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="plan in mrpPlans" :key="plan.id">
+                  <td>{{ plan.itemNumber }}</td>
+                  <td>{{ plan.description }}</td>
+                  <td>{{ plan.site }}</td>
+                  <td>{{ plan.productionLine }}</td>
+                  <td>{{ plan.releaseDate }}</td>
+                  <td>{{ plan.quantityScheduled }}</td>
+                  <td><span class="version-badge">{{ plan.version }}</span></td>
+                  <td>{{ plan.fileName || '-' }}</td>
+                  <td>{{ plan.createdBy || '-' }}</td>
+                </tr>
+                <tr v-if="mrpPlans.length === 0">
+                  <td colspan="9" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div v-if="mrpTab === 'weekly'">
+          <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
+            <select v-model="weeklyCreatedBy" @change="onWeeklyCreatedByChange" class="form-input" style="width: auto;">
+              <option value="">选择导入人</option>
+              <option v-for="cb in createdBys" :key="cb" :value="cb">{{ cb }}</option>
+            </select>
+            <select v-model="weeklyFileName" @change="onWeeklyFileNameChange" class="form-input" style="width: auto;" :disabled="!weeklyCreatedBy">
+              <option value="">选择文件</option>
+              <option v-for="fn in weeklyFileNames" :key="fn" :value="fn">{{ fn }}</option>
+            </select>
+            <button class="btn btn-primary" @click="loadWeeklyReport" :disabled="!weeklyCreatedBy || !weeklyFileName">查询</button>
+          </div>
+          <h3 v-if="weeklyColumns.length > 0" style="margin-bottom: 1.5rem;">周需求报表 - {{ weeklyCreatedBy }} / {{ weeklyFileName }}</h3>
+          <div v-if="weeklyColumns.length > 0" class="table-wrapper" style="overflow: auto; max-height: 70vh;">
+            <table style="border-collapse: collapse;">
+              <thead style="position: sticky; top: 0; z-index: 3; background: #fff;">
+                <tr>
+                  <th rowspan="2" style="position: sticky; left: 0; top: 0; z-index: 4; background: #fff; border: 1px solid #000; vertical-align: middle;">物料号</th>
+                  <th rowspan="2" style="position: sticky; left: 80px; top: 0; z-index: 4; background: #fff; border: 1px solid #000; vertical-align: middle;">描述</th>
+                  <th v-for="(group, idx) in weeklyColumnGroups" :key="'week-' + idx" :colspan="group.versions.length" style="background: #fff; border: 1px solid #000; text-align: center; font-weight: bold;">{{ group.weekLabel }}</th>
+                </tr>
+                <tr>
+                  <th v-for="(col, idx) in weeklyColumns" :key="'ver-' + idx" :style="{ background: col.versionIndex % 2 === 0 ? '#ffffff' : '#90EE90', border: '1px solid #000' }">{{ col.version }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in weeklyReport" :key="row.itemNumber">
+                  <td style="position: sticky; left: 0; background: #fff; z-index: 1; border: 1px solid #000; font-weight: bold;">{{ row.itemNumber }}</td>
+                  <td style="position: sticky; left: 80px; background: #fff; z-index: 1; border: 1px solid #000;">{{ row.description }}</td>
+                  <td v-for="(col, idx) in weeklyColumns" :key="'data-' + idx" :style="{ background: col.versionIndex % 2 === 0 ? '#ffffff' : '#90EE90', border: '1px solid #000', textAlign: 'center' }">
+                    {{ row[col.key] || '-' }}
+                  </td>
+                </tr>
+                <tr v-if="weeklyReport.length === 0">
+                  <td :colspan="weeklyColumns.length + 2" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Routing Page -->
+      <div v-if="currentPage === 'routing'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">工艺路线</h1>
+          <p class="page-subtitle">成品BOM定义</p>
+        </div>
+        <div style="margin-bottom: 2rem;">
+          <button class="btn btn-primary" @click="showImportModal('routing')">导入工艺路线</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>成品物料号</th>
+                <th>描述</th>
+                <th>组件数</th>
+                <th>版本</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in routings" :key="r.id">
+                <td>{{ r.productNumber }}</td>
+                <td>{{ r.description }}</td>
+                <td>-</td>
+                <td>{{ r.version }}</td>
+              </tr>
+              <tr v-if="routings.length === 0">
+                <td colspan="4" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Lines Page -->
+      <div v-if="currentPage === 'lines'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">生产线配置</h1>
+          <p class="page-subtitle">生产线基础参数</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>生产线编码</th>
+                <th>生产线名称</th>
+                <th>每周工作天数</th>
+                <th>每天班次</th>
+                <th>每班时长(小时)</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="line in lines" :key="line.lineCode">
+                <td>{{ line.lineCode }}</td>
+                <td>{{ line.lineName }}</td>
+                <td>{{ line.workingDaysPerWeek }}</td>
+                <td>{{ line.shiftsPerDay }}</td>
+                <td>{{ line.hoursPerShift }}</td>
+                <td>{{ line.isActive ? '启用' : '禁用' }}</td>
+              </tr>
+              <tr v-if="lines.length === 0">
+                <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Realtime Page -->
+      <div v-if="currentPage === 'realtime'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">生产线实时配置</h1>
+          <p class="page-subtitle">班产量计算结果</p>
+        </div>
+        <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
+          <select v-model="selectedVersion" class="form-input" style="width: auto;">
+            <option value="">选择版本</option>
+            <option v-for="v in versions" :key="v" :value="v">{{ v }}</option>
+          </select>
+          <button class="btn btn-primary" @click="calculateRealtime">计算</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>生产线</th>
+                <th>成品</th>
+                <th>组件</th>
+                <th>班产量</th>
+                <th>CT(秒)</th>
+                <th>OEE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in realtimeData" :key="r.id">
+                <td>{{ r.lineCode }}</td>
+                <td>{{ r.itemNumber }}</td>
+                <td>{{ r.componentNumber }}</td>
+                <td>{{ r.shiftOutput }}</td>
+                <td>{{ r.ct }}</td>
+                <td>{{ r.oee }}</td>
+              </tr>
+              <tr v-if="realtimeData.length === 0">
+                <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据，请先选择版本并点击计算</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Capacity Page -->
+      <div v-if="currentPage === 'capacity'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">产能计算</h1>
+          <p class="page-subtitle">产能利用率分析</p>
+        </div>
+        <div style="margin-bottom: 2rem;">
+          <button class="btn btn-primary" @click="calculateCapacity">计算产能</button>
+        </div>
+        <div class="grid grid-4" style="margin-bottom: 2rem;">
+          <div class="card">
+            <div class="card-label">周产能</div>
+            <div class="card-value">{{ capacityStats.weeklyCapacity }}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">周需求</div>
+            <div class="card-value">{{ capacityStats.weeklyDemand }}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">利用率</div>
+            <div class="card-value">{{ capacityStats.utilization }}%</div>
+          </div>
+          <div class="card">
+            <div class="card-label">状态</div>
+            <div class="card-value" style="font-size: 1.5rem;">{{ capacityStats.status }}</div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>生产线</th>
+                <th>组件</th>
+                <th>周产能</th>
+                <th>周需求</th>
+                <th>利用率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in capacityData" :key="c.lineCode + c.componentNumber">
+                <td>{{ c.lineCode }}</td>
+                <td>{{ c.componentNumber }}</td>
+                <td>{{ c.weeklyCapacity }}</td>
+                <td>{{ c.weeklyDemand }}</td>
+                <td :style="{color: c.capacityUtilization > 100 ? '#000' : '#525252'}">{{ c.capacityUtilization }}%</td>
+              </tr>
+              <tr v-if="capacityData.length === 0">
+                <td colspan="5" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CWS Page -->
+      <div v-if="currentPage === 'cws'" class="page">
+        <div class="page-header">
+          <h1 class="page-title">CWS人力核算</h1>
+          <p class="page-subtitle">人力成本分析</p>
+        </div>
+        <div style="margin-bottom: 2rem;">
+          <button class="btn btn-primary" @click="calculateCws">计算人力</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>生产线</th>
+                <th>生产线名称</th>
+                <th>总人数</th>
+                <th>总工时</th>
+                <th>人均产出</th>
+                <th>人力成本</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in cwsData" :key="c.lineCode">
+                <td>{{ c.lineCode }}</td>
+                <td>{{ c.lineName }}</td>
+                <td>{{ c.totalWorkers }}</td>
+                <td>{{ c.totalManHours }}</td>
+                <td>{{ c.productivityPerWorker }}</td>
+                <td>{{ c.laborCost }}</td>
+              </tr>
+              <tr v-if="cwsData.length === 0">
+                <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div v-if="showImport" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18,18,18,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div style="width: 480px; background: white; border: 4px solid var(--foreground); box-shadow: 12px 12px 0px 0px var(--foreground); padding: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; font-family: var(--font-display); font-weight: 900; text-transform: uppercase; font-size: 1.5rem;">导入{{ importType === 'family' ? '编码族' : importType === 'product' ? '产品' : importType === 'mrp' ? 'MRP' : '工艺路线' }}</h3>
+        <div v-if="isImporting" style="text-align: center; padding: 2rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 1rem;">导入中，请稍候...</div>
+          <div style="color: var(--muted-foreground);">大文件可能需要较长时间</div>
+        </div>
+        <div v-else>
+          <div style="margin-bottom: 1.5rem;">
+            <input type="file" accept=".xlsx,.xls" @change="handleFileUpload" class="form-input" style="font-family: var(--font-body);">
+          </div>
+          <div v-if="importType === 'mrp'" style="margin-bottom: 1.5rem;">
+            <input type="text" v-model="importFileName" placeholder="输入文件名称（自定义命名）" class="form-input" style="font-family: var(--font-body);">
+          </div>
+          <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button class="btn" @click="showImport = false">取消</button>
+            <button class="btn btn-primary" @click="confirmImport">确认导入</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div v-if="toast.show" :class="['toast', toast.type]" style="position: fixed; top: 2rem; right: 2rem; padding: 1rem 1.5rem; background: var(--foreground); color: var(--background); border: 3px solid var(--foreground); box-shadow: 6px 6px 0px 0px var(--muted-foreground); font-family: var(--font-body); font-size: 0.95rem; z-index: 2000; min-width: 280px;">
+      {{ toast.message }}
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    createApp({
+      setup() {
+        const API_BASE = 'http://localhost:8080/api';
+        const currentPage = ref('login');
+        const currentUser = ref('');
+        const token = ref('');
+        const loginForm = ref({ username: '', password: '' });
+
+        // Data
+        const families = ref([]);
+        const products = ref([]);
+        const mrpPlans = ref([]);
+        const routings = ref([]);
+        const lines = ref([]);
+        const realtimeData = ref([]);
+        const capacityData = ref([]);
+        const cwsData = ref([]);
+        const versions = ref([]);
+        const selectedVersion = ref('');
+        const productTab = ref('families');
+        const mrpTab = ref('plans');
+
+        // Stats
+        const stats = ref({
+          totalProducts: 0,
+          totalFamilies: 0,
+          totalMrpPlans: 0,
+          totalLines: 0,
+          totalRoutings: 0
+        });
+
+        const capacityStats = ref({
+          weeklyCapacity: 0,
+          weeklyDemand: 0,
+          utilization: 0,
+          status: '-'
+        });
+
+        // Import
+        const showImport = ref(false);
+        const importType = ref('');
+        const importFile = ref(null);
+        const importFileName = ref('');
+        const isImporting = ref(false);
+
+        // Toast notification
+        const toast = ref({ show: false, message: '', type: 'success' });
+        const showToast = (message, type = 'success') => {
+          toast.value = { show: true, message, type };
+          setTimeout(() => { toast.value.show = false; }, 3000);
+        };
+
+        // MRP Filter
+        const createdBys = ref([]);
+        const fileNames = ref([]);
+        const selectedCreatedBy = ref('');
+        const selectedFileName = ref('');
+
+        // Weekly report filters
+        const weeklyCreatedBy = ref('');
+        const weeklyFileNames = ref([]);
+        const weeklyFileName = ref('');
+        const weeklyColumns = ref([]);
+        const weeklyReport = ref([]);
+
+        const pageTitle = computed(() => {
+          const titles = {
+            dashboard: '仪表盘',
+            products: '产品主数据',
+            mrp: 'MRP计划管理',
+            routing: '工艺路线',
+            lines: '生产线配置',
+            realtime: '实时配置',
+            capacity: '产能计算',
+            cws: 'CWS人力核算'
+          };
+          return titles[currentPage.value] || '';
+        });
+
+        const recentPlans = computed(() => mrpPlans.value.slice(0, 10));
+
+        // API helpers
+        const api = async (path, options = {}) => {
+          const headers = { 'Content-Type': 'application/json' };
+          if (token.value) {
+            headers['Authorization'] = `Bearer ${token.value}`;
+          }
+          const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'API Error');
+          return data;
+        };
+
+        // Login
+        const handleLogin = async () => {
+          try {
+            const data = await api('/auth/login', {
+              method: 'POST',
+              body: JSON.stringify(loginForm.value)
+            });
+            token.value = data.data.token;
+            currentUser.value = data.data.realName || data.data.username;
+            currentPage.value = 'dashboard';
+            loadInitialData();
+          } catch (err) {
+            showToast('登录失败: ' + err.message, 'error');
+          }
+        };
+
+        const handleLogout = () => {
+          token.value = '';
+          currentUser.value = '';
+          loginForm.value = { username: '', password: '' };
+          currentPage.value = 'login';
+        };
+
+        // Load data
+        const loadInitialData = async () => {
+          try {
+            const [vData, familyData, lineData, routingData] = await Promise.all([
+              api('/mrp/versions'),
+              api('/products/families'),
+              api('/lines'),
+              api('/routings')
+            ]);
+            versions.value = vData.data || [];
+            families.value = familyData.data || [];
+            lines.value = lineData.data || [];
+            routings.value = routingData.data || [];
+            stats.value.totalFamilies = families.value.length;
+            stats.value.totalLines = lines.value.length;
+            stats.value.totalRoutings = routings.value.length;
+            if (versions.value.length > 0) {
+              selectedVersion.value = versions.value[0];
+              loadMrpPlans();
+            }
+          } catch (err) {
+            console.error('Load initial data error:', err);
+          }
+        };
+
+        const loadDashboardData = async () => {
+          await loadInitialData();
+          if (selectedVersion.value) {
+            try {
+              const data = await api(`/mrp/plans/version/${selectedVersion.value}`);
+              mrpPlans.value = data.data || [];
+              stats.value.totalMrpPlans = mrpPlans.value.length;
+            } catch (err) {
+              console.error('Load MRP error:', err);
+            }
+          }
+        };
+
+        const refreshData = () => {
+          loadDashboardData();
+        };
+
+        // Products
+        const loadProducts = async () => {
+          try {
+            const data = await api('/products');
+            products.value = data.data || [];
+            stats.value.totalProducts = products.value.length;
+          } catch (err) {
+            console.error('Load products error:', err);
+          }
+        };
+
+        // MRP
+        const loadMrpCreatedBys = async () => {
+          try {
+            const data = await api('/mrp/filters/created-bys');
+            createdBys.value = data.data || [];
+          } catch (err) {
+            console.error('Load createdBys error:', err);
+          }
+        };
+
+        const loadMrpFileNames = async (createdBy) => {
+          if (!createdBy) {
+            fileNames.value = [];
+            return;
+          }
+          try {
+            const data = await api(`/mrp/filters/${encodeURIComponent(createdBy)}/files`);
+            fileNames.value = data.data || [];
+          } catch (err) {
+            console.error('Load fileNames error:', err);
+          }
+        };
+
+        const loadMrpVersions = async (createdBy, fileName) => {
+          if (!createdBy || !fileName) {
+            versions.value = [];
+            return;
+          }
+          try {
+            const data = await api(`/mrp/filters/${encodeURIComponent(createdBy)}/${encodeURIComponent(fileName)}/versions`);
+            versions.value = data.data || [];
+          } catch (err) {
+            console.error('Load versions error:', err);
+          }
+        };
+
+        const onCreatedByChange = () => {
+          selectedFileName.value = '';
+          versions.value = '';
+          selectedVersion.value = '';
+          loadMrpFileNames(selectedCreatedBy.value);
+        };
+
+        const onFileNameChange = () => {
+          selectedVersion.value = '';
+          loadMrpVersions(selectedCreatedBy.value, selectedFileName.value);
+        };
+
+        const loadMrpPlans = async () => {
+          if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
+            showToast('请选择完整的筛选条件（导入人、文件、版本）', 'warning');
+            return;
+          }
+          try {
+            const createdBy = encodeURIComponent(selectedCreatedBy.value);
+            const fileName = encodeURIComponent(selectedFileName.value);
+            const version = encodeURIComponent(selectedVersion.value);
+            const data = await api(`/mrp/plans/filtered?createdBy=${createdBy}&fileName=${fileName}&version=${version}`);
+            mrpPlans.value = data.data || [];
+            stats.value.totalMrpPlans = mrpPlans.value.length;
+          } catch (err) {
+            console.error('Load MRP error:', err);
+          }
+        };
+
+        // Weekly report functions
+        const onWeeklyCreatedByChange = () => {
+          weeklyFileName.value = '';
+          weeklyColumns.value = [];
+          weeklyReport.value = [];
+          if (weeklyCreatedBy.value) {
+            loadMrpFileNames(weeklyCreatedBy.value).then(() => {
+              weeklyFileNames.value = fileNames.value;
+            });
+          }
+        };
+
+        const onWeeklyFileNameChange = () => {
+          weeklyReport.value = [];
+          weeklyColumns.value = [];
+          weeklyColumnGroups.value = [];
+        };
+
+        const weeklyColumnGroups = ref([]);
+
+        const getVersionColor = (versionIndex) => {
+          const colors = ['#ffffff', '#e0e0e0', '#f0f0f0', '#d0d0d0'];
+          return colors[versionIndex % colors.length];
+        };
+
+        const loadWeeklyReport = async () => {
+          if (!weeklyCreatedBy.value || !weeklyFileName.value) {
+            showToast('请选择导入人和文件', 'warning');
+            return;
+          }
+          mrpTab.value = 'weekly';
+          try {
+            const createdBy = encodeURIComponent(weeklyCreatedBy.value);
+            const fileName = encodeURIComponent(weeklyFileName.value);
+            const data = await api(`/mrp/reports/weekly/by-file?createdBy=${createdBy}&fileName=${fileName}`);
+            const result = data.data && data.data[0];
+            if (result) {
+              const cols = result.columns || [];
+              // 列格式已经包含 weekLabel: "W11(3/2-3/8)", version: "0303", key: "W11(0303)"
+              weeklyColumns.value = cols;
+              weeklyReport.value = result.data || [];
+
+              // 生成分组信息（按周分组）
+              const groups = [];
+              let currentWeek = null;
+              let currentGroup = null;
+              for (const col of cols) {
+                if (col.week !== currentWeek) {
+                  if (currentGroup) groups.push(currentGroup);
+                  currentGroup = { week: col.week, weekLabel: col.weekLabel, versions: [] };
+                  currentWeek = col.week;
+                }
+                currentGroup.versions.push(col);
+              }
+              if (currentGroup) groups.push(currentGroup);
+              weeklyColumnGroups.value = groups;
+            } else {
+              weeklyColumns.value = [];
+              weeklyReport.value = [];
+              weeklyColumnGroups.value = [];
+            }
+          } catch (err) {
+            console.error('Load weekly report error:', err);
+            showToast('加载周报表失败', 'error');
+          }
+        };
+
+        const loadMonthlyReport = async () => {
+          if (!selectedVersion.value) return;
+          mrpTab.value = 'monthly';
+          // Similar to weekly
+        };
+
+        // Lines
+        const loadLines = async () => {
+          try {
+            const data = await api('/lines');
+            lines.value = data.data || [];
+            stats.value.totalLines = lines.value.length;
+          } catch (err) {
+            console.error('Load lines error:', err);
+          }
+        };
+
+        // Realtime
+        const calculateRealtime = async () => {
+          if (!selectedVersion.value) {
+            showToast('请先选择版本', 'warning');
+            return;
+          }
+          try {
+            await api(`/line-realtime/calculate?version=${selectedVersion.value}`, { method: 'POST' });
+            const data = await api(`/line-realtime/list?version=${selectedVersion.value}`);
+            realtimeData.value = data.data || [];
+          } catch (err) {
+            console.error('Calculate realtime error:', err);
+          }
+        };
+
+        // Capacity
+        const calculateCapacity = async () => {
+          if (!selectedVersion.value) {
+            showToast('请先选择版本', 'warning');
+            return;
+          }
+          try {
+            const data = await api(`/capacity/calculate?version=${selectedVersion.value}`);
+            capacityData.value = data.data || [];
+            let totalCap = 0, totalDem = 0;
+            capacityData.value.forEach(c => {
+              totalCap += parseFloat(c.weeklyCapacity || 0);
+              totalDem += parseFloat(c.weeklyDemand || 0);
+            });
+            capacityStats.value.weeklyCapacity = Math.round(totalCap);
+            capacityStats.value.weeklyDemand = Math.round(totalDem);
+            capacityStats.value.utilization = totalCap > 0 ? Math.round((totalDem / totalCap) * 100) : 0;
+            capacityStats.value.status = capacityStats.value.utilization > 100 ? '超负荷' : '正常';
+          } catch (err) {
+            console.error('Calculate capacity error:', err);
+          }
+        };
+
+        // CWS
+        const calculateCws = async () => {
+          if (!selectedVersion.value) {
+            showToast('请先选择版本', 'warning');
+            return;
+          }
+          try {
+            const data = await api(`/cws/calculate?version=${selectedVersion.value}`);
+            cwsData.value = data.data || [];
+          } catch (err) {
+            console.error('Calculate CWS error:', err);
+          }
+        };
+
+        // Import
+        const showImportModal = (type) => {
+          importType.value = type;
+          if (type === 'mrp') {
+            loadMrpCreatedBys();
+          }
+          showImport.value = true;
+        };
+
+        const handleFileUpload = (e) => {
+          importFile.value = e.target.files[0];
+        };
+
+        const confirmImport = async () => {
+          if (!importFile.value) {
+            showToast('请选择文件', 'warning');
+            return;
+          }
+          if (importType.value === 'mrp' && !importFileName.value) {
+            showToast('请输入文件名称', 'warning');
+            return;
+          }
+          isImporting.value = true;
+          try {
+            const formData = new FormData();
+            formData.append('file', importFile.value);
+            if (importType.value === 'mrp') {
+              formData.append('fileName', importFileName.value);
+              formData.append('createdBy', currentUser.value);
+              console.log('Import params:', { fileName: importFileName.value, createdBy: currentUser.value });
+            }
+            const res = await fetch(`${API_BASE}/mrp/plans/import`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token.value}` },
+              body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast('导入成功: ' + data.message, 'success');
+              showImport.value = false;
+              const importedFileName = importFileName.value;
+              importFileName.value = '';
+              if (importType.value === 'mrp') {
+                // Reload createdBys and auto-select the imported user/file
+                await loadMrpCreatedBys();
+                selectedCreatedBy.value = currentUser.value;
+                await loadMrpFileNames(currentUser.value);
+                selectedFileName.value = importedFileName;
+                await loadMrpVersions(currentUser.value, importedFileName);
+                if (versions.value.length > 0) {
+                  selectedVersion.value = versions.value[0];
+                }
+                loadMrpPlans();
+              }
+            } else {
+              showToast('导入失败: ' + data.message, 'error');
+            }
+          } catch (err) {
+            showToast('导入失败: ' + err.message, 'error');
+          } finally {
+            isImporting.value = false;
+          }
+        };
+
+        // Watch productTab to load products
+        onMounted(() => {
+          if (currentPage.value !== 'login') {
+            loadInitialData();
+          }
+        });
+
+        // Watch currentPage to load MRP filters when navigating to MRP page
+        watch(currentPage, (newPage) => {
+          if (newPage === 'mrp') {
+            loadMrpCreatedBys();
+          }
+        });
+
+        return {
+          currentPage,
+          currentUser,
+          loginForm,
+          handleLogin,
+          handleLogout,
+          pageTitle,
+          families,
+          products,
+          mrpPlans,
+          routings,
+          lines,
+          realtimeData,
+          capacityData,
+          cwsData,
+          versions,
+          selectedVersion,
+          productTab,
+          mrpTab,
+          stats,
+          capacityStats,
+          recentPlans,
+          weeklyReport,
+          showImport,
+          importType,
+          importFileName,
+          isImporting,
+          toast,
+          showToast,
+          createdBys,
+          fileNames,
+          selectedCreatedBy,
+          selectedFileName,
+          weeklyCreatedBy,
+          weeklyFileNames,
+          weeklyFileName,
+          weeklyColumns,
+          weeklyColumnGroups,
+          getVersionColor,
+          onWeeklyCreatedByChange,
+          onWeeklyFileNameChange,
+          showImportModal,
+          handleFileUpload,
+          confirmImport,
+          loadDashboardData,
+          refreshData,
+          loadMrpCreatedBys,
+          loadMrpFileNames,
+          loadMrpVersions,
+          onCreatedByChange,
+          onFileNameChange,
+          loadMrpPlans,
+          loadWeeklyReport,
+          loadMonthlyReport,
+          calculateRealtime,
+          calculateCapacity,
+          calculateCws
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.capics:capics-backend >----------------------
+[INFO] Building CAPICS Backend 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.2.0:resources (default-resources) @ capics-backend ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Using 'UTF-8' encoding to copy filtered properties files.
+[INFO] Copying 1 resource
+[INFO] Copying 1 resource
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ capics-backend ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 59 source files to C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\target\classes
+[INFO] /C:/Users/Vulcan/Desktop/claude code/Mini Max/capics 3/backend/src/main/java/com/capics/config/SecurityConfig.java: C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\SecurityConfig.java使用或覆盖了已过时的 API。
+[INFO] /C:/Users/Vulcan/Desktop/claude code/Mini Max/capics 3/backend/src/main/java/com/capics/config/SecurityConfig.java: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.815 s
+[INFO] Finished at: 2026-03-21T16:44:47+08:00
+[INFO] ------------------------------------------------------------------------
