@@ -48,6 +48,11 @@ const routes = [
         component: () => import('@/views/CapacityAssessmentView.vue')
       },
       {
+        path: 'capacity-realtime',
+        name: 'CapacityAssessmentRealtime',
+        component: () => import('@/views/CapacityAssessmentRealtimeView.vue')
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/UsersView.vue')

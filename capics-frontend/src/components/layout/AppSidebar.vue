@@ -43,6 +43,11 @@
           产能评估
         </router-link>
       </li>
+      <li class="nav-item">
+        <router-link to="/capacity-realtime" class="nav-link" :class="{ active: $route.path === '/capacity-realtime' }">
+          产能评估（实时）
+        </router-link>
+      </li>
       <li class="nav-section">系统</li>
       <li class="nav-item">
         <router-link to="/users" class="nav-link" :class="{ active: $route.path === '/users' }">
