@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Sort;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,12 +49,12 @@ class ProductFamilyServiceTest {
         family2.setOee(new BigDecimal("80.0"));
         family2.setWorkerCount(3);
 
-        when(repository.findAll()).thenReturn(Arrays.asList(family1, family2));
+        when(repository.findAll(any(Sort.class))).thenReturn(Arrays.asList(family1, family2));
 
         List<ProductFamilyDto> result = service.findAll();
 
         assertEquals(2, result.size());
-        verify(repository).findAll();
+        verify(repository).findAll(any(Sort.class));
     }
 
     @Test

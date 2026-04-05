@@ -39,6 +39,13 @@
         :options="availableLines.map(l => ({ value: l, label: l }))"
         placeholder="请选择生产线"
       />
+      <button
+        v-if="!showSummary && selectedLine && summaryData.length > 0"
+        class="btn btn-secondary"
+        @click="showSummary = true"
+      >
+        显示汇总表
+      </button>
     </div>
 
     <!-- 警告信息 -->
@@ -47,6 +54,43 @@
       <ul class="warning-list">
         <li v-for="(warning, idx) in warnings" :key="idx">{{ warning }}</li>
       </ul>
+    </div>
+
+    <!-- 汇总表 -->
+    <div
+      v-if="selectedLine && summaryData.length > 0 && showSummary"
+      class="summary-panel"
+      :style="{ left: summaryPosition.x + 'px', top: summaryPosition.y + 'px' }"
+      @mousedown="startDrag"
+    >
+      <div class="summary-title">
+        <span>{{ selectedLine }}</span>
+        <button class="close-btn" @click="closeSummary">×</button>
+      </div>
+      <div class="summary-scroll">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">统计维度</th>
+              <th v-for="(week, idx) in displayWeeks" :key="week">{{ getWeekDate(week) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(row, idx) in summaryData"
+              :key="idx"
+              :class="{ 'total-row': row.dimension === '总计' }"
+            >
+              <td class="sticky-col">{{ row.dimension }}</td>
+              <td v-for="(week, wIdx) in displayWeeks" :key="week">
+                <span class="loading-value" :class="{ 'high-load': row.loadings[week] > 1 }">
+                  {{ formatLoading(row.loadings[week]) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- 表格容器 -->
@@ -326,6 +370,47 @@ import BaseSelect from '@/components/common/BaseSelect.vue'
 const { token } = useAuth()
 const { showToast } = useToast()
 
+// 汇总表拖动状态
+const isDragging = ref(false)
+const dragOffset = ref({ x: 0, y: 0 })
+const summaryPosition = ref({ x: window.innerWidth - 650, y: 80 })
+const showSummary = ref(true)
+
+// 汇总表显示的周数（全部）
+const displayWeeks = computed(() => {
+  return weeks.value
+})
+
+// 拖动相关函数
+const startDrag = (e) => {
+  if (e.target.closest('.close-btn')) return
+  isDragging.value = true
+  dragOffset.value = {
+    x: e.clientX - summaryPosition.value.x,
+    y: e.clientY - summaryPosition.value.y
+  }
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+}
+
+const onDrag = (e) => {
+  if (!isDragging.value) return
+  summaryPosition.value = {
+    x: e.clientX - dragOffset.value.x,
+    y: e.clientY - dragOffset.value.y
+  }
+}
+
+const stopDrag = () => {
+  isDragging.value = false
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+}
+
+const closeSummary = () => {
+  showSummary.value = false
+}
+
 // MRP筛选条件
 const createdBys = ref([])
 const fileNames = ref([])
@@ -375,6 +460,37 @@ const editableData = computed(() => {
 const currentLineConfig = computed(() => {
   if (!selectedLine.value) return { workingDaysPerWeek: 5, shiftsPerDay: 2, hoursPerShift: 8 }
   return lineConfigs.value[selectedLine.value] || { workingDaysPerWeek: 5, shiftsPerDay: 2, hoursPerShift: 8 }
+})
+
+// 汇总数据
+const summaryData = computed(() => {
+  const items = editableData.value
+  const weeksVal = weeks.value
+
+  // 1. 计算生产线总计LOAD
+  const totalRow = { dimension: '总计', loadings: {} }
+  weeksVal.forEach(week => {
+    let totalLoad = 0
+    items.forEach(item => {
+      totalLoad += calcLoading(item, week)
+    })
+    totalRow.loadings[week] = totalLoad
+  })
+
+  // 2. 按 PF 分组计算LOAD
+  const pfGroups = {}
+  items.forEach(item => {
+    const pf = item.pf || '未分类'
+    if (!pfGroups[pf]) {
+      pfGroups[pf] = { dimension: pf, loadings: {} }
+    }
+    weeksVal.forEach(week => {
+      if (!pfGroups[pf].loadings[week]) pfGroups[pf].loadings[week] = 0
+      pfGroups[pf].loadings[week] += calcLoading(item, week)
+    })
+  })
+
+  return [totalRow, ...Object.values(pfGroups)]
 })
 
 // 判断单元格是否处于编辑状态
@@ -648,6 +764,138 @@ onMounted(() => {
 .line-filter-label {
   font-weight: 500;
   color: var(--foreground);
+}
+
+/* === Summary Panel === */
+.summary-panel {
+  position: fixed;
+  width: 600px;
+  max-height: 350px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: move;
+  user-select: none;
+}
+
+.summary-title {
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border-light);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  color: var(--primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+}
+
+.close-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.close-btn:hover {
+  background: var(--border);
+  color: var(--foreground);
+}
+
+.summary-scroll {
+  flex: 1;
+  overflow: auto;
+  white-space: nowrap;
+}
+
+.summary-table {
+  width: max-content;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.summary-table th,
+.summary-table td {
+  border: 1px solid var(--border-light);
+  padding: 0.375rem 0.5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.summary-table th {
+  background: var(--muted);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.summary-table .sticky-col {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 10;
+  text-align: left;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.summary-table th.sticky-col {
+  background: var(--muted);
+  z-index: 30;
+}
+
+.summary-table .total-row {
+  font-weight: 700;
+  background: var(--muted);
+}
+
+.summary-table .total-row .sticky-col {
+  background: var(--muted);
+}
+
+.summary-table .loading-value {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.summary-table .loading-value.high-load {
+  color: #DC2626;
+}
+
+.summary-scroll::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.summary-scroll::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+.summary-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.summary-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }
 
 /* === Editable Cell === */

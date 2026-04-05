@@ -168,6 +168,13 @@ public class ProductService {
         dto.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null);
         dto.setUpdatedBy(entity.getUpdatedBy());
         dto.setUpdatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().toString() : null);
+        // 获取PF
+        if (entity.getFamilyCode() != null) {
+            List<ProductFamily> families = familyRepository.findByFamilyCode(entity.getFamilyCode());
+            if (!families.isEmpty()) {
+                dto.setPf(families.get(0).getPf());
+            }
+        }
         return dto;
     }
 

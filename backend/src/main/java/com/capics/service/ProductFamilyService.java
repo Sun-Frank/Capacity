@@ -6,8 +6,11 @@ import com.capics.entity.ProductFamilyId;
 import com.capics.repository.ProductFamilyRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProductFamilyService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductFamilyService.class);
     private final ProductFamilyRepository repository;
 
     public ProductFamilyService(ProductFamilyRepository repository) {
@@ -50,30 +54,52 @@ public class ProductFamilyService {
                 .orElseThrow(() -> new RuntimeException("Product family not found"));
     }
 
+    // Create operation - uses dto values directly as keys
     public ProductFamilyDto save(ProductFamilyDto dto) {
-        ProductFamilyId id = new ProductFamilyId(dto.getFamilyCode(), dto.getLineCode());
-        ProductFamily entity;
+        log.info("ProductFamilyService.save (create) called with: familyCode={}, lineCode={}",
+                dto.getFamilyCode(), dto.getLineCode());
+        ProductFamily entity = toEntity(dto);
+        entity.setCreatedBy(dto.getUpdatedBy());
+        entity = repository.save(entity);
+        return toDto(entity);
+    }
 
-        // 如果记录已存在，保留创建信息
+    // Update operation - accepts original keys to find record
+    @Transactional
+    public ProductFamilyDto save(ProductFamilyDto dto, String originalFamilyCode, String originalLineCode) {
+        log.info("ProductFamilyService.save called with: familyCode={}, lineCode={}, description={}, pf={}, updatedBy={}",
+                dto.getFamilyCode(), dto.getLineCode(), dto.getDescription(), dto.getPf(), dto.getUpdatedBy());
+
+        // 用dto中的key查找记录（因为key不可编辑，dto中的key就是原始key）
+        ProductFamilyId id = new ProductFamilyId(dto.getFamilyCode(), dto.getLineCode());
         Optional<ProductFamily> existing = repository.findById(id);
+        log.info("findById result: present={}", existing.isPresent());
+
         if (existing.isPresent()) {
-            entity = existing.get();
-            // 更新字段
+            // 正常更新
+            ProductFamily entity = existing.get();
+            log.info("Updating existing record: familyCode={}, lineCode={}",
+                    entity.getFamilyCode(), entity.getLineCode());
             entity.setCodingRule(dto.getCodingRule());
             entity.setCycleTime(dto.getCycleTime());
             entity.setOee(dto.getOee());
             entity.setWorkerCount(dto.getWorkerCount());
             entity.setVersion(dto.getVersion());
             entity.setDescription(dto.getDescription());
-            // 设置修改人
+            entity.setPf(dto.getPf());
             entity.setUpdatedBy(dto.getUpdatedBy());
+            entity = repository.save(entity);
+            log.info("After save - entity: familyCode={}, lineCode={}, description={}, pf={}",
+                    entity.getFamilyCode(), entity.getLineCode(), entity.getDescription(), entity.getPf());
+            return toDto(entity);
         } else {
-            entity = toEntity(dto);
-            entity.setCreatedBy(dto.getUpdatedBy()); // 新建时createdBy就是当前操作人
+            // 记录不存在，创建新的
+            log.info("Record not found, creating new");
+            ProductFamily entity = toEntity(dto);
+            entity.setCreatedBy(dto.getUpdatedBy());
+            entity = repository.save(entity);
+            return toDto(entity);
         }
-
-        entity = repository.save(entity);
-        return toDto(entity);
     }
 
     public void delete(String familyCode, String lineCode) {
@@ -212,6 +238,12 @@ public class ProductFamilyService {
                     entity.setDescription(getCellValueAsString(row.getCell(idxDescription)));
                 }
 
+                // PF
+                Integer idxPf = findColumnIndex(headerMap, "pf", "PF");
+                if (idxPf != null) {
+                    entity.setPf(getCellValueAsString(row.getCell(idxPf)));
+                }
+
                 if (entity.getFamilyCode() != null && !entity.getFamilyCode().isEmpty()) {
                     repository.save(entity);
                     count++;
@@ -260,6 +292,7 @@ public class ProductFamilyService {
         dto.setUpdatedBy(entity.getUpdatedBy());
         dto.setUpdatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().toString() : null);
         dto.setDescription(entity.getDescription());
+        dto.setPf(entity.getPf());
         return dto;
     }
 
@@ -273,6 +306,7 @@ public class ProductFamilyService {
         entity.setWorkerCount(dto.getWorkerCount());
         entity.setVersion(dto.getVersion());
         entity.setDescription(dto.getDescription());
+        entity.setPf(dto.getPf());
         return entity;
     }
 }

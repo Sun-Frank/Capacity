@@ -8,27 +8,11 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
           <label>编码族</label>
-          <input type="text" v-model="form.familyCode" class="form-input" required />
+          <input type="text" v-model="form.familyCode" class="form-input" />
         </div>
         <div class="form-group">
           <label>生产线</label>
-          <input type="text" v-model="form.lineCode" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label>编码规则</label>
-          <input type="text" v-model="form.codingRule" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>周期时间(秒)</label>
-          <input type="number" step="0.01" v-model="form.cycleTime" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>OEE(%)</label>
-          <input type="number" step="0.01" v-model="form.oee" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>人数</label>
-          <input type="number" v-model="form.workerCount" class="form-input" />
+          <input type="text" v-model="form.lineCode" class="form-input" />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn" @click="$emit('close')">取消</button>
@@ -56,11 +40,7 @@ const emit = defineEmits(['close', 'confirm'])
 
 const form = ref({
   familyCode: '',
-  lineCode: '',
-  codingRule: '',
-  cycleTime: '',
-  oee: '',
-  workerCount: ''
+  lineCode: ''
 })
 
 const isSubmitting = ref(false)
@@ -69,11 +49,7 @@ watch(() => props.familyLine, (newFamilyLine) => {
   if (newFamilyLine) {
     form.value = {
       familyCode: newFamilyLine.familyCode || '',
-      lineCode: newFamilyLine.lineCode || '',
-      codingRule: newFamilyLine.codingRule || '',
-      cycleTime: newFamilyLine.cycleTime || '',
-      oee: newFamilyLine.oee || '',
-      workerCount: newFamilyLine.workerCount || ''
+      lineCode: newFamilyLine.lineCode || ''
     }
   }
 }, { immediate: true })

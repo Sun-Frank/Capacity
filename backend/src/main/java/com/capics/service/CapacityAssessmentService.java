@@ -139,6 +139,13 @@ public class CapacityAssessmentService {
                     continue;
                 }
 
+                // 7.1 获取PF信息（根据familyCode和lineCode查找）
+                String pf = null;
+                Optional<ProductFamily> pfOpt = productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode);
+                if (pfOpt.isPresent()) {
+                    pf = pfOpt.get().getPf();
+                }
+
                 // 8. 检查产线是否激活
                 Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
                 if (lineConfigOpt.isEmpty() || !lineConfigOpt.get().getIsActive()) {
@@ -199,6 +206,7 @@ public class CapacityAssessmentService {
                 row.put("itemNumber", itemNumber);
                 row.put("description", description);
                 row.put("componentNumber", componentNumber);
+                row.put("pf", pf);
                 row.put("shiftOutput", shiftOutput);
                 row.put("shiftWorkers", workerCount);
                 row.put("ct", ct);

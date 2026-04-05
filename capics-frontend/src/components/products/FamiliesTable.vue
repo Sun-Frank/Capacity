@@ -6,6 +6,7 @@
           <th>编码族</th>
           <th>生产线</th>
           <th>描述</th>
+          <th>PF</th>
           <th>编码规则</th>
           <th>周期时间(秒)</th>
           <th>OEE(%)</th>
@@ -20,6 +21,7 @@
           <td>{{ f.familyCode }}</td>
           <td>{{ f.lineCode }}</td>
           <td>{{ f.description || '-' }}</td>
+          <td>{{ f.pf || '-' }}</td>
           <td>{{ f.codingRule }}</td>
           <td>{{ f.cycleTime }}</td>
           <td>{{ formatOee(f.oee) }}</td>

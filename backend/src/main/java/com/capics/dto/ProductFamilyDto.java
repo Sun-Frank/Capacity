@@ -17,4 +17,5 @@ public class ProductFamilyDto {
     private String updatedBy;
     private String updatedAt;
     private String description;
+    private String pf;
 }

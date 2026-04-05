@@ -53,6 +53,9 @@ public class Product {
     @Column
     private LocalDateTime updatedAt;
 
+    @Transient
+    private String pf;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

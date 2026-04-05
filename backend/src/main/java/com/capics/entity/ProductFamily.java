@@ -53,6 +53,9 @@ public class ProductFamily {
     @Column(length = 255)
     private String description;
 
+    @Column(name = "pf", length = 100)
+    private String pf;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

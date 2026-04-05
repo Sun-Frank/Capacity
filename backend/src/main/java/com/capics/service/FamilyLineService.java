@@ -9,6 +9,8 @@ import com.capics.repository.FamilyLineRepository;
 import com.capics.repository.ProductFamilyRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 @Service
 public class FamilyLineService {
 
+    private static final Logger log = LoggerFactory.getLogger(FamilyLineService.class);
     private final FamilyLineRepository repository;
     private final ProductFamilyRepository productFamilyRepository;
 
@@ -54,22 +57,46 @@ public class FamilyLineService {
                 .orElseThrow(() -> new RuntimeException("Family line not found"));
     }
 
-    public FamilyLineDto save(FamilyLineDto dto, String updatedBy) {
-        FamilyLineId id = new FamilyLineId(dto.getFamilyCode(), dto.getLineCode());
-        FamilyLine entity;
+    public FamilyLineDto save(FamilyLineDto dto, String updatedBy, String originalFamilyCode, String originalLineCode) {
+        log.info("FamilyLineService.save called with: originalFamilyCode={}, originalLineCode={}, new familyCode={}, new lineCode={}, updatedBy={}",
+                originalFamilyCode, originalLineCode, dto.getFamilyCode(), dto.getLineCode(), updatedBy);
 
-        Optional<FamilyLine> existing = repository.findById(id);
+        // 用原始key查找记录
+        FamilyLineId originalId = new FamilyLineId(originalFamilyCode, originalLineCode);
+        Optional<FamilyLine> existing = repository.findById(originalId);
+        log.info("findById with original key result: present={}", existing.isPresent());
+
+        boolean keyChanged = !dto.getFamilyCode().equals(originalFamilyCode) || !dto.getLineCode().equals(originalLineCode);
+
         if (existing.isPresent()) {
-            entity = existing.get();
-            entity.setLineCode(dto.getLineCode());
-            entity.setUpdatedBy(updatedBy);
-        } else {
-            entity = toEntity(dto);
-            entity.setCreatedBy(updatedBy);
-        }
+            if (keyChanged) {
+                // Key changed: delete old, create new
+                log.info("Key changed, deleting old record and creating new one");
+                repository.deleteById(originalId);
 
-        entity = repository.save(entity);
-        return toDto(entity);
+                FamilyLine entity = toEntity(dto);
+                entity.setCreatedBy(existing.get().getCreatedBy());
+                entity.setCreatedAt(existing.get().getCreatedAt());
+                entity.setUpdatedBy(updatedBy);
+                entity = repository.save(entity);
+                return toDto(entity);
+            } else {
+                // Key没变，正常更新
+                FamilyLine entity = existing.get();
+                log.info("Updating existing FamilyLine: familyCode={}, lineCode={}",
+                        entity.getFamilyCode(), entity.getLineCode());
+                entity.setUpdatedBy(updatedBy);
+                entity = repository.save(entity);
+                return toDto(entity);
+            }
+        } else {
+            // 记录不存在，创建新的
+            log.info("Record not found, creating new");
+            FamilyLine entity = toEntity(dto);
+            entity.setCreatedBy(updatedBy);
+            entity = repository.save(entity);
+            return toDto(entity);
+        }
     }
 
     public void delete(String familyCode, String lineCode) {

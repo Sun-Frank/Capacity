@@ -17,4 +17,5 @@ public class ProductDto {
     private String createdAt;
     private String updatedBy;
     private String updatedAt;
+    private String pf;
 }

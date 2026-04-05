@@ -56,9 +56,8 @@ public class ProductController {
     @PutMapping("/families/{familyCode}/{lineCode}")
     public ResponseEntity<ApiResponse> updateFamily(@PathVariable String familyCode, @PathVariable String lineCode,
                                                      @RequestBody ProductFamilyDto dto) {
-        dto.setFamilyCode(familyCode);
-        dto.setLineCode(lineCode);
-        ProductFamilyDto updated = familyService.save(dto);
+        // 传递原始key（path variable）和新key（body中的值）
+        ProductFamilyDto updated = familyService.save(dto, familyCode, lineCode);
         return ResponseEntity.ok(ApiResponse.success("Updated", updated));
     }
 
@@ -110,9 +109,8 @@ public class ProductController {
     @PutMapping("/family-lines/{familyCode}/{lineCode}")
     public ResponseEntity<ApiResponse> updateFamilyLine(@PathVariable String familyCode, @PathVariable String lineCode,
                                                         @RequestBody FamilyLineDto dto) {
-        dto.setFamilyCode(familyCode);
-        dto.setLineCode(lineCode);
-        FamilyLineDto updated = familyLineService.save(dto, dto.getUpdatedBy());
+        // 传递原始key（path variable）和新key（body中的值）
+        FamilyLineDto updated = familyLineService.save(dto, dto.getUpdatedBy(), familyCode, lineCode);
         return ResponseEntity.ok(ApiResponse.success("Updated", updated));
     }
 

@@ -8,11 +8,19 @@
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
           <label>编码族</label>
-          <input type="text" v-model="form.familyCode" class="form-input" required />
+          <input type="text" :value="form.familyCode" class="form-input" readonly />
         </div>
         <div class="form-group">
           <label>生产线</label>
-          <input type="text" v-model="form.lineCode" class="form-input" required />
+          <input type="text" :value="form.lineCode" class="form-input" readonly />
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <input type="text" v-model="form.description" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>PF</label>
+          <input type="text" v-model="form.pf" class="form-input" />
         </div>
         <div class="form-group">
           <label>编码规则</label>
@@ -57,6 +65,8 @@ const emit = defineEmits(['close', 'confirm'])
 const form = ref({
   familyCode: '',
   lineCode: '',
+  description: '',
+  pf: '',
   codingRule: '',
   cycleTime: '',
   oee: '',
@@ -70,6 +80,8 @@ watch(() => props.family, (newFamily) => {
     form.value = {
       familyCode: newFamily.familyCode || '',
       lineCode: newFamily.lineCode || '',
+      description: newFamily.description || '',
+      pf: newFamily.pf || '',
       codingRule: newFamily.codingRule || '',
       cycleTime: newFamily.cycleTime || '',
       oee: newFamily.oee || '',
