@@ -451,9 +451,9 @@ const selectedLineData = computed(() => {
   return linesData.value[selectedLine.value]
 })
 
-// 可编辑的本地数据
+// 可编辑的本地数据（直接引用selectedLineData，不要副本）
 const editableData = computed(() => {
-  return selectedLineData.value.map(item => ({ ...item }))
+  return selectedLineData.value
 })
 
 // 当前选中产线的配置
@@ -464,7 +464,7 @@ const currentLineConfig = computed(() => {
 
 // 汇总数据
 const summaryData = computed(() => {
-  const items = editableData.value
+  const items = selectedLineData.value
   const weeksVal = weeks.value
 
   // 1. 计算生产线总计LOAD
