@@ -373,7 +373,7 @@ const { showToast } = useToast()
 // 汇总表拖动状态
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
-const summaryPosition = ref({ x: window.innerWidth - 650, y: 80 })
+const summaryPosition = ref({ x: 926, y: 1 })
 const showSummary = ref(true)
 
 // 汇总表显示的周数（全部）
@@ -769,8 +769,8 @@ onMounted(() => {
 /* === Summary Panel === */
 .summary-panel {
   position: fixed;
-  width: 600px;
-  max-height: 350px;
+  width: 1400px;
+  max-height: 490px;
   background: white;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
