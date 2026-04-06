@@ -131,13 +131,17 @@ const {
   weeklyColumns,
   weeklyReport,
   weeklyColumnGroups,
+  mrpPlansCache,
+  weeklyReportCache,
   loadCreatedBys,
   onCreatedByChange,
   onFileNameChange,
   loadMrpPlans: loadPlans,
   onWeeklyCreatedByChange,
   onWeeklyFileNameChange,
-  loadWeeklyReportData: loadWeekly
+  loadWeeklyReportData: loadWeekly,
+  restoreMrpCache,
+  restoreWeeklyCache
 } = useMrpFilters(token)
 
 const { showToast } = useToast()
@@ -270,7 +274,49 @@ const loadFileNames = async (createdBy) => {
 }
 
 onMounted(() => {
-  loadCreatedBys()
+  loadCreatedBys().then(() => {
+    // 恢复MRP计划缓存
+    if (mrpPlansCache.value) {
+      mrpPlans.value = mrpPlansCache.value.data || []
+    }
+    // 如果有恢复的筛选条件，需要重新加载下拉选项
+    if (selectedCreatedBy.value) {
+      loadFileNames(selectedCreatedBy.value).then(() => {
+        if (selectedFileName.value) {
+          loadVersions(selectedCreatedBy.value, selectedFileName.value)
+        }
+      })
+    }
+    // 恢复周报缓存
+    if (weeklyReportCache.value) {
+      const result = weeklyReportCache.value?.data?.[0]
+      if (result) {
+        weeklyColumns.value = result.columns || []
+        weeklyReport.value = result.data || []
+        // 重建columnGroups
+        const cols = weeklyColumns.value
+        const groups = []
+        let currentWeek = null
+        let currentGroup = null
+        for (const col of cols) {
+          if (col.week !== currentWeek) {
+            if (currentGroup) groups.push(currentGroup)
+            currentGroup = { week: col.week, weekLabel: col.weekLabel, versions: [], versionIndices: [] }
+            currentWeek = col.week
+          }
+          currentGroup.versions.push(col)
+        }
+        if (currentGroup) groups.push(currentGroup)
+        weeklyColumnGroups.value = groups
+      }
+    }
+    // 如果有恢复的周报筛选条件，需要重新加载下拉选项
+    if (weeklyCreatedBy.value) {
+      loadFileNames(weeklyCreatedBy.value).then(() => {
+        weeklyFileNames.value = fileNames.value
+      })
+    }
+  })
 })
 </script>
 

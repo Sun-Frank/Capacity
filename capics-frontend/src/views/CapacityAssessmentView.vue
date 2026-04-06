@@ -6,7 +6,7 @@
 
       <h1 class="page-title">静态产能核算</h1>
 
-      <p class="page-subtitle">静态产能核算模块</p>
+      <p class="page-subtitle">静态产能核算（周）模块</p>
 
     </div>
 
@@ -270,6 +270,49 @@ const { token } = useAuth()
 
 const { showToast } = useToast()
 
+// sessionStorage keys
+const SESSION_KEY = 'capics_capacity_static'
+
+// 保存状态到sessionStorage
+const saveState = () => {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      selectedCreatedBy: selectedCreatedBy.value,
+      selectedFileName: selectedFileName.value,
+      selectedVersion: selectedVersion.value,
+      linesData: linesData.value,
+      weeks: weeks.value,
+      weekDates: weekDates.value,
+      warnings: warnings.value,
+      selectedLine: selectedLine.value
+    }))
+  } catch (e) {
+    console.error('Save state error:', e)
+  }
+}
+
+// 从sessionStorage恢复状态
+const restoreState = () => {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY)
+    if (saved) {
+      const state = JSON.parse(saved)
+      selectedCreatedBy.value = state.selectedCreatedBy || ''
+      selectedFileName.value = state.selectedFileName || ''
+      selectedVersion.value = state.selectedVersion || ''
+      linesData.value = state.linesData || {}
+      weeks.value = state.weeks || []
+      weekDates.value = state.weekDates || {}
+      warnings.value = state.warnings || []
+      selectedLine.value = state.selectedLine || ''
+      return true
+    }
+  } catch (e) {
+    console.error('Restore state error:', e)
+  }
+  return false
+}
+
 
 
 // MRP筛选条件
@@ -490,6 +533,12 @@ const loadCapacityAssessment = async () => {
 
         }
 
+
+
+        // 保存状态
+
+        saveState()
+
       } else {
 
         linesData.value = {}
@@ -560,7 +609,10 @@ const formatLoading = (loading) => {
 
 onMounted(() => {
 
-  loadCreatedBys()
+  loadCreatedBys().then(() => {
+    // 恢复状态
+    restoreState()
+  })
 
 })
 

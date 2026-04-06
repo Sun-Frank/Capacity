@@ -1,8 +1,8 @@
 <template>
   <div class="page">
     <div class="page-header">
-      <h1 class="page-title">动态产能模拟（周）</h1>
-      <p class="page-subtitle">动态产能模拟（周）模块 - 双击或右键编辑单元格</p>
+      <h1 class="page-title">动态产能模拟（月）</h1>
+      <p class="page-subtitle">月度动态产能模拟模块 - 双击或右键编辑单元格</p>
     </div>
 
     <!-- MRP筛选条件 -->
@@ -72,7 +72,7 @@
           <thead>
             <tr>
               <th class="sticky-col">统计维度</th>
-              <th v-for="(week, idx) in displayWeeks" :key="week">{{ getWeekDate(week) }}</th>
+              <th v-for="(month, idx) in displayMonths" :key="month">{{ getMonthDate(month) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -82,9 +82,9 @@
               :class="{ 'total-row': row.dimension === '总计' }"
             >
               <td class="sticky-col">{{ row.dimension }}</td>
-              <td v-for="(week, wIdx) in displayWeeks" :key="week">
-                <span class="loading-value" :class="{ 'high-load': row.loadings[week] > 1 }">
-                  {{ formatLoading(row.loadings[week]) }}
+              <td v-for="(month, mIdx) in displayMonths" :key="month">
+                <span class="loading-value" :class="{ 'high-load': row.loadings[month] > 1 }">
+                  {{ formatLoading(row.loadings[month]) }}
                 </span>
               </td>
             </tr>
@@ -120,12 +120,12 @@
                 <th class="sticky-col sticky-col-6">CT</th>
                 <th class="sticky-col sticky-col-7">OEE</th>
                 <th
-                  v-for="(week, idx) in weeks"
-                  :key="'week-' + idx"
+                  v-for="(month, idx) in months"
+                  :key="'month-' + idx"
                   :colspan="2"
-                  class="week-header"
+                  class="month-header"
                 >
-                  {{ getWeekDate(week) }}
+                  {{ getMonthDate(month) }}
                 </th>
               </tr>
               <tr class="header-row-2">
@@ -136,7 +136,7 @@
                 <th class="sticky-col sticky-col-5"></th>
                 <th class="sticky-col sticky-col-6"></th>
                 <th class="sticky-col sticky-col-7"></th>
-                <template v-for="(week, idx) in weeks" :key="'sub-' + idx">
+                <template v-for="(month, idx) in months" :key="'sub-' + idx">
                   <th class="sub-header">需求量</th>
                   <th class="sub-header">LOADING</th>
                 </template>
@@ -225,37 +225,37 @@
                   </template>
                 </td>
                 <!-- 需求量和LOADING -->
-                <template v-for="(week, idx) in weeks" :key="'data-' + idx">
+                <template v-for="(month, idx) in months" :key="'data-' + idx">
                   <!-- 需求量 - 可编辑 -->
                   <td
                     class="data-cell editable-cell"
-                    :class="{ 'is-editing': isCellEditing(item, week + '_demand') }"
-                    @dblclick="startEdit(item, week + '_demand', $event)"
-                    @contextmenu.prevent="startEdit(item, week + '_demand', $event)"
+                    :class="{ 'is-editing': isCellEditing(item, month + '_demand') }"
+                    @dblclick="startEdit(item, month + '_demand', $event)"
+                    @contextmenu.prevent="startEdit(item, month + '_demand', $event)"
                     @click.stop
                   >
-                    <template v-if="isCellEditing(item, week + '_demand')">
+                    <template v-if="isCellEditing(item, month + '_demand')">
                       <input
                         ref="editInputRef"
                         type="number"
-                        v-model.number="item[week + '_demand']"
+                        v-model.number="item[month + '_demand']"
                         class="cell-input"
                         min="0"
-                        @blur="finishEdit(item, week + '_demand')"
-                        @keydown.enter="finishEdit(item, week + '_demand')"
-                        @keydown.escape="cancelEdit(item, week + '_demand')"
+                        @blur="finishEdit(item, month + '_demand')"
+                        @keydown.enter="finishEdit(item, month + '_demand')"
+                        @keydown.escape="cancelEdit(item, month + '_demand')"
                       >
                     </template>
                     <template v-else>
-                      <span class="cell-display">{{ formatDemand(item[week + '_demand']) }}</span>
+                      <span class="cell-display">{{ formatDemand(item[month + '_demand']) }}</span>
                     </template>
                   </td>
                   <!-- LOADING - 只读 -->
                   <td
                     class="data-cell loading-cell"
-                    :class="{ 'high-load': calcLoading(item, week) > 0.85 }"
+                    :class="{ 'high-load': calcLoading(item, month) > 0.85 }"
                   >
-                    {{ formatLoading(calcLoading(item, week)) }}
+                    {{ formatLoading(calcLoading(item, month)) }}
                   </td>
                 </template>
               </tr>
@@ -363,7 +363,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileName } from '@/api/mrp'
-import { getCapacityAssessment } from '@/api/capacityRealtime'
+import { getCapacityAssessmentMonthly } from '@/api/capacityMonthly'
 import { getLines } from '@/api/line'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
@@ -371,7 +371,7 @@ const { token } = useAuth()
 const { showToast } = useToast()
 
 // sessionStorage keys
-const SESSION_KEY = 'capics_capacity_realtime'
+const SESSION_KEY = 'capics_capacity_realtime_monthly'
 
 // 保存状态到sessionStorage
 const saveState = () => {
@@ -381,8 +381,9 @@ const saveState = () => {
       selectedFileName: selectedFileName.value,
       selectedVersion: selectedVersion.value,
       linesData: linesData.value,
-      weeks: weeks.value,
-      weekDates: weekDates.value,
+      months: months.value,
+      monthDates: monthDates.value,
+      monthDays: monthDays.value,
       warnings: warnings.value,
       selectedLine: selectedLine.value,
       lineConfigs: lineConfigs.value
@@ -402,8 +403,9 @@ const restoreState = () => {
       selectedFileName.value = state.selectedFileName || ''
       selectedVersion.value = state.selectedVersion || ''
       linesData.value = state.linesData || {}
-      weeks.value = state.weeks || []
-      weekDates.value = state.weekDates || {}
+      months.value = state.months || []
+      monthDates.value = state.monthDates || {}
+      monthDays.value = state.monthDays || {}
       warnings.value = state.warnings || []
       selectedLine.value = state.selectedLine || ''
       lineConfigs.value = state.lineConfigs || {}
@@ -421,9 +423,9 @@ const dragOffset = ref({ x: 0, y: 0 })
 const summaryPosition = ref({ x: 926, y: 1 })
 const showSummary = ref(true)
 
-// 汇总表显示的周数（全部）
-const displayWeeks = computed(() => {
-  return weeks.value
+// 汇总表显示的月数（全部）
+const displayMonths = computed(() => {
+  return months.value
 })
 
 // 拖动相关函数
@@ -467,8 +469,9 @@ const selectedVersion = ref('')
 // 生产线筛选
 const selectedLine = ref('')
 const linesData = ref({})
-const weeks = ref([])
-const weekDates = ref({})
+const months = ref([])
+const monthDates = ref({})
+const monthDays = ref({}) // 每月实际天数
 const warnings = ref([])
 
 // 产线配置 - 按生产线存储
@@ -478,7 +481,7 @@ const loading = ref(false)
 const error = ref('')
 
 // 编辑状态追踪
-const editingCell = ref(null) // { item, field }
+const editingCell = ref(null)
 const editingConfig = ref(null)
 const editInputRef = ref(null)
 const configInputRef = ref(null)
@@ -510,16 +513,16 @@ const currentLineConfig = computed(() => {
 // 汇总数据
 const summaryData = computed(() => {
   const items = selectedLineData.value
-  const weeksVal = weeks.value
+  const monthsVal = months.value
 
   // 1. 计算生产线总计LOAD
   const totalRow = { dimension: '总计', loadings: {} }
-  weeksVal.forEach(week => {
+  monthsVal.forEach(month => {
     let totalLoad = 0
     items.forEach(item => {
-      totalLoad += calcLoading(item, week)
+      totalLoad += calcLoading(item, month)
     })
-    totalRow.loadings[week] = totalLoad
+    totalRow.loadings[month] = totalLoad
   })
 
   // 2. 按 PF 分组计算LOAD
@@ -529,9 +532,9 @@ const summaryData = computed(() => {
     if (!pfGroups[pf]) {
       pfGroups[pf] = { dimension: pf, loadings: {} }
     }
-    weeksVal.forEach(week => {
-      if (!pfGroups[pf].loadings[week]) pfGroups[pf].loadings[week] = 0
-      pfGroups[pf].loadings[week] += calcLoading(item, week)
+    monthsVal.forEach(month => {
+      if (!pfGroups[pf].loadings[month]) pfGroups[pf].loadings[month] = 0
+      pfGroups[pf].loadings[month] += calcLoading(item, month)
     })
   })
 
@@ -632,8 +635,9 @@ const onFileNameChange = async () => {
 
 const resetData = () => {
   linesData.value = {}
-  weeks.value = []
-  weekDates.value = {}
+  months.value = []
+  monthDates.value = {}
+  monthDays.value = {}
   warnings.value = []
   selectedLine.value = ''
   lineConfigs.value = {}
@@ -673,7 +677,7 @@ const loadCapacityAssessment = async () => {
   resetData()
 
   try {
-    const data = await getCapacityAssessment(
+    const data = await getCapacityAssessmentMonthly(
       token.value,
       selectedCreatedBy.value,
       selectedFileName.value,
@@ -684,8 +688,9 @@ const loadCapacityAssessment = async () => {
       const result = data.data
       if (result && result.lines) {
         linesData.value = result.lines
-        weeks.value = result.weeks || []
-        weekDates.value = result.weekDates || {}
+        months.value = result.months || []
+        monthDates.value = result.monthDates || {}
+        monthDays.value = result.monthDays || {}
         warnings.value = result.warnings || []
 
         // 自动选中第一条生产线
@@ -715,8 +720,8 @@ const loadCapacityAssessment = async () => {
   }
 }
 
-const getWeekDate = (week) => {
-  return weekDates.value[week] || week
+const getMonthDate = (month) => {
+  return monthDates.value[month] || month
 }
 
 // 计算班产量 = (3600 / CT) × (OEE / 100) × hoursPerShift
@@ -728,14 +733,18 @@ const calcShiftOutput = (item) => {
   return (3600 / ct) * (oee / 100) * hours
 }
 
-// 计算LOAD = (需求量 × CT) / (工作天数 × 班数 × 每班时长 × OEE/100 × 3600)
-const calcLoading = (item, week) => {
-  const demand = parseFloat(item[week + '_demand']) || 0
+// 计算LOAD = (需求量 × CT) / (当月工作天数 × 班数 × 每班时长 × OEE/100 × 3600)
+// 当月工作天数 = 当月实际天数 × (每周工作天数 / 7)
+const calcLoading = (item, month) => {
+  const demand = parseFloat(item[month + '_demand']) || 0
   const ct = parseFloat(item.ct) || 0
   const oee = parseFloat(item.oee) || 0
   const { workingDaysPerWeek, shiftsPerDay, hoursPerShift } = currentLineConfig.value
+  const daysInMonth = monthDays.value[month] || 30
   if (demand <= 0 || ct <= 0 || hoursPerShift <= 0 || oee <= 0) return 0
-  const denominator = workingDaysPerWeek * shiftsPerDay * hoursPerShift * (oee / 100) * 3600
+  // 每月工作天数 = daysInMonth × (workingDaysPerWeek / 7)
+  const workingDaysPerMonth = daysInMonth * (workingDaysPerWeek / 7)
+  const denominator = workingDaysPerMonth * shiftsPerDay * hoursPerShift * (oee / 100) * 3600
   return (demand * ct) / denominator
 }
 
@@ -1175,8 +1184,8 @@ thead th {
 .header-row-1 th.sticky-col-6, .header-row-2 th.sticky-col-6 { z-index: 32 !important; }
 .header-row-1 th.sticky-col-7, .header-row-2 th.sticky-col-7 { z-index: 31 !important; }
 
-/* === Week Header === */
-.week-header {
+/* === Month Header === */
+.month-header {
   background: white !important;
   color: var(--foreground) !important;
   border-left: none;

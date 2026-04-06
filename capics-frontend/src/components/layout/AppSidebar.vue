@@ -40,12 +40,17 @@
       <li class="nav-section">分析</li>
       <li class="nav-item">
         <router-link to="/capacity-assessment" class="nav-link" :class="{ active: $route.path === '/capacity-assessment' }">
-          静态产能核算
+          静态产能核算（周）
         </router-link>
       </li>
       <li class="nav-item">
         <router-link to="/capacity-realtime" class="nav-link" :class="{ active: $route.path === '/capacity-realtime' }">
-          动态产能模拟
+          动态产能模拟（周）
+        </router-link>
+      </li>
+      <li class="nav-item">
+        <router-link to="/capacity-realtime-monthly" class="nav-link" :class="{ active: $route.path === '/capacity-realtime-monthly' }">
+          动态产能模拟（月）
         </router-link>
       </li>
       <li class="nav-section">系统</li>

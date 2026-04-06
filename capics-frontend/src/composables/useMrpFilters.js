@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import {
   getCreatedBys,
   getFileNamesByCreatedBy,
@@ -7,21 +7,90 @@ import {
   getWeeklyReport
 } from '@/api/mrp'
 
+const SESSION_KEY_MRP = 'capics_mrp_filters'
+const SESSION_KEY_WEEKLY = 'capics_weekly_filters'
+
+// 保存筛选状态到sessionStorage
+const saveMrpFilters = (state) => {
+  try {
+    sessionStorage.setItem(SESSION_KEY_MRP, JSON.stringify(state))
+  } catch (e) {
+    console.error('Save MRP filters error:', e)
+  }
+}
+
+const loadMrpFilters = () => {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY_MRP)
+    return saved ? JSON.parse(saved) : null
+  } catch (e) {
+    console.error('Load MRP filters error:', e)
+    return null
+  }
+}
+
+const saveWeeklyFilters = (state) => {
+  try {
+    sessionStorage.setItem(SESSION_KEY_WEEKLY, JSON.stringify(state))
+  } catch (e) {
+    console.error('Save weekly filters error:', e)
+  }
+}
+
+const loadWeeklyFilters = () => {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY_WEEKLY)
+    return saved ? JSON.parse(saved) : null
+  } catch (e) {
+    console.error('Load weekly filters error:', e)
+    return null
+  }
+}
+
 export function useMrpFilters(token) {
+  // 从sessionStorage恢复初始状态
+  const savedMrp = loadMrpFilters()
+  const savedWeekly = loadWeeklyFilters()
+
   const createdBys = ref([])
   const fileNames = ref([])
   const versions = ref([])
 
-  const selectedCreatedBy = ref('')
-  const selectedFileName = ref('')
-  const selectedVersion = ref('')
+  const selectedCreatedBy = ref(savedMrp?.selectedCreatedBy || '')
+  const selectedFileName = ref(savedMrp?.selectedFileName || '')
+  const selectedVersion = ref(savedMrp?.selectedVersion || '')
 
-  const weeklyCreatedBy = ref('')
+  const weeklyCreatedBy = ref(savedWeekly?.weeklyCreatedBy || '')
   const weeklyFileNames = ref([])
-  const weeklyFileName = ref('')
-  const weeklyColumns = ref([])
-  const weeklyReport = ref([])
-  const weeklyColumnGroups = ref([])
+  const weeklyFileName = ref(savedWeekly?.weeklyFileName || '')
+  const weeklyColumns = ref(savedWeekly?.weeklyColumns || [])
+  const weeklyReport = ref(savedWeekly?.weeklyReport || [])
+  const weeklyColumnGroups = ref(savedWeekly?.weeklyColumnGroups || [])
+
+  // MRP数据缓存
+  const mrpPlansCache = ref(savedMrp?.mrpPlansCache || null)
+
+  // 周报数据缓存
+  const weeklyReportCache = ref(savedWeekly?.weeklyReportCache || null)
+
+  // 监听MRP筛选变化，自动保存
+  watch([selectedCreatedBy, selectedFileName, selectedVersion], () => {
+    saveMrpFilters({
+      selectedCreatedBy: selectedCreatedBy.value,
+      selectedFileName: selectedFileName.value,
+      selectedVersion: selectedVersion.value,
+      mrpPlansCache: mrpPlansCache.value
+    })
+  })
+
+  // 监听周报筛选变化，自动保存
+  watch([weeklyCreatedBy, weeklyFileName], () => {
+    saveWeeklyFilters({
+      weeklyCreatedBy: weeklyCreatedBy.value,
+      weeklyFileName: weeklyFileName.value,
+      weeklyReportCache: weeklyReportCache.value
+    })
+  })
 
   const loadCreatedBys = async () => {
     try {
@@ -62,11 +131,14 @@ export function useMrpFilters(token) {
     selectedFileName.value = ''
     selectedVersion.value = ''
     versions.value = []
+    mrpPlansCache.value = null
     await loadFileNames(selectedCreatedBy.value)
   }
 
   const onFileNameChange = async () => {
     selectedVersion.value = ''
+    versions.value = []
+    mrpPlansCache.value = null
     await loadVersions(selectedCreatedBy.value, selectedFileName.value)
   }
 
@@ -81,6 +153,14 @@ export function useMrpFilters(token) {
         selectedFileName.value,
         selectedVersion.value
       )
+      mrpPlansCache.value = data
+      // 触发保存
+      saveMrpFilters({
+        selectedCreatedBy: selectedCreatedBy.value,
+        selectedFileName: selectedFileName.value,
+        selectedVersion: selectedVersion.value,
+        mrpPlansCache: mrpPlansCache.value
+      })
       return data
     } catch (err) {
       console.error('Load MRP plans error:', err)
@@ -94,6 +174,7 @@ export function useMrpFilters(token) {
     weeklyColumns.value = []
     weeklyReport.value = []
     weeklyColumnGroups.value = []
+    weeklyReportCache.value = null
     if (weeklyCreatedBy.value) {
       await loadFileNames(weeklyCreatedBy.value)
       weeklyFileNames.value = fileNames.value
@@ -104,6 +185,7 @@ export function useMrpFilters(token) {
     weeklyReport.value = []
     weeklyColumns.value = []
     weeklyColumnGroups.value = []
+    weeklyReportCache.value = null
   }
 
   const loadWeeklyReportData = async () => {
@@ -112,7 +194,8 @@ export function useMrpFilters(token) {
     }
     try {
       const data = await getWeeklyReport(token.value, weeklyCreatedBy.value, weeklyFileName.value)
-      const result = data.data && data.data[0]
+      weeklyReportCache.value = data
+      const result = data?.data?.[0]
       if (result) {
         const cols = result.columns || []
         // Add versionIndex for alternating colors
@@ -143,6 +226,12 @@ export function useMrpFilters(token) {
         if (currentGroup) groups.push(currentGroup)
         weeklyColumnGroups.value = groups
       }
+      // 触发保存
+      saveWeeklyFilters({
+        weeklyCreatedBy: weeklyCreatedBy.value,
+        weeklyFileName: weeklyFileName.value,
+        weeklyReportCache: weeklyReportCache.value
+      })
       return data
     } catch (err) {
       console.error('Load weekly report error:', err)
@@ -156,6 +245,42 @@ export function useMrpFilters(token) {
     selectedVersion.value = ''
     fileNames.value = []
     versions.value = []
+    mrpPlansCache.value = null
+    sessionStorage.removeItem(SESSION_KEY_MRP)
+  }
+
+  // 恢复MRP缓存数据
+  const restoreMrpCache = () => {
+    if (savedMrp?.mrpPlansCache) {
+      mrpPlansCache.value = savedMrp.mrpPlansCache
+    }
+  }
+
+  // 恢复周报缓存数据
+  const restoreWeeklyCache = () => {
+    if (savedWeekly?.weeklyReportCache) {
+      weeklyReportCache.value = savedWeekly.weeklyReportCache
+      const result = savedWeekly.weeklyReportCache?.data?.[0]
+      if (result) {
+        weeklyColumns.value = result.columns || []
+        weeklyReport.value = result.data || []
+        // 重建columnGroups
+        const cols = weeklyColumns.value
+        const groups = []
+        let currentWeek = null
+        let currentGroup = null
+        for (const col of cols) {
+          if (col.week !== currentWeek) {
+            if (currentGroup) groups.push(currentGroup)
+            currentGroup = { week: col.week, weekLabel: col.weekLabel, versions: [], versionIndices: [] }
+            currentWeek = col.week
+          }
+          currentGroup.versions.push(col)
+        }
+        if (currentGroup) groups.push(currentGroup)
+        weeklyColumnGroups.value = groups
+      }
+    }
   }
 
   return {
@@ -171,6 +296,8 @@ export function useMrpFilters(token) {
     weeklyColumns,
     weeklyReport,
     weeklyColumnGroups,
+    mrpPlansCache,
+    weeklyReportCache,
     loadCreatedBys,
     loadFileNames,
     loadVersions,
@@ -180,6 +307,8 @@ export function useMrpFilters(token) {
     onWeeklyCreatedByChange,
     onWeeklyFileNameChange,
     loadWeeklyReportData,
-    resetFilters
+    resetFilters,
+    restoreMrpCache,
+    restoreWeeklyCache
   }
 }

@@ -53,6 +53,11 @@ const routes = [
         component: () => import('@/views/CapacityAssessmentRealtimeView.vue')
       },
       {
+        path: 'capacity-realtime-monthly',
+        name: 'CapacityAssessmentRealtimeMonthly',
+        component: () => import('@/views/CapacityAssessmentRealtimeMonthlyView.vue')
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/UsersView.vue')

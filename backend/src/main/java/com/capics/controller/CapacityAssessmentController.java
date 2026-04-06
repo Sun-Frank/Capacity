@@ -28,4 +28,18 @@ public class CapacityAssessmentController {
             return ApiResponse.error("获取产能评估数据失败: " + e.getMessage());
         }
     }
+
+    @GetMapping("/monthly")
+    public ApiResponse getCapacityAssessmentMonthly(
+            @RequestParam String createdBy,
+            @RequestParam String fileName,
+            @RequestParam String version) {
+        try {
+            Map<String, Object> result = capacityAssessmentService.getCapacityAssessmentMonthly(createdBy, fileName, version);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("获取月度产能评估数据失败: " + e.getMessage());
+        }
+    }
 }
