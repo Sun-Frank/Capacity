@@ -1,4 +1,5 @@
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\RoutingItemRepository.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\SimulationSnapshotController.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\ProductFamilyRepository.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\FamilyLine.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\JwtUtil.java
@@ -25,6 +26,7 @@ C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\JwtAuthenticationFilter.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\CapacityAssessmentController.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\ProductFamilyService.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SimulationSnapshotRepository.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\MrpPlan.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\RoutingDto.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\Product.java
@@ -32,6 +34,7 @@ C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\LoginResponse.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\ApiResponse.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\LineRealtime.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\SimulationSnapshotService.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\RoutingFullDto.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\CapacityAssessmentDto.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SysRoleRepository.java
@@ -58,8 +61,11 @@ C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\MrpReportDto.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\CustomUserDetailsService.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\LineRealtimeRepository.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\DashboardService.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\LineController.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\AuthController.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\HealthController.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\SimulationSnapshot.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\BomExpandDto.java
+C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\DashboardController.java
 C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\ProductFamily.java

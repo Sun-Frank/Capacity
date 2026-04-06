@@ -29,6 +29,13 @@
       <button class="btn btn-primary" @click="loadCapacityAssessment" :disabled="loading">
         {{ loading ? '加载中...' : '加载数据' }}
       </button>
+      <button
+        v-if="Object.keys(linesData).length > 0"
+        class="btn btn-secondary"
+        @click="showSnapshotModal = true"
+      >
+        保存快照
+      </button>
     </div>
 
     <!-- 生产线筛选 -->
@@ -355,6 +362,29 @@
         </table>
       </div>
     </div>
+
+    <!-- 保存快照弹窗 -->
+    <div v-if="showSnapshotModal" class="modal-overlay" @click.self="showSnapshotModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>保存快照</h3>
+          <button class="close-btn" @click="showSnapshotModal = false">×</button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">快照名称</label>
+          <input
+            type="text"
+            v-model="snapshotName"
+            placeholder="请输入快照名称"
+            class="form-input"
+          >
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showSnapshotModal = false">取消</button>
+          <button class="btn btn-primary" @click="saveSnapshot" :disabled="!snapshotName">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -365,6 +395,7 @@ import { useToast } from '@/composables/useToast'
 import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileName } from '@/api/mrp'
 import { getCapacityAssessment } from '@/api/capacityRealtime'
 import { getLines } from '@/api/line'
+import { saveSnapshot as saveSnapshotApi } from '@/api/simulationSnapshot'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
 const { token } = useAuth()
@@ -476,6 +507,51 @@ const lineConfigs = ref({})
 
 const loading = ref(false)
 const error = ref('')
+
+// 保存快照状态
+const showSnapshotModal = ref(false)
+const snapshotName = ref('')
+
+// 保存快照
+const saveSnapshot = async () => {
+  if (!snapshotName.value) {
+    showToast('请输入快照名称', 'warning')
+    return
+  }
+  try {
+    // 深拷贝 linesData，并重新计算所有 loading 字段
+    const snapshotLinesData = JSON.parse(JSON.stringify(linesData.value))
+    for (const lineCode of Object.keys(snapshotLinesData)) {
+      for (const item of snapshotLinesData[lineCode]) {
+        for (const week of weeks.value) {
+          item[week + '_loading'] = calcLoading(item, week)
+        }
+      }
+    }
+    const data = {
+      createdBy: selectedCreatedBy.value,
+      fileName: selectedFileName.value,
+      version: selectedVersion.value,
+      snapshotName: snapshotName.value,
+      source: 'dynamic',
+      dimension: 'week',
+      linesData: snapshotLinesData,
+      dates: weeks.value,
+      dateLabels: weekDates.value
+    }
+    const result = await saveSnapshotApi(token.value, data)
+    if (result.success) {
+      showToast('快照保存成功', 'success')
+      showSnapshotModal.value = false
+      snapshotName.value = ''
+    } else {
+      showToast('保存失败: ' + result.message, 'error')
+    }
+  } catch (err) {
+    console.error('Save snapshot error:', err)
+    showToast('保存失败', 'error')
+  }
+}
 
 // 编辑状态追踪
 const editingCell = ref(null) // { item, field }
@@ -1319,5 +1395,69 @@ tbody td.sticky-col-7 {
 .table-scroll::-webkit-scrollbar-corner,
 .config-table-wrapper::-webkit-scrollbar-corner {
   background: var(--muted);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  min-width: 400px;
+  max-width: 90%;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.modal-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-body {
+  margin-bottom: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 </style>
