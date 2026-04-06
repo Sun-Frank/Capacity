@@ -4,9 +4,9 @@
 
     <div class="page-header">
 
-      <h1 class="page-title">产能评估</h1>
+      <h1 class="page-title">静态产能核算</h1>
 
-      <p class="page-subtitle">产能评估模块</p>
+      <p class="page-subtitle">静态产能核算模块</p>
 
     </div>
 

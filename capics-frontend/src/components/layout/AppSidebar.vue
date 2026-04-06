@@ -40,12 +40,12 @@
       <li class="nav-section">分析</li>
       <li class="nav-item">
         <router-link to="/capacity-assessment" class="nav-link" :class="{ active: $route.path === '/capacity-assessment' }">
-          产能评估
+          静态产能核算
         </router-link>
       </li>
       <li class="nav-item">
         <router-link to="/capacity-realtime" class="nav-link" :class="{ active: $route.path === '/capacity-realtime' }">
-          产能评估（实时）
+          动态产能模拟
         </router-link>
       </li>
       <li class="nav-section">系统</li>

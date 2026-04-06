@@ -1,8 +1,8 @@
 <template>
   <div class="page">
     <div class="page-header">
-      <h1 class="page-title">产能评估（实时计算）</h1>
-      <p class="page-subtitle">会议演示专用 - 双击或右键编辑单元格</p>
+      <h1 class="page-title">动态产能模拟</h1>
+      <p class="page-subtitle">动态产能模拟模块 - 双击或右键编辑单元格</p>
     </div>
 
     <!-- MRP筛选条件 -->

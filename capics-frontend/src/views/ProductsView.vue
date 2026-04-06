@@ -199,7 +199,7 @@ const handleImport = async ({ file, fileName }) => {
       checkResult = await checkFamilyImportDuplicates(token.value, file)
       if (checkResult.success === false && checkResult.data && checkResult.data.length > 0) {
         const duplicates = checkResult.data
-        confirmTitle.value = `发现 ${duplicates.length} 条已存在的记录`
+        confirmTitle.value = `发现 ${duplicates.length} 条已存在的编码族记录，点击确定将覆盖这些数据`
         confirmItems.value = duplicates.map(d => `${d.familyCode} + ${d.lineCode}`)
         pendingFile.value = file
         showConfirmModal.value = true
@@ -210,7 +210,7 @@ const handleImport = async ({ file, fileName }) => {
       checkResult = await checkProductImportDuplicates(token.value, file)
       if (checkResult.success === false && checkResult.data && checkResult.data.length > 0) {
         const duplicates = checkResult.data
-        confirmTitle.value = `发现 ${duplicates.length} 条已存在的记录`
+        confirmTitle.value = `发现 ${duplicates.length} 条已存在的产品记录，点击确定将覆盖这些数据`
         confirmItems.value = duplicates.map(d => `${d.itemNumber} + ${d.lineCode}`)
         pendingFile.value = file
         showConfirmModal.value = true
@@ -221,7 +221,7 @@ const handleImport = async ({ file, fileName }) => {
       checkResult = await checkFamilyLineImportDuplicates(token.value, file)
       if (checkResult.success === false && checkResult.data && checkResult.data.length > 0) {
         const duplicates = checkResult.data
-        confirmTitle.value = `发现 ${duplicates.length} 条已存在的记录`
+        confirmTitle.value = `发现 ${duplicates.length} 条已存在的编码族定线记录，点击确定将覆盖这些数据`
         confirmItems.value = duplicates.map(d => `${d.familyCode} + ${d.lineCode}`)
         pendingFile.value = file
         showConfirmModal.value = true

@@ -95,8 +95,9 @@ public class RoutingController {
     @PostMapping("/import")
     public ResponseEntity<ApiResponse> importRoutings(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("createdBy") String createdBy) throws IOException {
-        int count = routingService.importFromExcel(file, createdBy);
+            @RequestParam("createdBy") String createdBy,
+            @RequestParam(value = "overwrite", defaultValue = "false") boolean overwrite) throws IOException {
+        int count = routingService.importFromExcel(file, createdBy, overwrite);
         return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
     }
 

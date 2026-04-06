@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -158,12 +160,14 @@ public class RoutingService {
     }
 
     @Transactional
-    public int importFromExcel(MultipartFile file, String createdBy) throws IOException {
+    public int importFromExcel(MultipartFile file, String createdBy, boolean overwrite) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             int count = 0;
 
             Routing currentRouting = null;
+            String currentProductNumber = null;
+            Set<String> processedProductNumbers = new HashSet<>(); // 记录本次导入中已处理的成品物料号
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -175,13 +179,46 @@ public class RoutingService {
                 String lineCode = getCellValueAsString(row.getCell(3));
                 Integer bomLevel = getCellValueAsInteger(row.getCell(4));
 
-                // 如果有成品物料号，创建新的工艺路线
+                // 如果有成品物料号
                 if (productNumber != null && !productNumber.isEmpty()) {
+                    // 检查是否已存在且本次导入还未处理过
+                    if (processedProductNumbers.contains(productNumber)) {
+                        // 已在本次导入中处理过，只处理组件
+                        if (componentNumber != null && !componentNumber.isEmpty()
+                                && lineCode != null && !lineCode.isEmpty()
+                                && bomLevel != null) {
+                            RoutingItem item = new RoutingItem();
+                            item.setRoutingId(currentRouting.getId());
+                            item.setComponentNumber(componentNumber);
+                            item.setLineCode(lineCode);
+                            item.setBomLevel(bomLevel);
+                            item.setBomQuantity(BigDecimal.ONE);
+                            routingItemRepository.save(item);
+                        }
+                        continue;
+                    }
+
+                    List<Routing> existing = routingRepository.findAllByProductNumber(productNumber);
+                    if (!existing.isEmpty()) {
+                        if (overwrite) {
+                            // 删除旧的工艺路线及其组件
+                            for (Routing r : existing) {
+                                routingItemRepository.deleteByRoutingId(r.getId());
+                                routingRepository.delete(r);
+                            }
+                        } else {
+                            // 跳过不覆盖
+                            currentRouting = null;
+                            continue;
+                        }
+                    }
+
                     Routing routing = new Routing();
                     routing.setProductNumber(productNumber);
                     routing.setDescription(description);
                     routing.setCreatedBy(createdBy);
                     currentRouting = routingRepository.save(routing);
+                    processedProductNumbers.add(productNumber);
                     count++;
                 }
 

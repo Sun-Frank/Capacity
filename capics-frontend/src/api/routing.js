@@ -24,10 +24,11 @@ export function getRoutingByProductNumber(token, productNumber) {
   }).then(res => res.json())
 }
 
-export function importRoutings(token, file, createdBy) {
+export function importRoutings(token, file, createdBy, overwrite = false) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('createdBy', createdBy)
+  formData.append('overwrite', overwrite)
   return fetch(`${API_BASE}/routings/import`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
