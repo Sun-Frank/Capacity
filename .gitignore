@@ -1,1 +1,14 @@
-nul
+# Build artifacts
+backend/target/
+capics-frontend/dist/
+
+# Frontend dependencies
+capics-frontend/node_modules/
+
+# Local deployment secrets
+deploy/.env.prod
+
+# Local/temporary tooling files
+.claude/
+frontend/
+.gitnore

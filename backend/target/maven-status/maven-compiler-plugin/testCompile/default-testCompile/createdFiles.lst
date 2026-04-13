@@ -1,7 +1,0 @@
-com\capics\config\TestSecurityConfig.class
-com\capics\controller\AuthControllerTest.class
-com\capics\service\AuthServiceTest.class
-com\capics\service\MrpPlanServiceTest.class
-com\capics\service\ProductServiceTest.class
-com\capics\service\ProductFamilyServiceTest.class
-com\capics\CapicsApplicationTest.class
