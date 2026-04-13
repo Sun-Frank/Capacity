@@ -237,6 +237,7 @@ pg_dump -U capics_user capics > backup_$(date +%Y%m%d).sql
 
 - `部署手册.md`：完整部署说明与故障排查
 - `融合设计说明.md`：融合能力与计算逻辑变更说明
+- `接口明细表.md`：后端 API 接口清单（方法/路径/鉴权/参数）
 - `deploy/README.md`：一键部署脚本使用说明
 - `deploy/首发检查清单.md`：服务器首发核验
 - `deploy/端到端自测清单.md`：E2E 自测项
