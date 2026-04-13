@@ -1,71 +1,86 @@
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\RoutingItemRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\SimulationSnapshotController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\ProductFamilyRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\FamilyLine.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\JwtUtil.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\FamilyLineDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\LineRealtimeDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\MrpController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\AuthService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\RoutingController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\CapacityAssessmentService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\ProductId.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\UserController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\ProductController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\SysRole.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\UserService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\Routing.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\FamilyLineRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\SysUser.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\ProductService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\LineConfigService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\SecurityConfig.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\ProductFamilyDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\CapicsApplication.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\ProductRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\JwtAuthenticationFilter.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\CapacityAssessmentController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\ProductFamilyService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SimulationSnapshotRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\MrpPlan.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\RoutingDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\Product.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\RoutingRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\LoginResponse.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\ApiResponse.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\LineRealtime.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\SimulationSnapshotService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\RoutingFullDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\CapacityAssessmentDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SysRoleRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SysUserRoleRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\LineRealtimeController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\MrpPlanRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\MrpPlanDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\ProductDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\RoutingItemDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\LineRealtimeService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\RoutingItem.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\MrpPlanService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\RoutingService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\SysUserRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\FamilyLineService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\LoginRequest.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\ProductFamilyId.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\SysUserRole.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\LineConfigRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\LineConfig.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\SysUserDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\FamilyLineId.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\LineConfigDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\MrpReportDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\config\CustomUserDetailsService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\repository\LineRealtimeRepository.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\service\DashboardService.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\LineController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\AuthController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\HealthController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\SimulationSnapshot.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\dto\BomExpandDto.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\controller\DashboardController.java
-C:\Users\Vulcan\Desktop\claude code\Mini Max\capics 3\backend\src\main\java\com\capics\entity\ProductFamily.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\Routing.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\DashboardService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\ProductId.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\FamilyLineId.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\LineRealtimeRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\SimulationSnapshotService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\LineConfigRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\CapacityAssessmentDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\ProductFamily.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\MeetingMinutesRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\config\JwtUtil.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\MeetingMinutes.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\LoginRequest.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\SimulationSnapshot.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\ManpowerPlanRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\UserService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\LoginResponse.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\SimulationSnapshotController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\LineConfigDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\LineConfig.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\LineConfigService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\LineRealtimeService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\SysUser.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\ProductFamilyService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\MrpPlanDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\SysUserRole.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\SimulationSnapshotRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\LineRealtimeDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\ProductService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\MrpController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\MeetingMinutesDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\ApiResponse.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\RoutingItem.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\SysRole.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\HealthController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\RoutingItemDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\LineRealtimeController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\ManpowerPlanController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\ManpowerPlanService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\ManpowerPlanDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\MrpPlanRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\SysRoleRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\RoutingFullDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\config\CustomUserDetailsService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\BomExpandDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\FamilyLineDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\LineProfileDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\MeetingMinutesController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\LineProfileController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\FamilyLine.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\RoutingRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\AuthService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\MeetingMinutesService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\SysUserRoleRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\RoutingDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\Product.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\AuthController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\SysUserDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\LineController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\LineProfileRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\ProductRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\DashboardController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\MrpReportDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\FamilyLineRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\CapicsApplication.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\MrpPlan.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\FamilyLineService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\CapacityAssessmentController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\LineProfile.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\MrpPlanService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\ManpowerPlan.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\config\SecurityConfig.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\config\JwtAuthenticationFilter.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\ProductFamilyRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\ProductFamilyId.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\LineProfileService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\ProductFamilyDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\RoutingService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\service\CapacityAssessmentService.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\ProductController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\entity\LineRealtime.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\RoutingItemRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\dto\ProductDto.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\repository\SysUserRepository.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\RoutingController.java
+E:\TraeProject\Capacity\capics_V1\backend\src\main\java\com\capics\controller\UserController.java

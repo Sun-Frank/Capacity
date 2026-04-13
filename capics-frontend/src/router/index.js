@@ -48,6 +48,11 @@ const routes = [
         component: () => import('@/views/CapacityAssessmentView.vue')
       },
       {
+        path: 'capacity-assessment-monthly',
+        name: 'CapacityAssessmentMonthly',
+        component: () => import('@/views/CapacityAssessmentMonthlyView.vue')
+      },
+      {
         path: 'capacity-realtime',
         name: 'CapacityAssessmentRealtime',
         component: () => import('@/views/CapacityAssessmentRealtimeView.vue')
@@ -61,6 +66,11 @@ const routes = [
         path: 'users',
         name: 'Users',
         component: () => import('@/views/UsersView.vue')
+      },
+      {
+        path: 'fusion-workbench',
+        name: 'FusionWorkbench',
+        component: () => import('@/views/FusionWorkbenchView.vue')
       }
     ]
   }

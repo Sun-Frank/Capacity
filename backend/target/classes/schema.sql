@@ -3,6 +3,9 @@
 
 -- Drop tables if exist (in correct order due to foreign keys)
 DROP TABLE IF EXISTS line_realtime CASCADE;
+DROP TABLE IF EXISTS manpower_plan CASCADE;
+DROP TABLE IF EXISTS line_profile CASCADE;
+DROP TABLE IF EXISTS meeting_minutes CASCADE;
 DROP TABLE IF EXISTS routing_item CASCADE;
 DROP TABLE IF EXISTS routing CASCADE;
 DROP TABLE IF EXISTS line_config CASCADE;
@@ -56,6 +59,8 @@ CREATE TABLE product_family (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_by VARCHAR(50),
     updated_at TIMESTAMP DEFAULT NOW(),
+    description VARCHAR(255),
+    pf VARCHAR(100),
     PRIMARY KEY (family_code, line_code)
 );
 
@@ -145,6 +150,39 @@ CREATE TABLE line_config (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Line Profile Table (v2 fusion: line class / belong-to)
+CREATE TABLE line_profile (
+    line_code VARCHAR(50) PRIMARY KEY,
+    line_class VARCHAR(20),
+    belong_to VARCHAR(20),
+    note VARCHAR(255),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Manpower Plan Table (v2 fusion: fixed manpower factor)
+CREATE TABLE manpower_plan (
+    id BIGSERIAL PRIMARY KEY,
+    line_class VARCHAR(20) NOT NULL,
+    belong_to VARCHAR(20),
+    manpower_factor DECIMAL(8,4) NOT NULL DEFAULT 1.0000,
+    plan_date DATE NOT NULL,
+    remark VARCHAR(255),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Meeting Minutes Table (v2 fusion: planning notes)
+CREATE TABLE meeting_minutes (
+    id BIGSERIAL PRIMARY KEY,
+    mps_version VARCHAR(50) NOT NULL,
+    item_no INTEGER NOT NULL,
+    minutes VARCHAR(2000),
+    remark VARCHAR(255),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Line Realtime Table (生产线实时配置)
 CREATE TABLE line_realtime (
     id BIGSERIAL PRIMARY KEY,
@@ -156,7 +194,7 @@ CREATE TABLE line_realtime (
     shift_workers INTEGER,
     ct DECIMAL(10,2),
     oee DECIMAL(5,4),
-    weekly_demand VARCHAR(1000),
+    weekly_demand JSONB,
     mrp_version VARCHAR(10),
     calculated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (line_code, item_number, component_number, mrp_version)
@@ -173,6 +211,9 @@ CREATE INDEX idx_routing_product ON routing(product_number);
 CREATE INDEX idx_routing_item_routing ON routing_item(routing_id);
 CREATE INDEX idx_product_family_code ON product_family(family_code);
 CREATE INDEX idx_product_item ON product(item_number);
+CREATE INDEX idx_line_profile_class ON line_profile(line_class);
+CREATE INDEX idx_manpower_plan_class_date ON manpower_plan(line_class, plan_date);
+CREATE INDEX idx_meeting_minutes_version_item ON meeting_minutes(mps_version, item_no);
 
 -- Insert default admin user (password: admin123)
 INSERT INTO sys_user (username, password, real_name, email, enabled)
@@ -192,3 +233,39 @@ VALUES
     ('DIP1001N', 'DIP Line 1', 5, 2, 8.0),
     ('ASSY1001N', 'Assembly Line 1', 5, 2, 8.0),
     ('TEST1001N', 'Test Line 1', 5, 2, 8.0);
+
+-- Seed line_profile by inferring line class from line code prefix
+INSERT INTO line_profile (line_code, line_class, belong_to, note)
+SELECT
+    line_code,
+    UPPER(SUBSTRING(line_code, 1, 3)) AS line_class,
+    CASE
+        WHEN line_code LIKE 'SMT%' OR line_code LIKE 'DIP%' THEN 'PCBA'
+        ELSE 'FA'
+    END AS belong_to,
+    'Seeded from line_config'
+FROM line_config;
+
+-- ==========================================
+-- 产能模拟快照表（simulation_snapshot）
+-- ==========================================
+DROP TABLE IF EXISTS simulation_snapshot CASCADE;
+
+CREATE TABLE simulation_snapshot (
+    id BIGSERIAL PRIMARY KEY,
+    created_by VARCHAR(50) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    version VARCHAR(50) NOT NULL,
+    snapshot_name VARCHAR(100) NOT NULL,
+    source VARCHAR(20) NOT NULL,          -- 'static' 或 'dynamic'
+    dimension VARCHAR(20) NOT NULL,       -- 'week' 或 'month'
+    lines_data TEXT,                       -- JSON：产线 LOAD 矩阵
+    dates TEXT,                            -- JSON：日期列表
+    date_labels TEXT,                      -- JSON：日期标签映射
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 索引
+CREATE INDEX idx_snapshot_cbf ON simulation_snapshot(created_by, file_name);
+CREATE INDEX idx_snapshot_version ON simulation_snapshot(version);
+CREATE INDEX idx_snapshot_created_at ON simulation_snapshot(created_at);

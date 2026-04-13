@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ENV_FILE="${1:-${SCRIPT_DIR}/.env.prod}"
+
+if [[ ! -f "${ENV_FILE}" ]]; then
+  echo "[ERROR] Missing env file: ${ENV_FILE}"
+  echo "Copy ${SCRIPT_DIR}/.env.prod.example to ${SCRIPT_DIR}/.env.prod and update values first."
+  exit 1
+fi
+
+set -a
+source "${ENV_FILE}"
+set +a
+
+required_vars=(
+  DEPLOY_BASE SERVICE_USER JAVA_BIN SPRING_PROFILES_ACTIVE SERVER_PORT
+  DB_HOST DB_PORT DB_NAME DB_URL DB_USERNAME DB_PASSWORD
+  POSTGRES_ADMIN_USER POSTGRES_ADMIN_PASSWORD
+  JWT_SECRET JWT_EXPIRATION APP_CORS_ALLOWED_ORIGINS
+  NGINX_SERVER_NAME NGINX_WEB_ROOT NGINX_CONF_PATH
+)
+
+for var_name in "${required_vars[@]}"; do
+  if [[ -z "${!var_name:-}" ]]; then
+    echo "[ERROR] Required variable ${var_name} is empty in ${ENV_FILE}"
+    exit 1
+  fi
+done
+
+need_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "[ERROR] Command not found: $1"
+    exit 1
+  fi
+}
+
+need_cmd psql
+need_cmd mvn
+need_cmd npm
+need_cmd "${JAVA_BIN}"
+need_cmd systemctl
+need_cmd nginx
+
+if command -v rsync >/dev/null 2>&1; then
+  COPY_FRONTEND_WITH_RSYNC="true"
+else
+  COPY_FRONTEND_WITH_RSYNC="false"
+fi
+
+SUDO=""
+if [[ "${EUID}" -ne 0 ]]; then
+  SUDO="sudo"
+fi
+
+BACKEND_WORK_DIR="${DEPLOY_BASE}/backend"
+BACKEND_JAR_PATH="${BACKEND_WORK_DIR}/capics-backend.jar"
+BACKEND_ENV_PATH="${BACKEND_WORK_DIR}/capics-backend.env"
+SYSTEMD_SERVICE_PATH="/etc/systemd/system/capics-backend.service"
+SCHEMA_FILE="${PROJECT_ROOT}/backend/src/main/resources/schema.sql"
+FRONTEND_DIST_DIR="${PROJECT_ROOT}/capics-frontend/dist"
+
+echo "[1/8] Build backend jar..."
+(cd "${PROJECT_ROOT}/backend" && mvn -DskipTests clean package)
+
+BUILT_JAR="$(ls -1t "${PROJECT_ROOT}"/backend/target/capics-backend-*.jar | grep -v '\.original$' | head -n 1)"
+if [[ -z "${BUILT_JAR}" ]]; then
+  echo "[ERROR] Cannot find built jar under backend/target."
+  exit 1
+fi
+
+echo "[2/8] Build frontend dist..."
+(cd "${PROJECT_ROOT}/capics-frontend" && npm ci && npm run build)
+
+if [[ ! -f "${SCHEMA_FILE}" ]]; then
+  echo "[ERROR] Missing schema file: ${SCHEMA_FILE}"
+  exit 1
+fi
+
+echo "[3/8] Initialize database role and database..."
+export PGPASSWORD="${POSTGRES_ADMIN_PASSWORD}"
+
+ROLE_EXISTS="$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${DB_USERNAME}'")"
+if [[ "${ROLE_EXISTS}" != "1" ]]; then
+  psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -v ON_ERROR_STOP=1 \
+    -c "CREATE USER ${DB_USERNAME} WITH PASSWORD '${DB_PASSWORD}';"
+else
+  psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -v ON_ERROR_STOP=1 \
+    -c "ALTER USER ${DB_USERNAME} WITH PASSWORD '${DB_PASSWORD}';"
+fi
+
+DB_EXISTS="$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'")"
+if [[ "${DB_EXISTS}" != "1" ]]; then
+  psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -v ON_ERROR_STOP=1 \
+    -c "CREATE DATABASE ${DB_NAME} OWNER ${DB_USERNAME};"
+else
+  psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${POSTGRES_ADMIN_USER}" -d postgres -v ON_ERROR_STOP=1 \
+    -c "ALTER DATABASE ${DB_NAME} OWNER TO ${DB_USERNAME};"
+fi
+
+echo "[4/8] Apply schema.sql (includes table reset)..."
+export PGPASSWORD="${DB_PASSWORD}"
+psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 -f "${SCHEMA_FILE}"
+
+echo "[5/8] Prepare backend runtime files..."
+if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
+  ${SUDO} useradd --system --create-home --shell /usr/sbin/nologin "${SERVICE_USER}"
+fi
+
+${SUDO} mkdir -p "${BACKEND_WORK_DIR}"
+${SUDO} cp -f "${BUILT_JAR}" "${BACKEND_JAR_PATH}"
+${SUDO} tee "${BACKEND_ENV_PATH}" >/dev/null <<EOF
+SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+SERVER_PORT=${SERVER_PORT}
+DB_URL=${DB_URL}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRATION=${JWT_EXPIRATION}
+APP_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS}
+LOG_LEVEL_APP=${LOG_LEVEL_APP}
+LOG_LEVEL_SECURITY=${LOG_LEVEL_SECURITY}
+EOF
+${SUDO} chmod 600 "${BACKEND_ENV_PATH}"
+${SUDO} chown -R "${SERVICE_USER}:${SERVICE_USER}" "${BACKEND_WORK_DIR}"
+
+${SUDO} tee "${SYSTEMD_SERVICE_PATH}" >/dev/null <<EOF
+[Unit]
+Description=CAPICS Backend Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+WorkingDirectory=${BACKEND_WORK_DIR}
+EnvironmentFile=${BACKEND_ENV_PATH}
+ExecStart=${JAVA_BIN} -jar ${BACKEND_JAR_PATH}
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[6/8] Publish frontend to nginx web root..."
+${SUDO} mkdir -p "${NGINX_WEB_ROOT}"
+if [[ "${COPY_FRONTEND_WITH_RSYNC}" == "true" ]]; then
+  ${SUDO} rsync -a --delete "${FRONTEND_DIST_DIR}/" "${NGINX_WEB_ROOT}/"
+else
+  ${SUDO} rm -rf "${NGINX_WEB_ROOT:?}/"*
+  ${SUDO} cp -r "${FRONTEND_DIST_DIR}/." "${NGINX_WEB_ROOT}/"
+fi
+
+echo "[7/8] Write nginx site config..."
+${SUDO} tee "${NGINX_CONF_PATH}" >/dev/null <<EOF
+server {
+    listen 80;
+    server_name ${NGINX_SERVER_NAME};
+
+    root ${NGINX_WEB_ROOT};
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${SERVER_PORT}/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
+echo "[8/8] Restart services..."
+${SUDO} systemctl daemon-reload
+${SUDO} systemctl enable --now capics-backend
+${SUDO} nginx -t
+${SUDO} systemctl reload nginx
+
+echo
+echo "Deploy completed."
+echo "Backend service: systemctl status capics-backend --no-pager"
+echo "Backend health:  curl -fsS http://127.0.0.1:${SERVER_PORT}/api/health"
+echo "Nginx check:     curl -I http://127.0.0.1/"

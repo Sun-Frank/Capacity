@@ -1,17 +1,11 @@
 package com.capics.entity;
 
 import javax.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "routing_item")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class RoutingItem {
 
     @Id
@@ -42,5 +36,61 @@ public class RoutingItem {
         if (bomQuantity == null) {
             bomQuantity = BigDecimal.ONE;
         }
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getRoutingId() {
+        return this.routingId;
+    }
+
+    public void setRoutingId(Long routingId) {
+        this.routingId = routingId;
+    }
+
+    public String getComponentNumber() {
+        return this.componentNumber;
+    }
+
+    public void setComponentNumber(String componentNumber) {
+        this.componentNumber = componentNumber;
+    }
+
+    public String getLineCode() {
+        return this.lineCode;
+    }
+
+    public void setLineCode(String lineCode) {
+        this.lineCode = lineCode;
+    }
+
+    public Integer getBomLevel() {
+        return this.bomLevel;
+    }
+
+    public void setBomLevel(Integer bomLevel) {
+        this.bomLevel = bomLevel;
+    }
+
+    public BigDecimal getBomQuantity() {
+        return this.bomQuantity;
+    }
+
+    public void setBomQuantity(BigDecimal bomQuantity) {
+        this.bomQuantity = bomQuantity;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return this.createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

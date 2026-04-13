@@ -1,17 +1,19 @@
 package com.capics.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.io.Serializable;
 import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProductId implements Serializable {
     private String itemNumber;
     private String lineCode;
+
+    public ProductId() {
+    }
+
+    public ProductId(String itemNumber, String lineCode) {
+        this.itemNumber = itemNumber;
+        this.lineCode = lineCode;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -19,11 +21,27 @@ public class ProductId implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         ProductId that = (ProductId) o;
         return Objects.equals(itemNumber, that.itemNumber) &&
-               Objects.equals(lineCode, that.lineCode);
+                Objects.equals(lineCode, that.lineCode);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(itemNumber, lineCode);
+    }
+
+    public String getItemNumber() {
+        return this.itemNumber;
+    }
+
+    public void setItemNumber(String itemNumber) {
+        this.itemNumber = itemNumber;
+    }
+
+    public String getLineCode() {
+        return this.lineCode;
+    }
+
+    public void setLineCode(String lineCode) {
+        this.lineCode = lineCode;
     }
 }

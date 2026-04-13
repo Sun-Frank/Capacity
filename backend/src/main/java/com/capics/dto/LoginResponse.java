@@ -1,13 +1,50 @@
 package com.capics.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
 public class LoginResponse {
     private String token;
     private String username;
     private String realName;
     private Long id;
+
+    public LoginResponse() {
+    }
+
+    public LoginResponse(String token, String username, String realName, Long id) {
+        this.token = token;
+        this.username = username;
+        this.realName = realName;
+        this.id = id;
+    }
+
+    public String getToken() {
+        return this.token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getRealName() {
+        return this.realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 }

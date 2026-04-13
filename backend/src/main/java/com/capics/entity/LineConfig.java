@@ -1,17 +1,11 @@
 package com.capics.entity;
 
 import javax.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "line_config")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class LineConfig {
 
     @Id
@@ -51,5 +45,77 @@ public class LineConfig {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public String getLineCode() {
+        return this.lineCode;
+    }
+
+    public void setLineCode(String lineCode) {
+        this.lineCode = lineCode;
+    }
+
+    public Integer getWorkingDaysPerWeek() {
+        return this.workingDaysPerWeek;
+    }
+
+    public void setWorkingDaysPerWeek(Integer workingDaysPerWeek) {
+        this.workingDaysPerWeek = workingDaysPerWeek;
+    }
+
+    public Integer getShiftsPerDay() {
+        return this.shiftsPerDay;
+    }
+
+    public void setShiftsPerDay(Integer shiftsPerDay) {
+        this.shiftsPerDay = shiftsPerDay;
+    }
+
+    public BigDecimal getHoursPerShift() {
+        return this.hoursPerShift;
+    }
+
+    public void setHoursPerShift(BigDecimal hoursPerShift) {
+        this.hoursPerShift = hoursPerShift;
+    }
+
+    public Boolean getIsActive() {
+        return this.isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return this.createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getUpdatedBy() {
+        return this.updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return this.updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

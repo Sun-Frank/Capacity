@@ -1,0 +1,1 @@
+import{r as t}from"./index-OKZgnlAI.js";const s=t({show:!1,message:"",type:"success"});function h(){return{toast:s,showToast:(e,o="success")=>{s.value={show:!0,message:e,type:o},setTimeout(()=>{s.value.show=!1},3e3)},hideToast:()=>{s.value.show=!1}}}export{h as u};

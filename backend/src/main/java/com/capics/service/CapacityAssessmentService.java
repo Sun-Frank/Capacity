@@ -1,6 +1,5 @@
 package com.capics.service;
 
-import com.capics.dto.CapacityAssessmentDto;
 import com.capics.entity.*;
 import com.capics.repository.*;
 import org.springframework.stereotype.Service;
@@ -21,6 +20,8 @@ public class CapacityAssessmentService {
     private final ProductFamilyRepository productFamilyRepository;
     private final FamilyLineRepository familyLineRepository;
     private final LineConfigRepository lineConfigRepository;
+    private final LineProfileRepository lineProfileRepository;
+    private final ManpowerPlanService manpowerPlanService;
 
     public CapacityAssessmentService(
             MrpPlanService mrpPlanService,
@@ -29,7 +30,9 @@ public class CapacityAssessmentService {
             ProductRepository productRepository,
             ProductFamilyRepository productFamilyRepository,
             FamilyLineRepository familyLineRepository,
-            LineConfigRepository lineConfigRepository) {
+            LineConfigRepository lineConfigRepository,
+            LineProfileRepository lineProfileRepository,
+            ManpowerPlanService manpowerPlanService) {
         this.mrpPlanService = mrpPlanService;
         this.routingRepository = routingRepository;
         this.routingItemRepository = routingItemRepository;
@@ -37,25 +40,14 @@ public class CapacityAssessmentService {
         this.productFamilyRepository = productFamilyRepository;
         this.familyLineRepository = familyLineRepository;
         this.lineConfigRepository = lineConfigRepository;
+        this.lineProfileRepository = lineProfileRepository;
+        this.manpowerPlanService = manpowerPlanService;
     }
 
-    /**
-     * 获取产能评估数据
-     * 数据流：MRP成品 → Routing(组件) → Product(家族) → FamilyLine(产线) → Product(CT/OEE/人)
-     *
-     * 返回格式：
-     * {
-     *   lines: { lineCode: [ { itemNumber, description, componentNumber, shiftOutput, shiftWorkers, ct, oee, W01_demand, W01_loading, ... } ] },
-     *   weeks: ["W01", "W02", ...],
-     *   weekDates: { "W01": "2026/3/2", "W02": "2026/3/9", ... },
-     *   warnings: ["警告1", "警告2", ...]
-     * }
-     */
     public Map<String, Object> getCapacityAssessment(String createdBy, String fileName, String version) {
         List<String> warnings = new ArrayList<>();
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 1. 获取MRP计划的周需求量
         Map<String, Object> mrpData = mrpPlanService.getWeeklyDemandByVersion(createdBy, fileName, version);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> mrpItems = (List<Map<String, Object>>) mrpData.get("data");
@@ -70,7 +62,6 @@ public class CapacityAssessmentService {
             return result;
         }
 
-        // 2. 构建weeks列表和weekDates映射（用于前端显示）
         List<String> weeks = new ArrayList<>(weekDateRanges.keySet());
         Map<String, String> weekDates = new LinkedHashMap<>();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/M/d");
@@ -78,181 +69,30 @@ public class CapacityAssessmentService {
             weekDates.put(entry.getKey(), entry.getValue()[0].format(formatter));
         }
 
-        // 3. 按产线分组的结果（每行一个Map，展平的周数据）
         Map<String, List<Map<String, Object>>> linesData = new LinkedHashMap<>();
-
-        // 4. 遍历每个MRP成品
         for (Map<String, Object> mrpItem : mrpItems) {
             String itemNumber = (String) mrpItem.get("itemNumber");
             String description = (String) mrpItem.getOrDefault("description", "");
             @SuppressWarnings("unchecked")
             Map<String, BigDecimal> weeklyDemand = (Map<String, BigDecimal>) mrpItem.get("weeks");
 
-            // 查找工艺路线（可能有多条，用Set避免重复组件）
-            List<Routing> routings = routingRepository.findAllByProductNumber(itemNumber);
-            if (routings.isEmpty()) {
-                warnings.add("成品 [" + itemNumber + "] 在工艺路线表中未找到");
-                continue;
-            }
-
-            Set<String> processedComponents = new HashSet<>();
-            List<RoutingItem> allRoutingItems = new ArrayList<>();
-            for (Routing routing : routings) {
-                List<RoutingItem> items = routingItemRepository.findByRoutingId(routing.getId());
-                for (RoutingItem item : items) {
-                    if (!processedComponents.contains(item.getComponentNumber())) {
-                        processedComponents.add(item.getComponentNumber());
-                        allRoutingItems.add(item);
-                    }
-                }
-            }
-
-            // 5. 遍历每个组件
-            for (RoutingItem routingItem : allRoutingItems) {
-                String componentNumber = routingItem.getComponentNumber();
-
-                // 6. 查找组件在产品表中的信息（获取familyCode）
-                List<Product> componentProducts = productRepository.findByItemNumber(componentNumber);
-                if (componentProducts.isEmpty()) {
-                    warnings.add("组件 [" + componentNumber + "] 在产品列表中未找到");
-                    continue;
-                }
-
-                // 验证所有记录的familyCode一致
-                String familyCode = componentProducts.get(0).getFamilyCode();
-                if (familyCode == null || familyCode.isEmpty()) {
-                    warnings.add("组件 [" + componentNumber + "] 未设置编码族");
-                    continue;
-                }
-
-                // 7. 通过familyCode查找定线信息，获取lineCode
-                String lineCode = null;
-                for (FamilyLine fl : familyLineRepository.findAll()) {
-                    if (fl.getFamilyCode().equals(familyCode)) {
-                        lineCode = fl.getLineCode();
-                        break;
-                    }
-                }
-
-                if (lineCode == null) {
-                    warnings.add("编码族 [" + familyCode + "] 未找到定线信息");
-                    continue;
-                }
-
-                // 7.1 获取PF信息（根据familyCode和lineCode查找）
-                String pf = null;
-                Optional<ProductFamily> pfOpt = productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode);
-                if (pfOpt.isPresent()) {
-                    pf = pfOpt.get().getPf();
-                }
-
-                // 8. 检查产线是否激活
-                Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
-                if (lineConfigOpt.isEmpty() || !lineConfigOpt.get().getIsActive()) {
-                    warnings.add("产线 [" + lineCode + "] 未激活");
-                    continue;
-                }
-
-                LineConfig lineConfig = lineConfigOpt.get();
-
-                // 9. 获取组件在该产线的产品信息（CT、OEE、班人数）
-                Product product = null;
-                for (Product p : componentProducts) {
-                    if (p.getLineCode().equals(lineCode)) {
-                        product = p;
-                        break;
-                    }
-                }
-
-                if (product == null) {
-                    warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 下无产品信息");
-                    continue;
-                }
-
-                BigDecimal ct = product.getCycleTime();
-                BigDecimal oee = product.getOee();
-                Integer workerCount = product.getWorkerCount();
-
-                if (ct == null || oee == null || workerCount == null || ct.compareTo(BigDecimal.ZERO) <= 0) {
-                    warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 的CT/OEE/班人数不完整");
-                    continue;
-                }
-
-                // 10. 计算班产量
-                // 班产量 = (3600 / CT) × (OEE / 100) × hoursPerShift
-                BigDecimal hoursPerShift = lineConfig.getHoursPerShift();
-                BigDecimal shiftOutput = BigDecimal.valueOf(3600)
-                        .divide(ct, 10, RoundingMode.HALF_UP)
-                        .multiply(oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP))
-                        .multiply(hoursPerShift)
-                        .setScale(2, RoundingMode.HALF_UP);
-
-                // 11. 计算每周的LOAD和需求量
-                // LOAD = (需求量 × CT) / (工作天数 × 每天班数 × 每班工作时长(h) × OEE/100 × 3600)
-                // OEE在数据库中存的是85表示85%，需要除以100转换为小数
-                BigDecimal oeeDecimal = oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
-                BigDecimal workingDaysPerWeek = BigDecimal.valueOf(lineConfig.getWorkingDaysPerWeek());
-                BigDecimal shiftsPerDay = BigDecimal.valueOf(lineConfig.getShiftsPerDay());
-                BigDecimal denominator = workingDaysPerWeek
-                        .multiply(shiftsPerDay)
-                        .multiply(hoursPerShift)
-                        .multiply(oeeDecimal)
-                        .multiply(BigDecimal.valueOf(3600));
-
-                System.out.println("产线=" + lineCode + ", 分母=" + denominator + ", shiftOutput=" + shiftOutput);
-
-                // 构建展平的周数据行
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("itemNumber", itemNumber);
-                row.put("description", description);
-                row.put("componentNumber", componentNumber);
-                row.put("pf", pf);
-                row.put("shiftOutput", shiftOutput);
-                row.put("shiftWorkers", workerCount);
-                row.put("ct", ct);
-                row.put("oee", oee);
-
-                for (String week : weeks) {
-                    BigDecimal demand = weeklyDemand.get(week);
-                    if (demand == null) {
-                        demand = BigDecimal.ZERO;
-                    }
-
-                    BigDecimal load = BigDecimal.ZERO;
-                    if (denominator.compareTo(BigDecimal.ZERO) > 0) {
-                        load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
-                    }
-
-                    row.put(week + "_demand", demand);
-                    row.put(week + "_loading", load);
-                }
-
-                // 12. 按产线分组
-                linesData.computeIfAbsent(lineCode, k -> new ArrayList<>()).add(row);
-            }
+            processOneFinishedProductWeekly(itemNumber, description, weeklyDemand, weeks, weekDateRanges, linesData, warnings);
         }
 
         result.put("lines", linesData);
         result.put("weeks", weeks);
         result.put("weekDates", weekDates);
         result.put("warnings", warnings);
-
         return result;
     }
 
-    /**
-     * 获取月度产能评估数据
-     * 与 getCapacityAssessment 相同，但使用月度维度
-     */
     public Map<String, Object> getCapacityAssessmentMonthly(String createdBy, String fileName, String version) {
         List<String> warnings = new ArrayList<>();
         Map<String, Object> result = new LinkedHashMap<>();
 
-        // 1. 获取MRP计划的月需求量
         Map<String, Object> mrpData = mrpPlanService.getMonthlyDemandByVersion(createdBy, fileName, version);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> mrpItems = (List<Map<String, Object>>) mrpData.get("data");
-        // monthDateRanges 是 Map<String, String[]>，key是"yyyy-MM"，value是["yyyy-MM-dd", "yyyy-MM-dd"]
         @SuppressWarnings("unchecked")
         Map<String, String[]> monthDateRanges = (Map<String, String[]>) mrpData.get("monthDateRanges");
 
@@ -264,186 +104,265 @@ public class CapacityAssessmentService {
             return result;
         }
 
-        // 2. 构建months列表、monthDates映射和每月实际天数
         List<String> months = new ArrayList<>(monthDateRanges.keySet());
         Map<String, String> monthDates = new LinkedHashMap<>();
-        Map<String, Integer> monthDays = new LinkedHashMap<>(); // 每月实际天数
+        Map<String, Integer> monthDays = new LinkedHashMap<>();
         for (Map.Entry<String, String[]> entry : monthDateRanges.entrySet()) {
             String monthKey = entry.getKey();
-            // monthDateRanges value: ["yyyy-MM-dd", "yyyy-MM-dd"]
             String[] dateRange = entry.getValue();
-            // 计算该月天数：从第一天的最后一天得到
-            LocalDate firstDay = LocalDate.parse(dateRange[0]);
             LocalDate lastDay = LocalDate.parse(dateRange[1]);
-            int daysInMonth = lastDay.getDayOfMonth();
-            monthDays.put(monthKey, daysInMonth);
-            // 转换为 "yyyy/M" 格式显示
+            monthDays.put(monthKey, lastDay.getDayOfMonth());
             monthDates.put(monthKey, monthKey.replace("-", "/"));
         }
 
-        // 3. 按产线分组的结果
         Map<String, List<Map<String, Object>>> linesData = new LinkedHashMap<>();
-
-        // 4. 遍历每个MRP成品
         for (Map<String, Object> mrpItem : mrpItems) {
             String itemNumber = (String) mrpItem.get("itemNumber");
             String description = (String) mrpItem.getOrDefault("description", "");
             @SuppressWarnings("unchecked")
             Map<String, BigDecimal> monthlyDemand = (Map<String, BigDecimal>) mrpItem.get("months");
 
-            // 查找工艺路线
-            List<Routing> routings = routingRepository.findAllByProductNumber(itemNumber);
-            if (routings.isEmpty()) {
-                warnings.add("成品 [" + itemNumber + "] 在工艺路线表中未找到");
-                continue;
-            }
-
-            Set<String> processedComponents = new HashSet<>();
-            List<RoutingItem> allRoutingItems = new ArrayList<>();
-            for (Routing routing : routings) {
-                List<RoutingItem> items = routingItemRepository.findByRoutingId(routing.getId());
-                for (RoutingItem item : items) {
-                    if (!processedComponents.contains(item.getComponentNumber())) {
-                        processedComponents.add(item.getComponentNumber());
-                        allRoutingItems.add(item);
-                    }
-                }
-            }
-
-            // 5. 遍历每个组件
-            for (RoutingItem routingItem : allRoutingItems) {
-                String componentNumber = routingItem.getComponentNumber();
-
-                // 6. 查找组件在产品表中的信息
-                List<Product> componentProducts = productRepository.findByItemNumber(componentNumber);
-                if (componentProducts.isEmpty()) {
-                    warnings.add("组件 [" + componentNumber + "] 在产品列表中未找到");
-                    continue;
-                }
-
-                String familyCode = componentProducts.get(0).getFamilyCode();
-                if (familyCode == null || familyCode.isEmpty()) {
-                    warnings.add("组件 [" + componentNumber + "] 未设置编码族");
-                    continue;
-                }
-
-                // 7. 通过familyCode查找定线信息
-                String lineCode = null;
-                for (FamilyLine fl : familyLineRepository.findAll()) {
-                    if (fl.getFamilyCode().equals(familyCode)) {
-                        lineCode = fl.getLineCode();
-                        break;
-                    }
-                }
-
-                if (lineCode == null) {
-                    warnings.add("编码族 [" + familyCode + "] 未找到定线信息");
-                    continue;
-                }
-
-                // 7.1 获取PF信息
-                String pf = null;
-                Optional<ProductFamily> pfOpt = productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode);
-                if (pfOpt.isPresent()) {
-                    pf = pfOpt.get().getPf();
-                }
-
-                // 8. 检查产线是否激活
-                Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
-                if (lineConfigOpt.isEmpty() || !lineConfigOpt.get().getIsActive()) {
-                    warnings.add("产线 [" + lineCode + "] 未激活");
-                    continue;
-                }
-
-                LineConfig lineConfig = lineConfigOpt.get();
-
-                // 9. 获取组件在该产线的产品信息
-                Product product = null;
-                for (Product p : componentProducts) {
-                    if (p.getLineCode().equals(lineCode)) {
-                        product = p;
-                        break;
-                    }
-                }
-
-                if (product == null) {
-                    warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 下无产品信息");
-                    continue;
-                }
-
-                BigDecimal ct = product.getCycleTime();
-                BigDecimal oee = product.getOee();
-                Integer workerCount = product.getWorkerCount();
-
-                if (ct == null || oee == null || workerCount == null || ct.compareTo(BigDecimal.ZERO) <= 0) {
-                    warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 的CT/OEE/班人数不完整");
-                    continue;
-                }
-
-                // 10. 计算班产量
-                BigDecimal hoursPerShift = lineConfig.getHoursPerShift();
-                BigDecimal shiftOutput = BigDecimal.valueOf(3600)
-                        .divide(ct, 10, RoundingMode.HALF_UP)
-                        .multiply(oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP))
-                        .multiply(hoursPerShift)
-                        .setScale(2, RoundingMode.HALF_UP);
-
-                // 11. 计算每月的LOAD和需求量
-                // 每月工作天数 = 当月实际天数 × (每周工作天数 / 7)
-                BigDecimal oeeDecimal = oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
-                BigDecimal shiftsPerDay = BigDecimal.valueOf(lineConfig.getShiftsPerDay());
-
-                // 构建展平的月数据行
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("itemNumber", itemNumber);
-                row.put("description", description);
-                row.put("componentNumber", componentNumber);
-                row.put("pf", pf);
-                row.put("shiftOutput", shiftOutput);
-                row.put("shiftWorkers", workerCount);
-                row.put("ct", ct);
-                row.put("oee", oee);
-
-                for (String month : months) {
-                    BigDecimal demand = monthlyDemand.get(month);
-                    if (demand == null) {
-                        demand = BigDecimal.ZERO;
-                    }
-
-                    // 根据当月实际天数计算工作天数
-                    int daysInMonth = monthDays.get(month);
-                    int workingDaysPerWeekVal = lineConfig.getWorkingDaysPerWeek();
-                    // 每月工作天数 = daysInMonth × (workingDaysPerWeek / 7)
-                    BigDecimal workingDaysPerMonth = BigDecimal.valueOf(daysInMonth)
-                            .multiply(BigDecimal.valueOf(workingDaysPerWeekVal))
-                            .divide(BigDecimal.valueOf(7), 10, RoundingMode.HALF_UP);
-
-                    BigDecimal denominator = workingDaysPerMonth
-                            .multiply(shiftsPerDay)
-                            .multiply(hoursPerShift)
-                            .multiply(oeeDecimal)
-                            .multiply(BigDecimal.valueOf(3600));
-
-                    BigDecimal load = BigDecimal.ZERO;
-                    if (denominator.compareTo(BigDecimal.ZERO) > 0) {
-                        load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
-                    }
-
-                    row.put(month + "_demand", demand);
-                    row.put(month + "_loading", load);
-                }
-
-                // 12. 按产线分组
-                linesData.computeIfAbsent(lineCode, k -> new ArrayList<>()).add(row);
-            }
+            processOneFinishedProductMonthly(itemNumber, description, monthlyDemand, months, monthDays, linesData, warnings);
         }
 
         result.put("lines", linesData);
         result.put("months", months);
         result.put("monthDates", monthDates);
-        result.put("monthDays", monthDays); // 每月实际天数，用于前端重新计算
+        result.put("monthDays", monthDays);
         result.put("warnings", warnings);
-
         return result;
+    }
+
+    private void processOneFinishedProductWeekly(
+            String itemNumber,
+            String description,
+            Map<String, BigDecimal> weeklyDemand,
+            List<String> weeks,
+            Map<String, LocalDate[]> weekDateRanges,
+            Map<String, List<Map<String, Object>>> linesData,
+            List<String> warnings) {
+
+        List<RoutingItem> allRoutingItems = findRoutingItemsByFinishedItem(itemNumber, warnings);
+        for (RoutingItem routingItem : allRoutingItems) {
+            String componentNumber = routingItem.getComponentNumber();
+            Optional<ResolvedContext> contextOpt = resolveContext(componentNumber, warnings);
+            if (contextOpt.isEmpty()) {
+                continue;
+            }
+            ResolvedContext context = contextOpt.get();
+
+            Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
+            BigDecimal oeeDecimal = context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+            BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
+            BigDecimal workingDaysPerWeek = BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek());
+            BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
+            BigDecimal ct = context.product.getCycleTime();
+            for (String week : weeks) {
+                BigDecimal demand = weeklyDemand.getOrDefault(week, BigDecimal.ZERO);
+                LocalDate periodDate = weekDateRanges.get(week)[0];
+                BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
+                BigDecimal denominator = workingDaysPerWeek
+                        .multiply(shiftsPerDay)
+                        .multiply(hoursPerShift)
+                        .multiply(oeeDecimal)
+                        .multiply(BigDecimal.valueOf(3600))
+                        .multiply(manpowerFactor);
+
+                BigDecimal load = BigDecimal.ZERO;
+                if (denominator.compareTo(BigDecimal.ZERO) > 0) {
+                    load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                }
+                row.put(week + "_demand", demand);
+                row.put(week + "_loading", load);
+                row.put(week + "_manpowerFactor", manpowerFactor);
+            }
+
+            linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
+        }
+    }
+
+    private void processOneFinishedProductMonthly(
+            String itemNumber,
+            String description,
+            Map<String, BigDecimal> monthlyDemand,
+            List<String> months,
+            Map<String, Integer> monthDays,
+            Map<String, List<Map<String, Object>>> linesData,
+            List<String> warnings) {
+
+        List<RoutingItem> allRoutingItems = findRoutingItemsByFinishedItem(itemNumber, warnings);
+        for (RoutingItem routingItem : allRoutingItems) {
+            String componentNumber = routingItem.getComponentNumber();
+            Optional<ResolvedContext> contextOpt = resolveContext(componentNumber, warnings);
+            if (contextOpt.isEmpty()) {
+                continue;
+            }
+            ResolvedContext context = contextOpt.get();
+
+            Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
+            BigDecimal oeeDecimal = context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+            BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
+            BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
+            BigDecimal ct = context.product.getCycleTime();
+
+            for (String month : months) {
+                BigDecimal demand = monthlyDemand.getOrDefault(month, BigDecimal.ZERO);
+                int daysInMonth = monthDays.get(month);
+                BigDecimal workingDaysPerMonth = BigDecimal.valueOf(daysInMonth)
+                        .multiply(BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek()))
+                        .divide(BigDecimal.valueOf(7), 10, RoundingMode.HALF_UP);
+                LocalDate periodDate = LocalDate.parse(month + "-01");
+                BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
+
+                BigDecimal denominator = workingDaysPerMonth
+                        .multiply(shiftsPerDay)
+                        .multiply(hoursPerShift)
+                        .multiply(oeeDecimal)
+                        .multiply(BigDecimal.valueOf(3600))
+                        .multiply(manpowerFactor);
+
+                BigDecimal load = BigDecimal.ZERO;
+                if (denominator.compareTo(BigDecimal.ZERO) > 0) {
+                    load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                }
+
+                row.put(month + "_demand", demand);
+                row.put(month + "_loading", load);
+                row.put(month + "_manpowerFactor", manpowerFactor);
+            }
+
+            linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
+        }
+    }
+
+    private List<RoutingItem> findRoutingItemsByFinishedItem(String itemNumber, List<String> warnings) {
+        List<Routing> routings = routingRepository.findAllByProductNumber(itemNumber);
+        if (routings.isEmpty()) {
+            warnings.add("成品 [" + itemNumber + "] 在工艺路线表中未找到");
+            return Collections.emptyList();
+        }
+
+        Set<String> processedComponents = new HashSet<>();
+        List<RoutingItem> allRoutingItems = new ArrayList<>();
+        for (Routing routing : routings) {
+            List<RoutingItem> items = routingItemRepository.findByRoutingId(routing.getId());
+            for (RoutingItem item : items) {
+                if (processedComponents.add(item.getComponentNumber())) {
+                    allRoutingItems.add(item);
+                }
+            }
+        }
+        return allRoutingItems;
+    }
+
+    private Optional<ResolvedContext> resolveContext(String componentNumber, List<String> warnings) {
+        List<Product> componentProducts = productRepository.findByItemNumber(componentNumber);
+        if (componentProducts.isEmpty()) {
+            warnings.add("组件 [" + componentNumber + "] 在产品表中未找到");
+            return Optional.empty();
+        }
+
+        String familyCode = componentProducts.get(0).getFamilyCode();
+        if (familyCode == null || familyCode.isEmpty()) {
+            warnings.add("组件 [" + componentNumber + "] 未设置编码族");
+            return Optional.empty();
+        }
+
+        String lineCode = null;
+        for (FamilyLine fl : familyLineRepository.findAll()) {
+            if (fl.getFamilyCode().equals(familyCode)) {
+                lineCode = fl.getLineCode();
+                break;
+            }
+        }
+        if (lineCode == null) {
+            warnings.add("编码族 [" + familyCode + "] 未找到定线信息");
+            return Optional.empty();
+        }
+
+        String pf = productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode)
+                .map(ProductFamily::getPf)
+                .orElse(null);
+
+        Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
+        if (lineConfigOpt.isEmpty() || !Boolean.TRUE.equals(lineConfigOpt.get().getIsActive())) {
+            warnings.add("产线 [" + lineCode + "] 未激活");
+            return Optional.empty();
+        }
+        LineConfig lineConfig = lineConfigOpt.get();
+
+        Product componentOnLine = null;
+        for (Product p : componentProducts) {
+            if (lineCode.equals(p.getLineCode())) {
+                componentOnLine = p;
+                break;
+            }
+        }
+        if (componentOnLine == null) {
+            warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 下无产品信息");
+            return Optional.empty();
+        }
+
+        BigDecimal ct = componentOnLine.getCycleTime();
+        BigDecimal oee = componentOnLine.getOee();
+        Integer workerCount = componentOnLine.getWorkerCount();
+        if (ct == null || oee == null || workerCount == null || ct.compareTo(BigDecimal.ZERO) <= 0) {
+            warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 的CT/OEE/人力参数不完整");
+            return Optional.empty();
+        }
+
+        return Optional.of(new ResolvedContext(lineCode, pf, componentOnLine, lineConfig));
+    }
+
+    private Map<String, Object> buildBaseRow(
+            String itemNumber,
+            String description,
+            String componentNumber,
+            ResolvedContext context) {
+
+        BigDecimal shiftOutput = BigDecimal.valueOf(3600)
+                .divide(context.product.getCycleTime(), 10, RoundingMode.HALF_UP)
+                .multiply(context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP))
+                .multiply(context.lineConfig.getHoursPerShift())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("itemNumber", itemNumber);
+        row.put("description", description);
+        row.put("componentNumber", componentNumber);
+        row.put("pf", context.pf);
+        row.put("shiftOutput", shiftOutput);
+        row.put("shiftWorkers", context.product.getWorkerCount());
+        row.put("ct", context.product.getCycleTime());
+        row.put("oee", context.product.getOee());
+        return row;
+    }
+
+    private BigDecimal resolveManpowerFactor(String lineCode, LocalDate date) {
+        String lineClass = lineProfileRepository.findById(lineCode)
+                .map(LineProfile::getLineClass)
+                .orElseGet(() -> inferLineClass(lineCode));
+        return manpowerPlanService.resolveFactor(lineClass, date);
+    }
+
+    private String inferLineClass(String lineCode) {
+        if (lineCode == null || lineCode.length() < 3) {
+            return "UNKNOWN";
+        }
+        return lineCode.substring(0, 3).toUpperCase();
+    }
+
+    private static class ResolvedContext {
+        private final String lineCode;
+        private final String pf;
+        private final Product product;
+        private final LineConfig lineConfig;
+
+        private ResolvedContext(String lineCode, String pf, Product product, LineConfig lineConfig) {
+            this.lineCode = lineCode;
+            this.pf = pf;
+            this.product = product;
+            this.lineConfig = lineConfig;
+        }
     }
 }
