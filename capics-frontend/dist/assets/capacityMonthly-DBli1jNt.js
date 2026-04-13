@@ -1,1 +1,0 @@
-const a="/api";function c(e,n,t,o){return fetch(`${a}/capacity-assessment/monthly?createdBy=${encodeURIComponent(n)}&fileName=${encodeURIComponent(t)}&version=${encodeURIComponent(o)}`,{headers:{Authorization:`Bearer ${e}`}}).then(s=>s.json())}export{c as g};
