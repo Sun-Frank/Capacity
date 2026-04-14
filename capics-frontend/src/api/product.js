@@ -1,5 +1,27 @@
 const API_BASE = '/api'
 
+async function parseJsonSafe(res) {
+  try {
+    return await res.json()
+  } catch (e) {
+    return null
+  }
+}
+
+async function postFormExpectApi(url, token, formData, fallbackMessage) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  })
+  const json = await parseJsonSafe(res)
+  if (!res.ok) {
+    const msg = json?.message || json?.error || fallbackMessage
+    throw new Error(msg)
+  }
+  return json || { success: false, message: fallbackMessage }
+}
+
 export function getFamilies(token) {
   return fetch(`${API_BASE}/products/families`, {
     headers: { 'Authorization': `Bearer ${token}` }
@@ -34,11 +56,12 @@ export function importFamilies(token, file, createdBy) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('createdBy', createdBy)
-  return fetch(`${API_BASE}/products/families/import`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-    body: formData
-  }).then(res => res.json())
+  return postFormExpectApi(
+    `${API_BASE}/products/families/import`,
+    token,
+    formData,
+    '编码族导入失败，请检查模板与数据格式'
+  )
 }
 
 export function checkFamilyImportDuplicates(token, file) {
@@ -55,11 +78,12 @@ export function importProducts(token, file, createdBy) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('createdBy', createdBy)
-  return fetch(`${API_BASE}/products/import`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-    body: formData
-  }).then(res => res.json())
+  return postFormExpectApi(
+    `${API_BASE}/products/import`,
+    token,
+    formData,
+    '产品导入失败，请检查模板与数据格式'
+  )
 }
 
 export function checkProductImportDuplicates(token, file) {
@@ -103,11 +127,12 @@ export function importFamilyLines(token, file, createdBy) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('createdBy', createdBy)
-  return fetch(`${API_BASE}/products/family-lines/import`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-    body: formData
-  }).then(res => res.json())
+  return postFormExpectApi(
+    `${API_BASE}/products/family-lines/import`,
+    token,
+    formData,
+    '编码族定线导入失败，请检查模板与数据格式'
+  )
 }
 
 export function checkFamilyLineImportDuplicates(token, file) {

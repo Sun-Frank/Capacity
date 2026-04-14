@@ -88,9 +88,13 @@ public class ProductController {
     @PostMapping("/families/import")
     public ResponseEntity<ApiResponse> importFamilies(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("createdBy") String createdBy) throws IOException {
-        int count = familyService.importFromExcel(file, createdBy);
-        return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+            @RequestParam("createdBy") String createdBy) {
+        try {
+            int count = familyService.importFromExcel(file, createdBy);
+            return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("导入编码族失败: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/families/template")
@@ -145,9 +149,13 @@ public class ProductController {
     @PostMapping("/family-lines/import")
     public ResponseEntity<ApiResponse> importFamilyLines(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("createdBy") String createdBy) throws IOException {
-        int count = familyLineService.importFromExcel(file, createdBy);
-        return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+            @RequestParam("createdBy") String createdBy) {
+        try {
+            int count = familyLineService.importFromExcel(file, createdBy);
+            return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("导入编码族定线失败: " + e.getMessage()));
+        }
     }
 
     // ==================== Products ====================
@@ -205,9 +213,13 @@ public class ProductController {
     @PostMapping("/import")
     public ResponseEntity<ApiResponse> importProducts(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("createdBy") String createdBy) throws IOException {
-        int count = productService.importFromExcel(file, createdBy);
-        return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+            @RequestParam("createdBy") String createdBy) {
+        try {
+            int count = productService.importFromExcel(file, createdBy);
+            return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("导入产品失败: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/template")

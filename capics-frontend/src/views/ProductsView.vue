@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">产品主数据</h1>
@@ -316,7 +316,7 @@ const doImport = async (file) => {
     } else if (importType.value === 'family-line') {
       result = await importFamilyLines(token.value, file, currentUser.value)
     }
-    if (result.success) {
+    if (result && result.success) {
       showToast('导入成功: ' + result.message, 'success')
       showImport.value = false
       if (importType.value === 'family') {
@@ -327,10 +327,11 @@ const doImport = async (file) => {
         loadFamilyLines()
       }
     } else {
-      showToast('导入失败: ' + result.message, 'error')
+      const errorMsg = result?.message || '导入失败，请检查模板字段和数据格式'
+      showToast('导入失败: ' + errorMsg, 'error')
     }
   } catch (err) {
-    showToast('导入失败: ' + err.message, 'error')
+    showToast('导入失败: ' + (err?.message || '未知错误'), 'error')
   } finally {
     isImporting.value = false
   }
@@ -350,7 +351,7 @@ const handleUpdateFamily = async (formData) => {
       formData,
       currentUser.value
     )
-    if (result.success) {
+    if (result && result.success) {
       showToast('更新成功', 'success')
       showEditFamily.value = false
       loadFamilies()
@@ -376,7 +377,7 @@ const handleUpdateFamilyLine = async (formData) => {
       formData,
       currentUser.value
     )
-    if (result.success) {
+    if (result && result.success) {
       showToast('更新成功', 'success')
       showEditFamilyLine.value = false
       loadFamilyLines()
@@ -401,5 +402,6 @@ watch(productTab, (newTab) => {
   }
 })
 </script>
+
 
 
