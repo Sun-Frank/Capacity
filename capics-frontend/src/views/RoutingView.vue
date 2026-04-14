@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">工艺路线</h1>
@@ -13,6 +13,7 @@
         style="width: 200px;"
       >
       <button class="btn btn-primary" @click="showImportModal">导入工艺路线</button>
+      <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
     </div>
     <div class="table-wrapper">
       <table>
@@ -84,7 +85,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates } from '@/api/routing'
+import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate } from '@/api/routing'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
@@ -145,6 +146,22 @@ const loadRoutings = async () => {
 
 const showImportModal = () => {
   showImport.value = true
+}
+const handleDownloadRoutingTemplate = async () => {
+  try {
+    const blob = await downloadRoutingTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '工艺路线导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast('模板下载失败: ' + (err?.message || '未知错误'), 'error')
+  }
 }
 
 const handleImport = async ({ file }) => {
@@ -258,3 +275,5 @@ onMounted(() => {
   color: var(--muted-foreground);
 }
 </style>
+
+

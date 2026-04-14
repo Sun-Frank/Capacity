@@ -5,12 +5,19 @@ import com.capics.dto.BomExpandDto;
 import com.capics.dto.RoutingDto;
 import com.capics.dto.RoutingItemDto;
 import com.capics.service.RoutingService;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -99,6 +106,27 @@ public class RoutingController {
             @RequestParam(value = "overwrite", defaultValue = "false") boolean overwrite) throws IOException {
         int count = routingService.importFromExcel(file, createdBy, overwrite);
         return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+    }
+
+    @GetMapping("/template")
+    public ResponseEntity<Resource> downloadRoutingTemplate() throws IOException {
+        String fileName = "工艺路线导入模板.xlsx";
+        File localFile = new File("import_templates", fileName);
+        Resource resource;
+        if (localFile.exists()) {
+            resource = new org.springframework.core.io.FileSystemResource(localFile);
+        } else {
+            resource = new ClassPathResource("import_templates/" + fileName);
+        }
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 
     // 获取按生产线分组的工艺路线组件数据

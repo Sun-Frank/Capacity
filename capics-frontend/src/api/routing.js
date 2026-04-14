@@ -62,3 +62,13 @@ export function updateRoutingItemLine(token, id, lineCode, updatedBy) {
     body: JSON.stringify({ lineCode, updatedBy })
   }).then(res => res.json())
 }
+
+export async function downloadRoutingTemplate(token) {
+  const res = await fetch(`${API_BASE}/routings/template`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) {
+    throw new Error('模板下载失败')
+  }
+  return res.blob()
+}
