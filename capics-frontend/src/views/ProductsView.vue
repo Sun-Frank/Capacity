@@ -25,6 +25,7 @@
           @input="handleFamilySearch"
         >
         <button class="btn btn-primary" @click="showImportModal('family')">导入编码族</button>
+        <button class="btn" @click="handleDownloadFamilyTemplate">模板下载</button>
       </div>
       <FamiliesTable :families="families" @edit="handleEditFamily" />
     </div>
@@ -95,7 +96,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine } from '@/api/product'
+import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine, downloadFamilyTemplate } from '@/api/product'
 import BaseTabs from '@/components/common/BaseTabs.vue'
 import FamiliesTable from '@/components/products/FamiliesTable.vue'
 import ProductsTable from '@/components/products/ProductsTable.vue'
@@ -126,6 +127,23 @@ const showConfirmModal = ref(false)
 const confirmTitle = ref('')
 const confirmItems = ref([])
 const pendingFile = ref(null)
+
+const handleDownloadFamilyTemplate = async () => {
+  try {
+    const blob = await downloadFamilyTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '编码族导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast('模板下载失败: ' + (err.message || '未知错误'), 'error')
+  }
+}
 
 const loadFamilies = async () => {
   try {

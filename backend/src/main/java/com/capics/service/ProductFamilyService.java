@@ -5,7 +5,6 @@ import com.capics.entity.ProductFamily;
 import com.capics.entity.ProductFamilyId;
 import com.capics.repository.ProductFamilyRepository;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -54,7 +53,6 @@ public class ProductFamilyService {
                 .orElseThrow(() -> new RuntimeException("Product family not found"));
     }
 
-    // Create operation - uses dto values directly as keys
     public ProductFamilyDto save(ProductFamilyDto dto) {
         log.info("ProductFamilyService.save (create) called with: familyCode={}, lineCode={}",
                 dto.getFamilyCode(), dto.getLineCode());
@@ -64,22 +62,17 @@ public class ProductFamilyService {
         return toDto(entity);
     }
 
-    // Update operation - accepts original keys to find record
     @Transactional
     public ProductFamilyDto save(ProductFamilyDto dto, String originalFamilyCode, String originalLineCode) {
         log.info("ProductFamilyService.save called with: familyCode={}, lineCode={}, description={}, pf={}, updatedBy={}",
                 dto.getFamilyCode(), dto.getLineCode(), dto.getDescription(), dto.getPf(), dto.getUpdatedBy());
 
-        // 用dto中的key查找记录（因为key不可编辑，dto中的key就是原始key）
         ProductFamilyId id = new ProductFamilyId(dto.getFamilyCode(), dto.getLineCode());
         Optional<ProductFamily> existing = repository.findById(id);
         log.info("findById result: present={}", existing.isPresent());
 
         if (existing.isPresent()) {
-            // 正常更新
             ProductFamily entity = existing.get();
-            log.info("Updating existing record: familyCode={}, lineCode={}",
-                    entity.getFamilyCode(), entity.getLineCode());
             entity.setCodingRule(dto.getCodingRule());
             entity.setCycleTime(dto.getCycleTime());
             entity.setOee(dto.getOee());
@@ -89,12 +82,8 @@ public class ProductFamilyService {
             entity.setPf(dto.getPf());
             entity.setUpdatedBy(dto.getUpdatedBy());
             entity = repository.save(entity);
-            log.info("After save - entity: familyCode={}, lineCode={}, description={}, pf={}",
-                    entity.getFamilyCode(), entity.getLineCode(), entity.getDescription(), entity.getPf());
             return toDto(entity);
         } else {
-            // 记录不存在，创建新的
-            log.info("Record not found, creating new");
             ProductFamily entity = toEntity(dto);
             entity.setCreatedBy(dto.getUpdatedBy());
             entity = repository.save(entity);
@@ -112,29 +101,25 @@ public class ProductFamilyService {
         return repository.existsById(id);
     }
 
-    // 检查导入文件中的重复记录，返回已存在的记录列表
     public List<Map<String, String>> checkDuplicates(MultipartFile file) throws IOException {
         List<Map<String, String>> duplicates = new ArrayList<>();
 
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
 
-            // 第一行是表头，建立列名到索引的映射
             Row headerRow = sheet.getRow(0);
             if (headerRow == null) return duplicates;
 
-            Map<String, Integer> headerMap = new HashMap<>();
-            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                String header = getCellValueAsString(headerRow.getCell(i));
-                if (header != null && !header.isEmpty()) {
-                    headerMap.put(header.trim().toLowerCase(), i);
-                }
+            Map<String, Integer> headerMap = buildHeaderMap(headerRow);
+
+            Integer idxFamilyCode = findColumnIndex(headerMap,
+                    "familycode", "family_code", "family code", "family", "编码族", "familyCode");
+            Integer idxLineCode = findColumnIndex(headerMap,
+                    "linecode", "line_code", "line code", "line", "生产线", "lineCode");
+
+            if (idxFamilyCode == null || idxLineCode == null) {
+                return duplicates;
             }
-
-            Integer idxFamilyCode = findColumnIndex(headerMap, "familycode", "family_code", "编码族", "familyCode");
-            Integer idxLineCode = findColumnIndex(headerMap, "linecode", "line_code", "生产线", "lineCode");
-
-            if (idxFamilyCode == null || idxLineCode == null) return duplicates;
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -143,13 +128,11 @@ public class ProductFamilyService {
                 String familyCode = getCellValueAsString(row.getCell(idxFamilyCode));
                 String lineCode = getCellValueAsString(row.getCell(idxLineCode));
 
-                if (familyCode != null && !familyCode.isEmpty() && lineCode != null && !lineCode.isEmpty()) {
-                    if (exists(familyCode, lineCode)) {
-                        Map<String, String> dup = new HashMap<>();
-                        dup.put("familyCode", familyCode);
-                        dup.put("lineCode", lineCode);
-                        duplicates.add(dup);
-                    }
+                if (isNotBlank(familyCode) && isNotBlank(lineCode) && exists(familyCode, lineCode)) {
+                    Map<String, String> dup = new HashMap<>();
+                    dup.put("familyCode", familyCode);
+                    dup.put("lineCode", lineCode);
+                    duplicates.add(dup);
                 }
             }
         }
@@ -158,36 +141,34 @@ public class ProductFamilyService {
     }
 
     public int importFromExcel(MultipartFile file, String createdBy) throws IOException {
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             int count = 0;
 
-            // 第一行是表头，建立列名到索引的映射
             Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
-                throw new RuntimeException("Excel文件缺少表头行");
-            }
-            Map<String, Integer> headerMap = new HashMap<>();
-            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                String header = getCellValueAsString(headerRow.getCell(i));
-                if (header != null && !header.isEmpty()) {
-                    headerMap.put(header.trim().toLowerCase(), i);
-                }
+                throw new RuntimeException("Excel file missing header row");
             }
 
-            // 获取列索引（支持中英文表头）
-            Integer idxFamilyCode = findColumnIndex(headerMap, "familycode", "family_code", "编码族", "familyCode");
-            Integer idxLineCode = findColumnIndex(headerMap, "linecode", "line_code", "生产线", "lineCode");
-            Integer idxCodingRule = findColumnIndex(headerMap, "codingrule", "coding_rule", "编码规则", "codingRule");
-            Integer idxCycleTime = findColumnIndex(headerMap, "cycletime", "cycle_time", "周期时间", "cycleTime");
+            Map<String, Integer> headerMap = buildHeaderMap(headerRow);
+
+            Integer idxFamilyCode = findColumnIndex(headerMap,
+                    "familycode", "family_code", "family code", "family", "编码族", "familyCode");
+            Integer idxLineCode = findColumnIndex(headerMap,
+                    "linecode", "line_code", "line code", "line", "生产线", "lineCode");
+            Integer idxCodingRule = findColumnIndex(headerMap,
+                    "codingrule", "coding_rule", "coding rule", "编码规则", "codingRule");
+            Integer idxCycleTime = findColumnIndex(headerMap,
+                    "cycletime", "cycle_time", "cycle time", "ct", "周期时间", "cycleTime");
             Integer idxOee = findColumnIndex(headerMap, "oee");
-            Integer idxWorkerCount = findColumnIndex(headerMap, "workercount", "worker_count", "人数", "workerCount");
+            Integer idxWorkerCount = findColumnIndex(headerMap,
+                    "workercount", "worker_count", "worker count", "人数", "workerCount");
             Integer idxVersion = findColumnIndex(headerMap, "version", "版本");
             Integer idxDescription = findColumnIndex(headerMap, "description", "描述", "desc");
+            Integer idxPf = findColumnIndex(headerMap, "pf");
 
-            // 验证必需列
             if (idxFamilyCode == null || idxLineCode == null) {
-                throw new RuntimeException("Excel文件缺少必需列：编码族(familyCode)或生产线(lineCode)");
+                throw new RuntimeException("Excel missing required columns: familyCode/family code and lineCode/line code");
             }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -197,22 +178,17 @@ public class ProductFamilyService {
                 ProductFamily entity = new ProductFamily();
                 entity.setFamilyCode(getCellValueAsString(row.getCell(idxFamilyCode)));
                 entity.setLineCode(getCellValueAsString(row.getCell(idxLineCode)));
-                entity.setCodingRule(getCellValueAsString(row.getCell(idxCodingRule)));
+                entity.setCodingRule(getCellValueAsString(safeCell(row, idxCodingRule)));
                 entity.setCreatedBy(createdBy);
 
-                // 周期时间
                 if (idxCycleTime != null) {
-                    Cell ctCell = row.getCell(idxCycleTime);
-                    if (ctCell != null && ctCell.getCellType() == CellType.NUMERIC) {
-                        entity.setCycleTime(BigDecimal.valueOf(ctCell.getNumericCellValue()));
-                    }
+                    BigDecimal ct = getCellNumericAsBigDecimal(row.getCell(idxCycleTime));
+                    if (ct != null) entity.setCycleTime(ct);
                 }
 
-                // OEE
                 if (idxOee != null) {
-                    Cell oeeCell = row.getCell(idxOee);
-                    if (oeeCell != null && oeeCell.getCellType() == CellType.NUMERIC) {
-                        BigDecimal oeeValue = BigDecimal.valueOf(oeeCell.getNumericCellValue());
+                    BigDecimal oeeValue = getCellNumericAsBigDecimal(row.getCell(idxOee));
+                    if (oeeValue != null) {
                         if (oeeValue.compareTo(BigDecimal.ONE) <= 0) {
                             oeeValue = oeeValue.multiply(BigDecimal.valueOf(100)).setScale(2, java.math.RoundingMode.HALF_UP);
                         }
@@ -220,33 +196,30 @@ public class ProductFamilyService {
                     }
                 }
 
-                // 人数
                 if (idxWorkerCount != null) {
-                    Cell workerCell = row.getCell(idxWorkerCount);
-                    if (workerCell != null && workerCell.getCellType() == CellType.NUMERIC) {
-                        entity.setWorkerCount((int) workerCell.getNumericCellValue());
+                    BigDecimal workers = getCellNumericAsBigDecimal(row.getCell(idxWorkerCount));
+                    if (workers != null) {
+                        entity.setWorkerCount(workers.intValue());
                     }
                 }
 
-                // 版本
                 if (idxVersion != null) {
                     entity.setVersion(getCellValueAsString(row.getCell(idxVersion)));
                 }
 
-                // 描述
                 if (idxDescription != null) {
                     entity.setDescription(getCellValueAsString(row.getCell(idxDescription)));
                 }
 
-                // PF
-                Integer idxPf = findColumnIndex(headerMap, "pf", "PF");
                 if (idxPf != null) {
                     entity.setPf(getCellValueAsString(row.getCell(idxPf)));
                 }
 
-                if (entity.getFamilyCode() != null && !entity.getFamilyCode().isEmpty()) {
+                if (isNotBlank(entity.getFamilyCode()) && isNotBlank(entity.getLineCode())) {
                     repository.save(entity);
                     count++;
+                } else {
+                    log.warn("Skip row {} due to blank familyCode/lineCode", i + 1);
                 }
             }
 
@@ -254,12 +227,46 @@ public class ProductFamilyService {
         }
     }
 
-    // 根据多种可能的表头名称查找列索引
+    private Map<String, Integer> buildHeaderMap(Row headerRow) {
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            String header = getCellValueAsString(headerRow.getCell(i));
+            if (isNotBlank(header)) {
+                headerMap.put(normalizeHeader(header), i);
+            }
+        }
+        return headerMap;
+    }
+
     private Integer findColumnIndex(Map<String, Integer> headerMap, String... possibleNames) {
         for (String name : possibleNames) {
-            if (headerMap.containsKey(name.toLowerCase())) {
-                return headerMap.get(name.toLowerCase());
+            String normalized = normalizeHeader(name);
+            if (headerMap.containsKey(normalized)) {
+                return headerMap.get(normalized);
             }
+        }
+        return null;
+    }
+
+    private Cell safeCell(Row row, Integer idx) {
+        if (idx == null || row == null) {
+            return null;
+        }
+        return row.getCell(idx);
+    }
+
+    private BigDecimal getCellNumericAsBigDecimal(Cell cell) {
+        if (cell == null) return null;
+        try {
+            if (cell.getCellType() == CellType.NUMERIC) {
+                return BigDecimal.valueOf(cell.getNumericCellValue());
+            }
+            if (cell.getCellType() == CellType.STRING) {
+                String text = trimToNull(cell.getStringCellValue());
+                if (text == null) return null;
+                return new BigDecimal(text);
+            }
+        } catch (Exception ignored) {
         }
         return null;
     }
@@ -268,14 +275,33 @@ public class ProductFamilyService {
         if (cell == null) return null;
         switch (cell.getCellType()) {
             case STRING:
-                return cell.getStringCellValue();
+                return trimToNull(cell.getStringCellValue());
             case NUMERIC:
-                return String.valueOf((long) cell.getNumericCellValue());
+                double value = cell.getNumericCellValue();
+                if (Math.floor(value) == value) {
+                    return String.valueOf((long) value);
+                }
+                return String.valueOf(value);
             case BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
             default:
                 return null;
         }
+    }
+
+    private String normalizeHeader(String header) {
+        if (header == null) return "";
+        return header.trim().toLowerCase().replaceAll("[\\s_\\-]+", "");
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isNotBlank(String value) {
+        return trimToNull(value) != null;
     }
 
     private ProductFamilyDto toDto(ProductFamily entity) {
