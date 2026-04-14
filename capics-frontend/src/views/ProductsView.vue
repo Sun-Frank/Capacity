@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">产品主数据</h1>

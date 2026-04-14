@@ -113,9 +113,9 @@ public class ProductFamilyService {
             Map<String, Integer> headerMap = buildHeaderMap(headerRow);
 
             Integer idxFamilyCode = findColumnIndex(headerMap,
-                    "familycode", "family_code", "family code", "family", "编码族", "familyCode");
+                    "familycode", "family_code", "family code", "family", "familyCode", "编码族", "编码族代码", "编码族编码", "产品编码族");
             Integer idxLineCode = findColumnIndex(headerMap,
-                    "linecode", "line_code", "line code", "line", "生产线", "lineCode");
+                    "linecode", "line_code", "line code", "line", "lineCode", "线别", "产线", "线体", "线别代码");
 
             if (idxFamilyCode == null || idxLineCode == null) {
                 return duplicates;
@@ -153,16 +153,16 @@ public class ProductFamilyService {
             Map<String, Integer> headerMap = buildHeaderMap(headerRow);
 
             Integer idxFamilyCode = findColumnIndex(headerMap,
-                    "familycode", "family_code", "family code", "family", "编码族", "familyCode");
+                    "familycode", "family_code", "family code", "family", "familyCode", "编码族", "编码族代码", "编码族编码", "产品编码族");
             Integer idxLineCode = findColumnIndex(headerMap,
-                    "linecode", "line_code", "line code", "line", "生产线", "lineCode");
+                    "linecode", "line_code", "line code", "line", "lineCode", "线别", "产线", "线体", "线别代码");
             Integer idxCodingRule = findColumnIndex(headerMap,
-                    "codingrule", "coding_rule", "coding rule", "编码规则", "codingRule");
+                    "codingrule", "coding_rule", "coding rule", "codingRule", "编码规则");
             Integer idxCycleTime = findColumnIndex(headerMap,
-                    "cycletime", "cycle_time", "cycle time", "ct", "周期时间", "cycleTime");
+                    "cycletime", "cycle_time", "cycle time", "ct", "cycleTime", "周期时间", "节拍");
             Integer idxOee = findColumnIndex(headerMap, "oee");
             Integer idxWorkerCount = findColumnIndex(headerMap,
-                    "workercount", "worker_count", "worker count", "人数", "workerCount");
+                    "workercount", "worker_count", "worker count", "workerCount", "人数", "人力");
             Integer idxVersion = findColumnIndex(headerMap, "version", "版本");
             Integer idxDescription = findColumnIndex(headerMap, "description", "描述", "desc");
             Integer idxPf = findColumnIndex(headerMap, "pf");
@@ -336,3 +336,4 @@ public class ProductFamilyService {
         return entity;
     }
 }
+
