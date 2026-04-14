@@ -140,3 +140,23 @@ export async function downloadFamilyTemplate(token) {
   }
   return res.blob()
 }
+
+export async function downloadFamilyLineTemplate(token) {
+  const res = await fetch(`${API_BASE}/products/family-lines/template`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) {
+    throw new Error('模板下载失败')
+  }
+  return res.blob()
+}
+
+export async function downloadProductTemplate(token) {
+  const res = await fetch(`${API_BASE}/products/template`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) {
+    throw new Error('模板下载失败')
+  }
+  return res.blob()
+}

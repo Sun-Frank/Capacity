@@ -38,6 +38,7 @@
         />
         <button class="btn btn-primary" @click="loadMrpPlans">查询</button>
         <button class="btn" @click="showImportModal('mrp')">导入MRP</button>
+        <button class="btn" @click="handleDownloadMrpTemplate">模板下载</button>
       </div>
       <PlansTable :plans="mrpPlans" />
     </div>
@@ -109,7 +110,7 @@ import { ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useMrpFilters } from '@/composables/useMrpFilters'
 import { useToast } from '@/composables/useToast'
-import { importMrpPlans, getMonthlyReportByFile } from '@/api/mrp'
+import { importMrpPlans, getMonthlyReportByFile, downloadMrpTemplate } from '@/api/mrp'
 import BaseTabs from '@/components/common/BaseTabs.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import PlansTable from '@/components/mrp/PlansTable.vue'
@@ -159,6 +160,22 @@ const monthlyFileNames = ref([])
 const monthlyFileName = ref('')
 const monthlyColumns = ref([])
 const monthlyReport = ref([])
+const handleDownloadMrpTemplate = async () => {
+  try {
+    const blob = await downloadMrpTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'MRP导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast('模板下载失败: ' + (err.message || '未知错误'), 'error')
+  }
+}
 
 const loadMrpPlans = async () => {
   if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
@@ -342,3 +359,5 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 </style>
+
+

@@ -41,6 +41,7 @@
           @input="handleFamilyLineSearch"
         >
         <button class="btn btn-primary" @click="showImportModal('family-line')">导入编码族定线</button>
+        <button class="btn" @click="handleDownloadFamilyLineTemplate">模板下载</button>
       </div>
       <FamilyLinesTable :family-lines="familyLines" @edit="handleEditFamilyLine" />
     </div>
@@ -56,6 +57,7 @@
           @input="handleProductSearch"
         >
         <button class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
+        <button class="btn" @click="handleDownloadProductTemplate">模板下载</button>
       </div>
       <ProductsTable :products="products" />
     </div>
@@ -96,7 +98,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine, downloadFamilyTemplate } from '@/api/product'
+import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine, downloadFamilyTemplate, downloadFamilyLineTemplate, downloadProductTemplate } from '@/api/product'
 import BaseTabs from '@/components/common/BaseTabs.vue'
 import FamiliesTable from '@/components/products/FamiliesTable.vue'
 import ProductsTable from '@/components/products/ProductsTable.vue'
@@ -135,6 +137,39 @@ const handleDownloadFamilyTemplate = async () => {
     const a = document.createElement('a')
     a.href = url
     a.download = '编码族导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast('模板下载失败: ' + (err.message || '未知错误'), 'error')
+  }
+}
+const handleDownloadFamilyLineTemplate = async () => {
+  try {
+    const blob = await downloadFamilyLineTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '编码族定线导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast('模板下载失败: ' + (err.message || '未知错误'), 'error')
+  }
+}
+
+const handleDownloadProductTemplate = async () => {
+  try {
+    const blob = await downloadProductTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '产品导入模板.xlsx'
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -366,3 +401,5 @@ watch(productTab, (newTab) => {
   }
 })
 </script>
+
+

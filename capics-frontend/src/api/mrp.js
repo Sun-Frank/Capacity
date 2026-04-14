@@ -95,3 +95,13 @@ export function importMrpPlans(token, file, fileName, createdBy) {
     body: formData
   }).then(res => res.json())
 }
+
+export async function downloadMrpTemplate(token) {
+  const res = await fetch(`${API_BASE}/mrp/plans/template`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!res.ok) {
+    throw new Error('模板下载失败')
+  }
+  return res.blob()
+}

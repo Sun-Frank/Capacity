@@ -95,25 +95,12 @@ public class ProductController {
 
     @GetMapping("/families/template")
     public ResponseEntity<Resource> downloadFamilyTemplate() throws IOException {
-        String fileName = "编码族导入模板.xlsx";
+        return downloadTemplateFile("编码族导入模板.xlsx");
+    }
 
-        File localFile = new File("import_templates", fileName);
-        Resource resource;
-        if (localFile.exists()) {
-            resource = new org.springframework.core.io.FileSystemResource(localFile);
-        } else {
-            resource = new ClassPathResource("import_templates/" + fileName);
-        }
-
-        if (!resource.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+    @GetMapping("/family-lines/template")
+    public ResponseEntity<Resource> downloadFamilyLineTemplate() throws IOException {
+        return downloadTemplateFile("编码族定线导入模板.xlsx");
     }
 
     // ==================== Family Lines ====================
@@ -222,4 +209,30 @@ public class ProductController {
         int count = productService.importFromExcel(file, createdBy);
         return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
     }
+
+    @GetMapping("/template")
+    public ResponseEntity<Resource> downloadProductTemplate() throws IOException {
+        return downloadTemplateFile("产品导入模板.xlsx");
+    }
+
+    private ResponseEntity<Resource> downloadTemplateFile(String fileName) throws IOException {
+        File localFile = new File("import_templates", fileName);
+        Resource resource;
+        if (localFile.exists()) {
+            resource = new org.springframework.core.io.FileSystemResource(localFile);
+        } else {
+            resource = new ClassPathResource("import_templates/" + fileName);
+        }
+
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
 }
+
