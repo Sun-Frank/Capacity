@@ -8,7 +8,6 @@ import com.capics.entity.ProductFamilyId;
 import com.capics.repository.FamilyLineRepository;
 import com.capics.repository.ProductFamilyRepository;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
@@ -112,23 +111,35 @@ public class FamilyLineService {
     public List<Map<String, String>> checkDuplicates(MultipartFile file) throws IOException {
         List<Map<String, String>> duplicates = new ArrayList<>();
 
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) return duplicates;
+
+            Map<String, Integer> headerMap = buildHeaderMap(headerRow);
+            Integer idxFamilyCode = findColumnIndex(headerMap,
+                    "familycode", "family_code", "family code", "family", "familyCode",
+                    "编码族", "编码族代码", "编码族编码", "产品编码族");
+            Integer idxLineCode = findColumnIndex(headerMap,
+                    "linecode", "line_code", "line code", "line", "lineCode",
+                    "线别", "产线", "线体", "线别代码");
+
+            if (idxFamilyCode == null || idxLineCode == null) {
+                return duplicates;
+            }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                String familyCode = getCellValueAsString(row.getCell(0));
-                String lineCode = getCellValueAsString(row.getCell(1));
+                String familyCode = getCellValueAsString(row.getCell(idxFamilyCode));
+                String lineCode = getCellValueAsString(row.getCell(idxLineCode));
 
-                if (familyCode != null && !familyCode.isEmpty() && lineCode != null && !lineCode.isEmpty()) {
-                    if (exists(familyCode, lineCode)) {
-                        Map<String, String> dup = new HashMap<>();
-                        dup.put("familyCode", familyCode);
-                        dup.put("lineCode", lineCode);
-                        duplicates.add(dup);
-                    }
+                if (isNotBlank(familyCode) && isNotBlank(lineCode) && exists(familyCode, lineCode)) {
+                    Map<String, String> dup = new HashMap<>();
+                    dup.put("familyCode", familyCode);
+                    dup.put("lineCode", lineCode);
+                    duplicates.add(dup);
                 }
             }
         }
@@ -137,41 +148,93 @@ public class FamilyLineService {
     }
 
     public int importFromExcel(MultipartFile file, String createdBy) throws IOException {
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+        try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             int count = 0;
+
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new RuntimeException("Excel file missing header row");
+            }
+
+            Map<String, Integer> headerMap = buildHeaderMap(headerRow);
+            Integer idxFamilyCode = findColumnIndex(headerMap,
+                    "familycode", "family_code", "family code", "family", "familyCode",
+                    "编码族", "编码族代码", "编码族编码", "产品编码族");
+            Integer idxLineCode = findColumnIndex(headerMap,
+                    "linecode", "line_code", "line code", "line", "lineCode",
+                    "线别", "产线", "线体", "线别代码");
+
+            if (idxFamilyCode == null || idxLineCode == null) {
+                throw new RuntimeException("Excel missing required columns: familyCode/family code and lineCode/line code");
+            }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                FamilyLine entity = new FamilyLine();
-                entity.setFamilyCode(getCellValueAsString(row.getCell(0)));
-                entity.setLineCode(getCellValueAsString(row.getCell(1)));
-                entity.setCreatedBy(createdBy);
+                String familyCode = getCellValueAsString(row.getCell(idxFamilyCode));
+                String lineCode = getCellValueAsString(row.getCell(idxLineCode));
 
-                if (entity.getFamilyCode() != null && !entity.getFamilyCode().isEmpty()) {
-                    repository.save(entity);
-                    count++;
+                if (!isNotBlank(familyCode) && !isNotBlank(lineCode)) {
+                    continue;
                 }
+                if (!isNotBlank(familyCode) || !isNotBlank(lineCode)) {
+                    throw new RuntimeException("Row " + (i + 1) + " missing required familyCode/lineCode");
+                }
+
+                FamilyLine entity = new FamilyLine();
+                entity.setFamilyCode(familyCode);
+                entity.setLineCode(lineCode);
+                entity.setCreatedBy(createdBy);
+                repository.save(entity);
+                count++;
             }
 
             return count;
         }
     }
 
+    private Map<String, Integer> buildHeaderMap(Row headerRow) {
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+            String header = getCellValueAsString(headerRow.getCell(i));
+            if (isNotBlank(header)) {
+                headerMap.put(normalizeHeader(header), i);
+            }
+        }
+        return headerMap;
+    }
+
+    private Integer findColumnIndex(Map<String, Integer> headerMap, String... possibleNames) {
+        for (String name : possibleNames) {
+            String normalized = normalizeHeader(name);
+            if (headerMap.containsKey(normalized)) {
+                return headerMap.get(normalized);
+            }
+        }
+        return null;
+    }
+
     private String getCellValueAsString(Cell cell) {
         if (cell == null) return null;
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                return String.valueOf((long) cell.getNumericCellValue());
-            case BOOLEAN:
-                return String.valueOf(cell.getBooleanCellValue());
-            default:
-                return null;
-        }
+        DataFormatter formatter = new DataFormatter();
+        return trimToNull(formatter.formatCellValue(cell));
+    }
+
+    private String normalizeHeader(String header) {
+        if (header == null) return "";
+        return header.trim().toLowerCase().replaceAll("[^a-z0-9\\u4e00-\\u9fa5]+", "");
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isNotBlank(String value) {
+        return trimToNull(value) != null;
     }
 
     private FamilyLineDto toDto(FamilyLine entity) {
