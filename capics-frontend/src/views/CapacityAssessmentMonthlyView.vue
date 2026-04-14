@@ -1146,6 +1146,18 @@ thead th {
   color: white;
 }
 
+/* 第二行前7列（空白占位）改为白底，与第一行冻结列保持一致 */
+.header-row-2 th.sticky-col-1,
+.header-row-2 th.sticky-col-2,
+.header-row-2 th.sticky-col-3,
+.header-row-2 th.sticky-col-4,
+.header-row-2 th.sticky-col-5,
+.header-row-2 th.sticky-col-6,
+.header-row-2 th.sticky-col-7 {
+  background: #fff;
+  color: var(--foreground);
+}
+
 /* === Header sticky columns - highest z-index (表头冻结交叉区) === */
 /* 这里是左上角的核心区域，层级必须是最高的 (> 22)，这样向右滚动时才压得住普通表头 */
 .header-row-1 th.sticky-col-1, .header-row-2 th.sticky-col-1 { z-index: 37 !important; }
