@@ -291,7 +291,7 @@ public class ProductFamilyService {
 
     private String normalizeHeader(String header) {
         if (header == null) return "";
-        return header.trim().toLowerCase().replaceAll("[\\s_\\-]+", "");
+        return header.trim().toLowerCase().replaceAll("[^a-z0-9\\u4e00-\\u9fa5]+", "");
     }
 
     private String trimToNull(String value) {
