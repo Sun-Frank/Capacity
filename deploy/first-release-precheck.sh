@@ -66,6 +66,26 @@ for key in \
   require_value "${key}"
 done
 
+ENABLE_HTTPS="${ENABLE_HTTPS:-true}"
+SSL_CERT_PATH="${SSL_CERT_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem}"
+SSL_CERT_KEY_PATH="${SSL_CERT_KEY_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem}"
+
+if [[ "${ENABLE_HTTPS}" == "true" ]]; then
+  pass "ENABLE_HTTPS is true"
+  if [[ -f "${SSL_CERT_PATH}" ]]; then
+    pass "SSL cert file exists: ${SSL_CERT_PATH}"
+  else
+    fail "SSL cert file missing: ${SSL_CERT_PATH}"
+  fi
+  if [[ -f "${SSL_CERT_KEY_PATH}" ]]; then
+    pass "SSL cert key file exists: ${SSL_CERT_KEY_PATH}"
+  else
+    fail "SSL cert key file missing: ${SSL_CERT_KEY_PATH}"
+  fi
+else
+  warn "ENABLE_HTTPS is false (HTTP only)"
+fi
+
 if [[ -n "${JWT_SECRET:-}" && "${#JWT_SECRET}" -lt 32 ]]; then
   fail "JWT_SECRET length must be >= 32"
 else

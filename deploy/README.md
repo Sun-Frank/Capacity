@@ -53,3 +53,13 @@ bash deploy/first-release-run.sh deploy/.env.prod
 详细首发核对项见：
 
 - `deploy/首发检查清单.md`
+
+## HTTPS 配置说明
+
+- `ENABLE_HTTPS=true` 时，`deploy.sh` 会写入 80 跳转到 443，并生成 `listen 443 ssl http2` 配置。
+- 证书路径通过以下参数控制：
+  - `SSL_CERT_PATH`
+  - `SSL_CERT_KEY_PATH`
+- 未设置时默认使用：
+  - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem`
+  - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem`

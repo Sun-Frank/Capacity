@@ -61,6 +61,9 @@ BACKEND_ENV_PATH="${BACKEND_WORK_DIR}/capics-backend.env"
 SYSTEMD_SERVICE_PATH="/etc/systemd/system/capics-backend.service"
 SCHEMA_FILE="${PROJECT_ROOT}/backend/src/main/resources/schema.sql"
 FRONTEND_DIST_DIR="${PROJECT_ROOT}/capics-frontend/dist"
+ENABLE_HTTPS="${ENABLE_HTTPS:-true}"
+SSL_CERT_PATH="${SSL_CERT_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem}"
+SSL_CERT_KEY_PATH="${SSL_CERT_KEY_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem}"
 
 echo "[1/8] Build backend jar..."
 (cd "${PROJECT_ROOT}/backend" && mvn -DskipTests clean package)
@@ -157,7 +160,47 @@ else
 fi
 
 echo "[7/8] Write nginx site config..."
-${SUDO} tee "${NGINX_CONF_PATH}" >/dev/null <<EOF
+if [[ "${ENABLE_HTTPS}" == "true" ]]; then
+  if [[ ! -f "${SSL_CERT_PATH}" ]]; then
+    echo "[ERROR] SSL cert file not found: ${SSL_CERT_PATH}"
+    exit 1
+  fi
+  if [[ ! -f "${SSL_CERT_KEY_PATH}" ]]; then
+    echo "[ERROR] SSL cert key file not found: ${SSL_CERT_KEY_PATH}"
+    exit 1
+  fi
+  ${SUDO} tee "${NGINX_CONF_PATH}" >/dev/null <<EOF
+server {
+    listen 80;
+    server_name ${NGINX_SERVER_NAME};
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${NGINX_SERVER_NAME};
+
+    ssl_certificate ${SSL_CERT_PATH};
+    ssl_certificate_key ${SSL_CERT_KEY_PATH};
+
+    root ${NGINX_WEB_ROOT};
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:${SERVER_PORT}/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+else
+  ${SUDO} tee "${NGINX_CONF_PATH}" >/dev/null <<EOF
 server {
     listen 80;
     server_name ${NGINX_SERVER_NAME};
@@ -178,6 +221,7 @@ server {
     }
 }
 EOF
+fi
 
 echo "[8/8] Restart services..."
 ${SUDO} systemctl daemon-reload
