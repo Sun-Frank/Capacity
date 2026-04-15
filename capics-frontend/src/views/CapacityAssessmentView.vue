@@ -74,7 +74,7 @@
 
         v-model="selectedLine"
 
-        :options="availableLines.map(l => ({ value: l, label: l }))"
+        :options="availableLines.map(l => ({ value: l, label: formatLineLabel(l) }))"
 
         placeholder="请选择生产线"
 
@@ -128,7 +128,7 @@
 
       <div v-else class="table-wrapper">
 
-        <div class="line-header">{{ selectedLine }}</div>
+        <div class="line-header">{{ formatLineLabel(selectedLine) }}</div>
 
         <div class="table-scroll">
 
@@ -261,6 +261,7 @@ import { useToast } from '@/composables/useToast'
 import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileName } from '@/api/mrp'
 
 import { getCapacityAssessment } from '@/api/capacity'
+import { getLines } from '@/api/line'
 
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
@@ -328,6 +329,7 @@ const selectedCreatedBy = ref('')
 const selectedFileName = ref('')
 
 const selectedVersion = ref('')
+const lineNameMap = ref({})
 
 
 
@@ -359,6 +361,12 @@ const availableLines = computed(() => {
 
 })
 
+const formatLineLabel = (lineCode) => {
+  if (!lineCode) return ''
+  const lineName = lineNameMap.value[lineCode]
+  return lineName ? `${lineCode} - ${lineName}` : lineCode
+}
+
 
 
 // 当前选中的生产线数据
@@ -374,6 +382,23 @@ const selectedLineData = computed(() => {
   return linesData.value[selectedLine.value]
 
 })
+
+const loadLineNames = async (lineCodes) => {
+  try {
+    const response = await getLines(token.value)
+    if (response.success && response.data) {
+      const names = {}
+      response.data.forEach(line => {
+        if (!lineCodes || lineCodes.length === 0 || lineCodes.includes(line.lineCode)) {
+          names[line.lineCode] = line.lineName || ''
+        }
+      })
+      lineNameMap.value = names
+    }
+  } catch (err) {
+    console.error('Load line names error:', err)
+  }
+}
 
 
 
@@ -538,6 +563,7 @@ const loadCapacityAssessment = async () => {
         // 保存状态
 
         saveState()
+        await loadLineNames(lineCodes)
 
       } else {
 
@@ -609,9 +635,13 @@ const formatLoading = (loading) => {
 
 onMounted(() => {
 
-  loadCreatedBys().then(() => {
+  loadCreatedBys().then(async () => {
     // 恢复状态
     restoreState()
+    const lineCodes = Object.keys(linesData.value || {})
+    if (lineCodes.length > 0) {
+      await loadLineNames(lineCodes)
+    }
   })
 
 })

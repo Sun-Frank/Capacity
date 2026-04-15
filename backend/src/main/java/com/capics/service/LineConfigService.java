@@ -40,6 +40,7 @@ public class LineConfigService {
         LineConfig entity;
         if (repository.existsById(dto.getLineCode())) {
             entity = repository.findById(dto.getLineCode()).get();
+            entity.setLineName(dto.getLineName());
             entity.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek());
             entity.setShiftsPerDay(dto.getShiftsPerDay());
             entity.setHoursPerShift(dto.getHoursPerShift());
@@ -65,6 +66,7 @@ public class LineConfigService {
     private LineConfigDto toDto(LineConfig entity) {
         LineConfigDto dto = new LineConfigDto();
         dto.setLineCode(entity.getLineCode());
+        dto.setLineName(entity.getLineName());
         dto.setWorkingDaysPerWeek(entity.getWorkingDaysPerWeek());
         dto.setShiftsPerDay(entity.getShiftsPerDay());
         dto.setHoursPerShift(entity.getHoursPerShift());
@@ -79,6 +81,7 @@ public class LineConfigService {
     private LineConfig toEntity(LineConfigDto dto) {
         LineConfig entity = new LineConfig();
         entity.setLineCode(dto.getLineCode());
+        entity.setLineName(dto.getLineName());
         entity.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek());
         entity.setShiftsPerDay(dto.getShiftsPerDay());
         entity.setHoursPerShift(dto.getHoursPerShift());

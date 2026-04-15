@@ -11,6 +11,10 @@
           <input type="text" v-model="form.lineCode" class="form-input" required :disabled="!!line" />
         </div>
         <div class="form-group">
+          <label>生产线名称</label>
+          <input type="text" v-model="form.lineName" class="form-input" required />
+        </div>
+        <div class="form-group">
           <label>每周工作天数</label>
           <input type="number" v-model="form.workingDaysPerWeek" class="form-input" min="1" max="7" required />
         </div>
@@ -55,6 +59,7 @@ const emit = defineEmits(['close', 'confirm'])
 
 const form = ref({
   lineCode: '',
+  lineName: '',
   workingDaysPerWeek: 5,
   shiftsPerDay: 2,
   hoursPerShift: 8.0,
@@ -67,6 +72,7 @@ watch(() => props.line, (newLine) => {
   if (newLine) {
     form.value = {
       lineCode: newLine.lineCode || '',
+      lineName: newLine.lineName || '',
       workingDaysPerWeek: newLine.workingDaysPerWeek || 5,
       shiftsPerDay: newLine.shiftsPerDay || 2,
       hoursPerShift: newLine.hoursPerShift || 8.0,
@@ -75,6 +81,7 @@ watch(() => props.line, (newLine) => {
   } else {
     form.value = {
       lineCode: '',
+      lineName: '',
       workingDaysPerWeek: 5,
       shiftsPerDay: 2,
       hoursPerShift: 8.0,

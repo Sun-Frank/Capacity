@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public class LineConfigDto {
     private String lineCode;
+    private String lineName;
     private Integer workingDaysPerWeek;
     private Integer shiftsPerDay;
     private BigDecimal hoursPerShift;
@@ -23,6 +24,14 @@ public class LineConfigDto {
 
     public Integer getWorkingDaysPerWeek() {
         return this.workingDaysPerWeek;
+    }
+
+    public String getLineName() {
+        return this.lineName;
+    }
+
+    public void setLineName(String lineName) {
+        this.lineName = lineName;
     }
 
     public void setWorkingDaysPerWeek(Integer workingDaysPerWeek) {

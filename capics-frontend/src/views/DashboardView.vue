@@ -109,7 +109,7 @@
               :class="{ 'total-row': row.isTotal, 'group-row': row.group && !row.isTotal }"
             >
               <td class="sticky-col line-name" :class="{ 'total-name': row.isTotal }">
-                {{ row.lineCode }}
+                {{ formatLineLabel(row.lineCode) }}
               </td>
               <td
                 v-for="(loading, idx) in row.loadings"
@@ -136,6 +136,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getLoadingMatrix, getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileName } from '@/api/dashboard'
 import { getSnapshot, getSnapshotNames } from '@/api/simulationSnapshot'
+import { getLines } from '@/api/line'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
 const { token } = useAuth()
@@ -162,6 +163,7 @@ const rows = ref([])
 const dates = ref([])
 const dateLabels = ref({})
 const warnings = ref([])
+const lineNameMap = ref({})
 
 const loading = ref(false)
 const error = ref('')
@@ -186,6 +188,13 @@ const getDateLabel = (date) => {
   return dateLabels.value[date] || date
 }
 
+const formatLineLabel = (lineCode) => {
+  if (!lineCode) return ''
+  if (lineCode.includes('TOTAL')) return lineCode
+  const lineName = lineNameMap.value[lineCode]
+  return lineName ? `${lineCode} - ${lineName}` : lineCode
+}
+
 const formatLoading = (loading) => {
   if (loading === 0) return '-'
   return (loading * 100).toFixed(0) + '%'
@@ -197,6 +206,21 @@ const loadCreatedBys = async () => {
     createdBys.value = data.data || []
   } catch (err) {
     console.error('Load createdBys error:', err)
+  }
+}
+
+const loadLineNames = async () => {
+  try {
+    const data = await getLines(token.value)
+    if (data.success && data.data) {
+      const names = {}
+      data.data.forEach(line => {
+        names[line.lineCode] = line.lineName || ''
+      })
+      lineNameMap.value = names
+    }
+  } catch (err) {
+    console.error('Load line names error:', err)
   }
 }
 
@@ -420,6 +444,7 @@ const loadData = async () => {
 
 onMounted(() => {
   loadCreatedBys()
+  loadLineNames()
 })
 </script>
 

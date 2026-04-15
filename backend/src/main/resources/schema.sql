@@ -229,10 +229,7 @@ SELECT u.id, r.id FROM sys_user u, sys_role r WHERE u.username = 'admin' AND r.r
 INSERT INTO line_config (line_code, line_name, working_days_per_week, shifts_per_day, hours_per_shift)
 VALUES
     ('SMT1001N', 'SMT Line 1', 5, 2, 8.0),
-    ('SMT1002N', 'SMT Line 2', 5, 2, 8.0),
-    ('DIP1001N', 'DIP Line 1', 5, 2, 8.0),
-    ('ASSY1001N', 'Assembly Line 1', 5, 2, 8.0),
-    ('TEST1001N', 'Test Line 1', 5, 2, 8.0);
+    ('SMT1002N', 'SMT Line 2', 5, 2, 8.0);
 
 -- Seed line_profile by inferring line class from line code prefix
 INSERT INTO line_profile (line_code, line_class, belong_to, note)

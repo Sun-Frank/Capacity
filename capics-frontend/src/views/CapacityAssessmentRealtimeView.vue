@@ -43,7 +43,7 @@
       <span class="line-filter-label">选择生产线：</span>
       <BaseSelect
         v-model="selectedLine"
-        :options="availableLines.map(l => ({ value: l, label: l }))"
+        :options="availableLines.map(l => ({ value: l, label: formatLineLabel(l) }))"
         placeholder="请选择生产线"
       />
       <button
@@ -71,7 +71,7 @@
       @mousedown="startDrag"
     >
       <div class="summary-title">
-        <span>{{ selectedLine }}</span>
+        <span>{{ formatLineLabel(selectedLine) }}</span>
         <button class="close-btn" @click="closeSummary">×</button>
       </div>
       <div class="summary-scroll">
@@ -114,7 +114,7 @@
         该生产线暂无数据
       </div>
       <div v-else class="table-wrapper">
-        <div class="line-header">{{ selectedLine }}</div>
+        <div class="line-header">{{ formatLineLabel(selectedLine) }}</div>
         <div class="table-scroll" @click="closeAllEditing">
           <table class="main-table">
             <thead>
@@ -287,7 +287,7 @@
           </thead>
           <tbody>
             <tr>
-              <td class="line-name">{{ selectedLine }}</td>
+              <td class="line-name">{{ formatLineLabel(selectedLine) }}</td>
               <td
                 class="editable-cell"
                 :class="{ 'is-editing': editingConfig === 'workingDaysPerWeek' }"
@@ -504,6 +504,7 @@ const warnings = ref([])
 
 // 产线配置 - 按生产线存储
 const lineConfigs = ref({})
+const lineNameMap = ref({})
 
 const loading = ref(false)
 const error = ref('')
@@ -563,6 +564,12 @@ const configInputRef = ref(null)
 const availableLines = computed(() => {
   return Object.keys(linesData.value).sort()
 })
+
+const formatLineLabel = (lineCode) => {
+  if (!lineCode) return ''
+  const lineName = lineNameMap.value[lineCode]
+  return lineName ? `${lineCode} - ${lineName}` : lineCode
+}
 
 // 当前选中的生产线数据
 const selectedLineData = computed(() => {
@@ -722,8 +729,10 @@ const loadLineConfigs = async (lineCodes) => {
     const response = await getLines(token.value)
     if (response.success && response.data) {
       const configs = {}
+      const names = {}
       response.data.forEach(line => {
         if (lineCodes.includes(line.lineCode)) {
+          names[line.lineCode] = line.lineName || ''
           configs[line.lineCode] = {
             workingDaysPerWeek: line.workingDaysPerWeek || 5,
             shiftsPerDay: line.shiftsPerDay || 2,
@@ -732,6 +741,7 @@ const loadLineConfigs = async (lineCodes) => {
         }
       })
       lineConfigs.value = configs
+      lineNameMap.value = names
     }
   } catch (err) {
     console.error('Load line configs error:', err)
@@ -836,6 +846,10 @@ onMounted(() => {
   loadCreatedBys().then(() => {
     // 恢复状态
     restoreState()
+    const lineCodes = Object.keys(linesData.value || {})
+    if (lineCodes.length > 0) {
+      loadLineConfigs(lineCodes)
+    }
   })
 })
 </script>

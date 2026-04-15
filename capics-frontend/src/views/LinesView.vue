@@ -12,6 +12,7 @@
         <thead>
           <tr>
             <th>生产线编码</th>
+            <th>生产线名称</th>
             <th>每周工作天数</th>
             <th>每天班次</th>
             <th>每班时长(小时)</th>
@@ -22,6 +23,7 @@
         <tbody>
           <tr v-for="line in lines" :key="line.lineCode">
             <td>{{ line.lineCode }}</td>
+            <td>{{ line.lineName || '-' }}</td>
             <td>{{ line.workingDaysPerWeek }}</td>
             <td>{{ line.shiftsPerDay }}</td>
             <td>{{ line.hoursPerShift }}</td>
@@ -31,7 +33,7 @@
             </td>
           </tr>
           <tr v-if="lines.length === 0">
-            <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+            <td colspan="7" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
       </table>

@@ -12,6 +12,9 @@ public class LineConfig {
     @Column(length = 50)
     private String lineCode;
 
+    @Column(name = "line_name", length = 100)
+    private String lineName;
+
     @Column
     private Integer workingDaysPerWeek = 5;
 
@@ -57,6 +60,14 @@ public class LineConfig {
 
     public Integer getWorkingDaysPerWeek() {
         return this.workingDaysPerWeek;
+    }
+
+    public String getLineName() {
+        return this.lineName;
+    }
+
+    public void setLineName(String lineName) {
+        this.lineName = lineName;
     }
 
     public void setWorkingDaysPerWeek(Integer workingDaysPerWeek) {
