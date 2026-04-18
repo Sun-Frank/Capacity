@@ -79,6 +79,12 @@ public class MrpPlanService {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             int count = 0;
+            String lastItemNumber = null;
+            String lastDescription = null;
+            String lastSite = null;
+            String lastProductionLine = null;
+            String lastRoutingCode = null;
+            String lastVersion = null;
 
             // Excel列索引对应:
             // A(0): Item Number, B(1): Description, C(2): Site, D(3): Production Line
@@ -94,6 +100,26 @@ public class MrpPlanService {
                 entity.setDescription(getCellValueAsString(row.getCell(1)));
                 entity.setSite(getCellValueAsString(row.getCell(2)));
                 entity.setProductionLine(getCellValueAsString(row.getCell(3)));
+                if (entity.getItemNumber() == null || entity.getItemNumber().trim().isEmpty()) {
+                    entity.setItemNumber(lastItemNumber);
+                } else {
+                    lastItemNumber = entity.getItemNumber();
+                }
+                if (entity.getDescription() == null || entity.getDescription().trim().isEmpty()) {
+                    entity.setDescription(lastDescription);
+                } else {
+                    lastDescription = entity.getDescription();
+                }
+                if (entity.getSite() == null || entity.getSite().trim().isEmpty()) {
+                    entity.setSite(lastSite);
+                } else {
+                    lastSite = entity.getSite();
+                }
+                if (entity.getProductionLine() == null || entity.getProductionLine().trim().isEmpty()) {
+                    entity.setProductionLine(lastProductionLine);
+                } else {
+                    lastProductionLine = entity.getProductionLine();
+                }
 
                 Cell dateCell = row.getCell(4);
                 if (dateCell != null && dateCell.getCellType() == CellType.NUMERIC) {
@@ -119,11 +145,33 @@ public class MrpPlanService {
 
                 entity.setRoutingCode(getCellValueAsString(row.getCell(8)));
                 entity.setVersion(getCellValueAsString(row.getCell(9)));
+                if (entity.getRoutingCode() == null || entity.getRoutingCode().trim().isEmpty()) {
+                    entity.setRoutingCode(lastRoutingCode);
+                } else {
+                    lastRoutingCode = entity.getRoutingCode();
+                }
+                if (entity.getVersion() == null || entity.getVersion().trim().isEmpty()) {
+                    entity.setVersion(lastVersion);
+                } else {
+                    lastVersion = entity.getVersion();
+                }
                 entity.setFileName(fileName);
                 entity.setCreatedBy(createdBy);
+                if (entity.getQuantityCompleted() == null) {
+                    entity.setQuantityCompleted(BigDecimal.ZERO);
+                }
 
                 if (entity.getItemNumber() != null && !entity.getItemNumber().isEmpty()
                         && entity.getVersion() != null && !entity.getVersion().isEmpty()) {
+                    if (entity.getSite() == null || entity.getSite().trim().isEmpty()) {
+                        throw new IOException("Row " + (i + 1) + " missing required field: Site");
+                    }
+                    if (entity.getReleaseDate() == null) {
+                        throw new IOException("Row " + (i + 1) + " missing required field: Release");
+                    }
+                    if (entity.getQuantityScheduled() == null) {
+                        throw new IOException("Row " + (i + 1) + " missing required field: Quantity Scheduled");
+                    }
                     repository.save(entity);
                     count++;
                 }

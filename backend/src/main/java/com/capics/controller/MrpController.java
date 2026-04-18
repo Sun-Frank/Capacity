@@ -82,9 +82,15 @@ public class MrpController {
     public ResponseEntity<ApiResponse> importPlans(
             @RequestParam("file") MultipartFile file,
             @RequestParam("fileName") String fileName,
-            @RequestParam("createdBy") String createdBy) throws IOException {
-        int count = mrpPlanService.importFromExcel(file, fileName, createdBy);
-        return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+            @RequestParam("createdBy") String createdBy) {
+        try {
+            int count = mrpPlanService.importFromExcel(file, fileName, createdBy);
+            return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Import failed: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/plans/template")
