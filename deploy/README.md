@@ -13,6 +13,7 @@ At minimum, update:
 - `JWT_SECRET`
 - `NGINX_SERVER_NAME`
 - `APP_CORS_ALLOWED_ORIGINS`
+- `DB_SCHEMA_MODE` (recommended: `incremental` in production)
 
 ## 2) Run deploy
 
@@ -21,10 +22,16 @@ bash deploy/deploy.sh deploy/.env.prod
 ```
 
 This does:
-1. DB initialization (`role`/`database`/`schema.sql`)
+1. DB initialization (`role`/`database`) + schema step by `DB_SCHEMA_MODE`
 2. Backend build + systemd publish/start
 3. Frontend build + publish to Nginx web root
 4. Nginx config write + reload
+
+## DB schema modes
+
+- `DB_SCHEMA_MODE=incremental` (default): only apply SQL files under `deploy/sql/migrations/*.sql` once each (tracked by `public.schema_migrations`)
+- `DB_SCHEMA_MODE=bootstrap`: apply `backend/src/main/resources/schema.sql` only when DB has no tables
+- `DB_SCHEMA_MODE=reset`: force apply `schema.sql` (drops/recreates tables)
 
 ## 3) Run E2E smoke test
 

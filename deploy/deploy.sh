@@ -64,6 +64,8 @@ FRONTEND_DIST_DIR="${PROJECT_ROOT}/capics-frontend/dist"
 ENABLE_HTTPS="${ENABLE_HTTPS:-true}"
 SSL_CERT_PATH="${SSL_CERT_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem}"
 SSL_CERT_KEY_PATH="${SSL_CERT_KEY_PATH:-/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem}"
+DB_SCHEMA_MODE="${DB_SCHEMA_MODE:-incremental}" # reset | bootstrap | incremental
+MIGRATIONS_DIR="${SCRIPT_DIR}/sql/migrations"
 
 echo "[1/8] Build backend jar..."
 (cd "${PROJECT_ROOT}/backend" && mvn -DskipTests clean package)
@@ -77,7 +79,7 @@ fi
 echo "[2/8] Build frontend dist..."
 (cd "${PROJECT_ROOT}/capics-frontend" && npm ci && npm run build)
 
-if [[ ! -f "${SCHEMA_FILE}" ]]; then
+if [[ "${DB_SCHEMA_MODE}" != "incremental" ]] && [[ ! -f "${SCHEMA_FILE}" ]]; then
   echo "[ERROR] Missing schema file: ${SCHEMA_FILE}"
   exit 1
 fi
@@ -103,9 +105,78 @@ else
     -c "ALTER DATABASE ${DB_NAME} OWNER TO ${DB_USERNAME};"
 fi
 
-echo "[4/8] Apply schema.sql (includes table reset)..."
-export PGPASSWORD="${DB_PASSWORD}"
-psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 -f "${SCHEMA_FILE}"
+apply_incremental_migrations() {
+  if [[ ! -d "${MIGRATIONS_DIR}" ]]; then
+    echo "[INFO] Incremental mode: no migrations directory (${MIGRATIONS_DIR}), skip DB schema changes."
+    return 0
+  fi
+
+  export PGPASSWORD="${DB_PASSWORD}"
+  psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 <<'SQL'
+CREATE TABLE IF NOT EXISTS public.schema_migrations (
+    migration_name VARCHAR(255) PRIMARY KEY,
+    executed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+SQL
+
+  shopt -s nullglob
+  local migration_files=("${MIGRATIONS_DIR}"/*.sql)
+  shopt -u nullglob
+
+  if [[ "${#migration_files[@]}" -eq 0 ]]; then
+    echo "[INFO] Incremental mode: no migration files under ${MIGRATIONS_DIR}, skip DB schema changes."
+    return 0
+  fi
+
+  for migration_file in "${migration_files[@]}"; do
+    local migration_name
+    migration_name="$(basename "${migration_file}")"
+    local applied
+    applied="$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -tAc "SELECT 1 FROM public.schema_migrations WHERE migration_name='${migration_name}'")"
+    if [[ "${applied}" == "1" ]]; then
+      echo "[INFO] Skip applied migration: ${migration_name}"
+      continue
+    fi
+    echo "[INFO] Apply migration: ${migration_name}"
+    psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 -f "${migration_file}"
+    psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 \
+      -c "INSERT INTO public.schema_migrations(migration_name) VALUES ('${migration_name}')"
+  done
+}
+
+echo "[4/8] Apply database schema (${DB_SCHEMA_MODE})..."
+case "${DB_SCHEMA_MODE}" in
+  reset)
+    if [[ ! -f "${SCHEMA_FILE}" ]]; then
+      echo "[ERROR] Missing schema file: ${SCHEMA_FILE}"
+      exit 1
+    fi
+    echo "[WARN] DB_SCHEMA_MODE=reset will drop/recreate tables using schema.sql"
+    export PGPASSWORD="${DB_PASSWORD}"
+    psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 -f "${SCHEMA_FILE}"
+    ;;
+  bootstrap)
+    if [[ ! -f "${SCHEMA_FILE}" ]]; then
+      echo "[ERROR] Missing schema file: ${SCHEMA_FILE}"
+      exit 1
+    fi
+    export PGPASSWORD="${DB_PASSWORD}"
+    TABLE_COUNT="$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")"
+    if [[ "${TABLE_COUNT}" == "0" ]]; then
+      echo "[INFO] Empty database detected, apply schema.sql once."
+      psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}" -d "${DB_NAME}" -v ON_ERROR_STOP=1 -f "${SCHEMA_FILE}"
+    else
+      echo "[INFO] Existing tables detected (${TABLE_COUNT}), bootstrap mode skips schema.sql."
+    fi
+    ;;
+  incremental)
+    apply_incremental_migrations
+    ;;
+  *)
+    echo "[ERROR] Invalid DB_SCHEMA_MODE=${DB_SCHEMA_MODE}. Use: reset | bootstrap | incremental"
+    exit 1
+    ;;
+esac
 
 echo "[5/8] Prepare backend runtime files..."
 if ! id -u "${SERVICE_USER}" >/dev/null 2>&1; then
