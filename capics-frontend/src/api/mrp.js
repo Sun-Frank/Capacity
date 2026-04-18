@@ -99,6 +99,9 @@ export function importMrpPlans(token, file, fileName, createdBy) {
     const contentType = res.headers.get('content-type') || ''
 
     if (!rawText || !rawText.trim()) {
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`Import denied (HTTP ${res.status}). Please re-login and verify CORS origin whitelist.`)
+      }
       throw new Error(`Import API returned empty response (HTTP ${res.status})`)
     }
 
