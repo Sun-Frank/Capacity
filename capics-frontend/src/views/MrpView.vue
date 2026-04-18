@@ -118,7 +118,7 @@ import WeeklyReportTable from '@/components/mrp/WeeklyReportTable.vue'
 import MonthlyReportTable from '@/components/mrp/MonthlyReportTable.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
 
-const { token, currentUser } = useAuth()
+const { token, currentUser, currentUsername } = useAuth()
 const {
   createdBys,
   fileNames,
@@ -262,7 +262,8 @@ const handleImport = async ({ file, fileName }) => {
   }
   isImporting.value = true
   try {
-    const result = await importMrpPlans(token.value, file, fileName, currentUser.value)
+    const createdBy = currentUsername.value || currentUser.value || 'admin'
+    const result = await importMrpPlans(token.value, file, fileName, createdBy)
     if (result.success) {
       showToast('导入成功: ' + result.message, 'success')
       showImport.value = false

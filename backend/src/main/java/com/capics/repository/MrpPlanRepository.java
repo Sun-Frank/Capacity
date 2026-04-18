@@ -26,7 +26,7 @@ public interface MrpPlanRepository extends JpaRepository<MrpPlan, Long> {
     List<MrpPlan> findByVersionOrderByItemNumberAndReleaseDate(String version);
 
     // New filter methods for three-level cascade filtering
-    @Query("SELECT DISTINCT m.createdBy FROM MrpPlan m WHERE m.createdBy IS NOT NULL ORDER BY m.createdBy")
+    @Query("SELECT DISTINCT m.createdBy FROM MrpPlan m WHERE m.createdBy IS NOT NULL AND TRIM(m.createdBy) <> '' ORDER BY m.createdBy")
     List<String> findAllCreatedBys();
 
     @Query("SELECT DISTINCT m.fileName FROM MrpPlan m WHERE m.createdBy = :createdBy AND m.fileName IS NOT NULL ORDER BY m.fileName")

@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -82,9 +83,14 @@ public class MrpController {
     public ResponseEntity<ApiResponse> importPlans(
             @RequestParam("file") MultipartFile file,
             @RequestParam("fileName") String fileName,
-            @RequestParam("createdBy") String createdBy) {
+            @RequestParam(value = "createdBy", required = false) String createdBy,
+            Principal principal) {
         try {
-            int count = mrpPlanService.importFromExcel(file, fileName, createdBy);
+            String effectiveCreatedBy = createdBy;
+            if (effectiveCreatedBy == null || effectiveCreatedBy.trim().isEmpty()) {
+                effectiveCreatedBy = principal != null ? principal.getName() : "unknown";
+            }
+            int count = mrpPlanService.importFromExcel(file, fileName, effectiveCreatedBy.trim());
             return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
         } catch (IOException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
