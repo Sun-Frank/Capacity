@@ -1,6 +1,7 @@
 # Build artifacts
 backend/target/
 capics-frontend/dist/
+backend/compile.log
 
 # Frontend dependencies
 capics-frontend/node_modules/
