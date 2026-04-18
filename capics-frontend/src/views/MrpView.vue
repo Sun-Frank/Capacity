@@ -166,7 +166,7 @@ const handleDownloadMrpTemplate = async () => {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'MRP导入模板.xlsx'
+    a.download = 'MRP导入模板-v2.xlsx'
     document.body.appendChild(a)
     a.click()
     a.remove()

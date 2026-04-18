@@ -77,107 +77,126 @@ public class MrpPlanService {
         }
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = workbook.getSheetAt(0);
+            Sheet sheet = workbook.getSheet("Data");
+            if (sheet == null) {
+                throw new IOException("MRP导入模板格式错误：未找到名为 Data 的工作表");
+            }
+
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new IOException("MRP导入模板格式错误：Data 工作表缺少表头");
+            }
+
+            Map<String, Integer> headerMap = new HashMap<>();
+            for (int c = 0; c < headerRow.getLastCellNum(); c++) {
+                String header = getCellValueAsString(headerRow.getCell(c));
+                if (header != null) {
+                    headerMap.put(header.trim().toLowerCase(Locale.ROOT), c);
+                }
+            }
+
+            Integer idxItemNumber = findColumnIndex(headerMap, "item number*", "item number");
+            Integer idxReleaseDate = findColumnIndex(headerMap, "release date*", "release date");
+            Integer idxDueDate = findColumnIndex(headerMap, "due date*", "due date");
+            Integer idxQuantity = findColumnIndex(headerMap, "quantity*", "quantity");
+            Integer idxReference = findColumnIndex(headerMap, "reference*", "reference");
+            if (idxItemNumber == null || idxReleaseDate == null || idxDueDate == null || idxQuantity == null || idxReference == null) {
+                throw new IOException("MRP导入模板格式错误：Data 表头必须包含 Item Number*、Release Date*、Due Date*、Quantity*、Reference*");
+            }
+
             int count = 0;
-            String lastItemNumber = null;
-            String lastDescription = null;
-            String lastSite = null;
-            String lastProductionLine = null;
-            String lastRoutingCode = null;
-            String lastVersion = null;
-
-            // Excel列索引对应:
-            // A(0): Item Number, B(1): Description, C(2): Site, D(3): Production Line
-            // E(4): Release, F(5): Due Date, G(6): Quantity Scheduled, H(7): Quantity Completed
-            // I(8): Routing Code, J(9): 版本
-
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
                 MrpPlan entity = new MrpPlan();
-                entity.setItemNumber(getCellValueAsString(row.getCell(0)));
-                entity.setDescription(getCellValueAsString(row.getCell(1)));
-                entity.setSite(getCellValueAsString(row.getCell(2)));
-                entity.setProductionLine(getCellValueAsString(row.getCell(3)));
-                if (entity.getItemNumber() == null || entity.getItemNumber().trim().isEmpty()) {
-                    entity.setItemNumber(lastItemNumber);
-                } else {
-                    lastItemNumber = entity.getItemNumber();
-                }
-                if (entity.getDescription() == null || entity.getDescription().trim().isEmpty()) {
-                    entity.setDescription(lastDescription);
-                } else {
-                    lastDescription = entity.getDescription();
-                }
-                if (entity.getSite() == null || entity.getSite().trim().isEmpty()) {
-                    entity.setSite(lastSite);
-                } else {
-                    lastSite = entity.getSite();
-                }
-                if (entity.getProductionLine() == null || entity.getProductionLine().trim().isEmpty()) {
-                    entity.setProductionLine(lastProductionLine);
-                } else {
-                    lastProductionLine = entity.getProductionLine();
-                }
+                entity.setItemNumber(getCellValueAsString(row.getCell(idxItemNumber)));
+                entity.setReleaseDate(getCellValueAsDate(row.getCell(idxReleaseDate)));
+                entity.setDueDate(getCellValueAsDate(row.getCell(idxDueDate)));
+                entity.setQuantityScheduled(getCellValueAsBigDecimal(row.getCell(idxQuantity)));
+                entity.setVersion(getCellValueAsString(row.getCell(idxReference)));
 
-                Cell dateCell = row.getCell(4);
-                if (dateCell != null && dateCell.getCellType() == CellType.NUMERIC) {
-                    Date date = DateUtil.getJavaDate(dateCell.getNumericCellValue());
-                    entity.setReleaseDate(date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate());
-                }
-
-                Cell dueDateCell = row.getCell(5);
-                if (dueDateCell != null && dueDateCell.getCellType() == CellType.NUMERIC) {
-                    Date date = DateUtil.getJavaDate(dueDateCell.getNumericCellValue());
-                    entity.setDueDate(date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate());
-                }
-
-                Cell qtyScheduledCell = row.getCell(6);
-                if (qtyScheduledCell != null && qtyScheduledCell.getCellType() == CellType.NUMERIC) {
-                    entity.setQuantityScheduled(BigDecimal.valueOf(qtyScheduledCell.getNumericCellValue()));
-                }
-
-                Cell qtyCompletedCell = row.getCell(7);
-                if (qtyCompletedCell != null && qtyCompletedCell.getCellType() == CellType.NUMERIC) {
-                    entity.setQuantityCompleted(BigDecimal.valueOf(qtyCompletedCell.getNumericCellValue()));
-                }
-
-                entity.setRoutingCode(getCellValueAsString(row.getCell(8)));
-                entity.setVersion(getCellValueAsString(row.getCell(9)));
-                if (entity.getRoutingCode() == null || entity.getRoutingCode().trim().isEmpty()) {
-                    entity.setRoutingCode(lastRoutingCode);
-                } else {
-                    lastRoutingCode = entity.getRoutingCode();
-                }
-                if (entity.getVersion() == null || entity.getVersion().trim().isEmpty()) {
-                    entity.setVersion(lastVersion);
-                } else {
-                    lastVersion = entity.getVersion();
-                }
+                entity.setDescription(null);
+                entity.setSite("1240");
+                entity.setProductionLine(null);
+                entity.setRoutingCode(null);
+                entity.setQuantityCompleted(BigDecimal.ZERO);
                 entity.setFileName(fileName);
                 entity.setCreatedBy(createdBy);
-                if (entity.getQuantityCompleted() == null) {
-                    entity.setQuantityCompleted(BigDecimal.ZERO);
-                }
 
                 if (entity.getItemNumber() != null && !entity.getItemNumber().isEmpty()
                         && entity.getVersion() != null && !entity.getVersion().isEmpty()) {
-                    if (entity.getSite() == null || entity.getSite().trim().isEmpty()) {
-                        throw new IOException("Row " + (i + 1) + " missing required field: Site");
-                    }
                     if (entity.getReleaseDate() == null) {
-                        throw new IOException("Row " + (i + 1) + " missing required field: Release");
+                        throw new IOException("Row " + (i + 1) + " missing required field: Release Date*");
+                    }
+                    if (entity.getDueDate() == null) {
+                        throw new IOException("Row " + (i + 1) + " missing required field: Due Date*");
                     }
                     if (entity.getQuantityScheduled() == null) {
-                        throw new IOException("Row " + (i + 1) + " missing required field: Quantity Scheduled");
+                        throw new IOException("Row " + (i + 1) + " missing required field: Quantity*");
                     }
                     repository.save(entity);
                     count++;
                 }
             }
-
             return count;
+        }
+    }
+
+    private Integer findColumnIndex(Map<String, Integer> headerMap, String... aliases) {
+        for (String alias : aliases) {
+            Integer idx = headerMap.get(alias.toLowerCase(Locale.ROOT));
+            if (idx != null) {
+                return idx;
+            }
+        }
+        return null;
+    }
+
+    private LocalDate getCellValueAsDate(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.NUMERIC) {
+            Date date = DateUtil.getJavaDate(cell.getNumericCellValue());
+            return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        }
+        String value = getCellValueAsString(cell);
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        value = value.trim();
+        List<DateTimeFormatter> formatters = Arrays.asList(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                DateTimeFormatter.ofPattern("yyyy/M/d"),
+                DateTimeFormatter.ofPattern("yyyy/M/dd"),
+                DateTimeFormatter.ofPattern("yyyy/MM/d"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd")
+        );
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                return LocalDate.parse(value, formatter);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal getCellValueAsBigDecimal(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.NUMERIC) {
+            return BigDecimal.valueOf(cell.getNumericCellValue());
+        }
+        String value = getCellValueAsString(cell);
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim().replace(",", ""));
+        } catch (NumberFormatException ignored) {
+            return null;
         }
     }
 

@@ -95,7 +95,7 @@ public class MrpController {
 
     @GetMapping("/plans/template")
     public ResponseEntity<Resource> downloadMrpTemplate() throws IOException {
-        String fileName = "MRP导入模板.xlsx";
+        String fileName = "MRP导入模板-v2.xlsx";
         File localFile = new File("import_templates", fileName);
         Resource resource;
         if (localFile.exists()) {
