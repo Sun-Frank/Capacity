@@ -89,11 +89,36 @@ export function importMrpPlans(token, file, fileName, createdBy) {
   formData.append('file', file)
   formData.append('fileName', fileName)
   formData.append('createdBy', createdBy)
+
   return fetch(`${API_BASE}/mrp/plans/import`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData
-  }).then(res => res.json())
+  }).then(async (res) => {
+    const rawText = await res.text()
+    const contentType = res.headers.get('content-type') || ''
+
+    if (!rawText || !rawText.trim()) {
+      throw new Error(`Import API returned empty response (HTTP ${res.status})`)
+    }
+
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Import API did not return JSON (HTTP ${res.status})`)
+    }
+
+    let data
+    try {
+      data = JSON.parse(rawText)
+    } catch (error) {
+      throw new Error(`Import API returned invalid JSON (HTTP ${res.status})`)
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.message || `Import failed (HTTP ${res.status})`)
+    }
+
+    return data
+  })
 }
 
 export async function downloadMrpTemplate(token) {
@@ -101,7 +126,7 @@ export async function downloadMrpTemplate(token) {
     headers: { 'Authorization': `Bearer ${token}` }
   })
   if (!res.ok) {
-    throw new Error('模板下载失败')
+    throw new Error('Template download failed')
   }
   return res.blob()
 }
