@@ -92,7 +92,10 @@ export function importMrpPlans(token, file, fileName, createdBy) {
 
   return fetch(`${API_BASE}/mrp/plans/import`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    },
     body: formData
   }).then(async (res) => {
     const rawText = await res.text()
