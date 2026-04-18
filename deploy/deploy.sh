@@ -296,7 +296,12 @@ fi
 
 echo "[8/8] Restart services..."
 ${SUDO} systemctl daemon-reload
-${SUDO} systemctl enable --now capics-backend
+${SUDO} systemctl enable capics-backend
+if ${SUDO} systemctl is-active --quiet capics-backend; then
+  ${SUDO} systemctl restart capics-backend
+else
+  ${SUDO} systemctl start capics-backend
+fi
 ${SUDO} nginx -t
 ${SUDO} systemctl reload nginx
 
