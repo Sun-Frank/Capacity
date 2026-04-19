@@ -257,6 +257,17 @@ server {
     root ${NGINX_WEB_ROOT};
     index index.html;
 
+    location /assets/ {
+        try_files \$uri =404;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    location = /index.html {
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
@@ -278,6 +289,17 @@ server {
 
     root ${NGINX_WEB_ROOT};
     index index.html;
+
+    location /assets/ {
+        try_files \$uri =404;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000, immutable";
+    }
+
+    location = /index.html {
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
 
     location / {
         try_files \$uri \$uri/ /index.html;
