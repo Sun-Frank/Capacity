@@ -42,11 +42,11 @@ api_put_json() {
 assert_success() {
   local json="$1"
   local hint="$2"
-  python3 - "$hint" <<'PY' <<<"${json}"
-import json,sys
+  JSON_INPUT="${json}" python3 - "$hint" <<'PY'
+import json,os,sys
 hint=sys.argv[1]
 try:
-    obj=json.load(sys.stdin)
+    obj=json.loads(os.environ.get("JSON_INPUT", ""))
 except Exception as e:
     print(f"[ERROR] {hint}: invalid JSON: {e}")
     sys.exit(1)
@@ -63,9 +63,9 @@ echo "PASS health"
 
 echo "[2/12] login"
 LOGIN_JSON="$(curl -fsS --max-time "${TIMEOUT_SECS}" -X POST "${BASE_URL}/api/auth/login" -H "Content-Type: application/json" -d "{\"username\":\"${ADMIN_USERNAME}\",\"password\":\"${ADMIN_PASSWORD}\"}")"
-TOKEN="$(python3 - <<'PY' <<<"${LOGIN_JSON}"
-import json,sys
-obj=json.load(sys.stdin)
+TOKEN="$(JSON_INPUT="${LOGIN_JSON}" python3 - <<'PY'
+import json,os
+obj=json.loads(os.environ.get("JSON_INPUT", ""))
 print((obj.get("data") or {}).get("token") or "")
 PY
 )"
@@ -88,9 +88,9 @@ assert_success "$(api_get "${BASE_URL}/api/ct-lines")" "ct-lines"
 echo "[4/12] mrp selectors"
 CB_JSON="$(api_get "${BASE_URL}/api/mrp/filters/created-bys")"
 assert_success "${CB_JSON}" "mrp/filters/created-bys"
-CREATED_BY="$(python3 - <<'PY' <<<"${CB_JSON}"
-import json,sys
-obj=json.load(sys.stdin)
+CREATED_BY="$(JSON_INPUT="${CB_JSON}" python3 - <<'PY'
+import json,os
+obj=json.loads(os.environ.get("JSON_INPUT", ""))
 arr=obj.get('data') or []
 print(arr[0] if arr else '')
 PY
@@ -102,9 +102,9 @@ fi
 
 FILES_JSON="$(api_get "${BASE_URL}/api/mrp/filters/${CREATED_BY}/files")"
 assert_success "${FILES_JSON}" "mrp/filters/{createdBy}/files"
-FILE_NAME="$(python3 - <<'PY' <<<"${FILES_JSON}"
-import json,sys
-obj=json.load(sys.stdin)
+FILE_NAME="$(JSON_INPUT="${FILES_JSON}" python3 - <<'PY'
+import json,os
+obj=json.loads(os.environ.get("JSON_INPUT", ""))
 arr=obj.get('data') or []
 print(arr[0] if arr else '')
 PY
@@ -121,9 +121,9 @@ PY
 )"
 VERSIONS_JSON="$(api_get "${BASE_URL}/api/mrp/filters/${CREATED_BY}/${ENC_FILE}/versions")"
 assert_success "${VERSIONS_JSON}" "mrp/filters/{createdBy}/{file}/versions"
-VERSION="$(python3 - <<'PY' <<<"${VERSIONS_JSON}"
-import json,sys
-obj=json.load(sys.stdin)
+VERSION="$(JSON_INPUT="${VERSIONS_JSON}" python3 - <<'PY'
+import json,os
+obj=json.loads(os.environ.get("JSON_INPUT", ""))
 arr=obj.get('data') or []
 print(arr[0] if arr else '')
 PY
@@ -199,9 +199,9 @@ assert_success "$(api_get "${BASE_URL}/api/simulation-snapshots/names?createdBy=
 echo "[10/12] ct-line inline update"
 CT_JSON="$(api_get "${BASE_URL}/api/ct-lines")"
 assert_success "${CT_JSON}" "ct-lines list"
-CT_PAYLOAD_AND_ID="$(python3 - <<'PY' <<<"${CT_JSON}"
-import json,sys
-obj=json.load(sys.stdin)
+CT_PAYLOAD_AND_ID="$(JSON_INPUT="${CT_JSON}" python3 - <<'PY'
+import json,os,sys
+obj=json.loads(os.environ.get("JSON_INPUT", ""))
 rows=((obj.get('data') or {}).get('rows') or [])
 if not rows:
   print('')
