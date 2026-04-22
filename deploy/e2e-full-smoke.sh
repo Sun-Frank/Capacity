@@ -42,19 +42,17 @@ api_put_json() {
 assert_success() {
   local json="$1"
   local hint="$2"
-  JSON_INPUT="${json}" python3 - "$hint" <<'PY'
-import json,os,sys
+  printf '%s' "${json}" | python3 -c 'import json,sys
 hint=sys.argv[1]
 try:
-    obj=json.loads(os.environ.get("JSON_INPUT", ""))
+    obj=json.load(sys.stdin)
 except Exception as e:
     print(f"[ERROR] {hint}: invalid JSON: {e}")
     sys.exit(1)
 if not obj.get("success", False):
-    print(f"[ERROR] {hint}: success=false, message={obj.get('message')}")
+    print(f"[ERROR] {hint}: success=false, message={obj.get(\"message\")}")
     sys.exit(1)
-print(f"PASS {hint}")
-PY
+print(f"PASS {hint}")' "${hint}"
 }
 
 echo "[1/12] health"
@@ -63,12 +61,9 @@ echo "PASS health"
 
 echo "[2/12] login"
 LOGIN_JSON="$(curl -fsS --max-time "${TIMEOUT_SECS}" -X POST "${BASE_URL}/api/auth/login" -H "Content-Type: application/json" -d "{\"username\":\"${ADMIN_USERNAME}\",\"password\":\"${ADMIN_PASSWORD}\"}")"
-TOKEN="$(JSON_INPUT="${LOGIN_JSON}" python3 - <<'PY'
-import json,os
-obj=json.loads(os.environ.get("JSON_INPUT", ""))
-print((obj.get("data") or {}).get("token") or "")
-PY
-)"
+TOKEN="$(printf '%s' "${LOGIN_JSON}" | python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+print((obj.get("data") or {}).get("token") or "")')"
 if [[ -z "${TOKEN}" ]]; then
   echo "[ERROR] Login token missing"
   echo "${LOGIN_JSON}"
@@ -88,13 +83,10 @@ assert_success "$(api_get "${BASE_URL}/api/ct-lines")" "ct-lines"
 echo "[4/12] mrp selectors"
 CB_JSON="$(api_get "${BASE_URL}/api/mrp/filters/created-bys")"
 assert_success "${CB_JSON}" "mrp/filters/created-bys"
-CREATED_BY="$(JSON_INPUT="${CB_JSON}" python3 - <<'PY'
-import json,os
-obj=json.loads(os.environ.get("JSON_INPUT", ""))
-arr=obj.get('data') or []
-print(arr[0] if arr else '')
-PY
-)"
+CREATED_BY="$(printf '%s' "${CB_JSON}" | python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+arr=obj.get("data") or []
+print(arr[0] if arr else "")')"
 if [[ -z "${CREATED_BY}" ]]; then
   echo "[ERROR] No MRP createdBy found"
   exit 1
@@ -102,13 +94,10 @@ fi
 
 FILES_JSON="$(api_get "${BASE_URL}/api/mrp/filters/${CREATED_BY}/files")"
 assert_success "${FILES_JSON}" "mrp/filters/{createdBy}/files"
-FILE_NAME="$(JSON_INPUT="${FILES_JSON}" python3 - <<'PY'
-import json,os
-obj=json.loads(os.environ.get("JSON_INPUT", ""))
-arr=obj.get('data') or []
-print(arr[0] if arr else '')
-PY
-)"
+FILE_NAME="$(printf '%s' "${FILES_JSON}" | python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+arr=obj.get("data") or []
+print(arr[0] if arr else "")')"
 if [[ -z "${FILE_NAME}" ]]; then
   echo "[ERROR] No MRP file found"
   exit 1
@@ -121,13 +110,10 @@ PY
 )"
 VERSIONS_JSON="$(api_get "${BASE_URL}/api/mrp/filters/${CREATED_BY}/${ENC_FILE}/versions")"
 assert_success "${VERSIONS_JSON}" "mrp/filters/{createdBy}/{file}/versions"
-VERSION="$(JSON_INPUT="${VERSIONS_JSON}" python3 - <<'PY'
-import json,os
-obj=json.loads(os.environ.get("JSON_INPUT", ""))
-arr=obj.get('data') or []
-print(arr[0] if arr else '')
-PY
-)"
+VERSION="$(printf '%s' "${VERSIONS_JSON}" | python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+arr=obj.get("data") or []
+print(arr[0] if arr else "")')"
 if [[ -z "${VERSION}" ]]; then
   echo "[ERROR] No MRP version found"
   exit 1
@@ -199,13 +185,12 @@ assert_success "$(api_get "${BASE_URL}/api/simulation-snapshots/names?createdBy=
 echo "[10/12] ct-line inline update"
 CT_JSON="$(api_get "${BASE_URL}/api/ct-lines")"
 assert_success "${CT_JSON}" "ct-lines list"
-CT_PAYLOAD_AND_ID="$(JSON_INPUT="${CT_JSON}" python3 - <<'PY'
-import json,os,sys
-obj=json.loads(os.environ.get("JSON_INPUT", ""))
-rows=((obj.get('data') or {}).get('rows') or [])
+CT_PAYLOAD_AND_ID="$(printf '%s' "${CT_JSON}" | python3 -c 'import json,sys
+obj=json.load(sys.stdin)
+rows=((obj.get("data") or {}).get("rows") or [])
 if not rows:
-  print('')
-  sys.exit(0)
+    print("")
+    sys.exit(0)
 r=rows[0]
 payload={
   "colB": r.get("colB") or "",
@@ -217,9 +202,7 @@ payload={
   "colW": r.get("colW") or "",
   "colX": r.get("colX") or ""
 }
-print(str(r.get('id')) + '\t' + json.dumps(payload, ensure_ascii=False))
-PY
-)"
+print(str(r.get("id")) + "\t" + json.dumps(payload, ensure_ascii=False))')"
 if [[ -z "${CT_PAYLOAD_AND_ID}" ]]; then
   echo "[ERROR] ct-lines has no rows"
   exit 1
