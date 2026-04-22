@@ -1,14 +1,33 @@
 package com.capics.service;
 
-import com.capics.entity.*;
-import com.capics.repository.*;
+import com.capics.entity.CtLineData;
+import com.capics.entity.LineConfig;
+import com.capics.entity.LineProfile;
+import com.capics.entity.Product;
+import com.capics.entity.ProductFamily;
+import com.capics.entity.Routing;
+import com.capics.entity.RoutingItem;
+import com.capics.repository.CtLineDataRepository;
+import com.capics.repository.LineConfigRepository;
+import com.capics.repository.LineProfileRepository;
+import com.capics.repository.ProductFamilyRepository;
+import com.capics.repository.ProductRepository;
+import com.capics.repository.RoutingItemRepository;
+import com.capics.repository.RoutingRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CapacityAssessmentService {
@@ -18,7 +37,7 @@ public class CapacityAssessmentService {
     private final RoutingItemRepository routingItemRepository;
     private final ProductRepository productRepository;
     private final ProductFamilyRepository productFamilyRepository;
-    private final FamilyLineRepository familyLineRepository;
+    private final CtLineDataRepository ctLineDataRepository;
     private final LineConfigRepository lineConfigRepository;
     private final LineProfileRepository lineProfileRepository;
     private final ManpowerPlanService manpowerPlanService;
@@ -29,7 +48,7 @@ public class CapacityAssessmentService {
             RoutingItemRepository routingItemRepository,
             ProductRepository productRepository,
             ProductFamilyRepository productFamilyRepository,
-            FamilyLineRepository familyLineRepository,
+            CtLineDataRepository ctLineDataRepository,
             LineConfigRepository lineConfigRepository,
             LineProfileRepository lineProfileRepository,
             ManpowerPlanService manpowerPlanService) {
@@ -38,7 +57,7 @@ public class CapacityAssessmentService {
         this.routingItemRepository = routingItemRepository;
         this.productRepository = productRepository;
         this.productFamilyRepository = productFamilyRepository;
-        this.familyLineRepository = familyLineRepository;
+        this.ctLineDataRepository = ctLineDataRepository;
         this.lineConfigRepository = lineConfigRepository;
         this.lineProfileRepository = lineProfileRepository;
         this.manpowerPlanService = manpowerPlanService;
@@ -145,39 +164,37 @@ public class CapacityAssessmentService {
         List<RoutingItem> allRoutingItems = findRoutingItemsByFinishedItem(itemNumber, warnings);
         for (RoutingItem routingItem : allRoutingItems) {
             String componentNumber = routingItem.getComponentNumber();
-            Optional<ResolvedContext> contextOpt = resolveContext(componentNumber, warnings);
-            if (contextOpt.isEmpty()) {
-                continue;
-            }
-            ResolvedContext context = contextOpt.get();
+            List<ResolvedContext> contexts = resolveContextsFromCt(componentNumber, warnings);
+            for (ResolvedContext context : contexts) {
+                Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
+                BigDecimal oeeDecimal = context.oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+                BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
+                BigDecimal workingDaysPerWeek = BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek());
+                BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
+                BigDecimal ct = context.ct;
 
-            Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
-            BigDecimal oeeDecimal = context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
-            BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
-            BigDecimal workingDaysPerWeek = BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek());
-            BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
-            BigDecimal ct = context.product.getCycleTime();
-            for (String week : weeks) {
-                BigDecimal demand = weeklyDemand.getOrDefault(week, BigDecimal.ZERO);
-                LocalDate periodDate = weekDateRanges.get(week)[0];
-                BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
-                BigDecimal denominator = workingDaysPerWeek
-                        .multiply(shiftsPerDay)
-                        .multiply(hoursPerShift)
-                        .multiply(oeeDecimal)
-                        .multiply(BigDecimal.valueOf(3600))
-                        .multiply(manpowerFactor);
+                for (String week : weeks) {
+                    BigDecimal demand = weeklyDemand.getOrDefault(week, BigDecimal.ZERO);
+                    LocalDate periodDate = weekDateRanges.get(week)[0];
+                    BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
+                    BigDecimal denominator = workingDaysPerWeek
+                            .multiply(shiftsPerDay)
+                            .multiply(hoursPerShift)
+                            .multiply(oeeDecimal)
+                            .multiply(BigDecimal.valueOf(3600))
+                            .multiply(manpowerFactor);
 
-                BigDecimal load = BigDecimal.ZERO;
-                if (denominator.compareTo(BigDecimal.ZERO) > 0) {
-                    load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                    BigDecimal load = BigDecimal.ZERO;
+                    if (denominator.compareTo(BigDecimal.ZERO) > 0) {
+                        load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                    }
+                    row.put(week + "_demand", demand);
+                    row.put(week + "_loading", load);
+                    row.put(week + "_manpowerFactor", manpowerFactor);
                 }
-                row.put(week + "_demand", demand);
-                row.put(week + "_loading", load);
-                row.put(week + "_manpowerFactor", manpowerFactor);
-            }
 
-            linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
+                linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
+            }
         }
     }
 
@@ -193,52 +210,49 @@ public class CapacityAssessmentService {
         List<RoutingItem> allRoutingItems = findRoutingItemsByFinishedItem(itemNumber, warnings);
         for (RoutingItem routingItem : allRoutingItems) {
             String componentNumber = routingItem.getComponentNumber();
-            Optional<ResolvedContext> contextOpt = resolveContext(componentNumber, warnings);
-            if (contextOpt.isEmpty()) {
-                continue;
-            }
-            ResolvedContext context = contextOpt.get();
+            List<ResolvedContext> contexts = resolveContextsFromCt(componentNumber, warnings);
+            for (ResolvedContext context : contexts) {
+                Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
+                BigDecimal oeeDecimal = context.oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+                BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
+                BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
+                BigDecimal ct = context.ct;
 
-            Map<String, Object> row = buildBaseRow(itemNumber, description, componentNumber, context);
-            BigDecimal oeeDecimal = context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
-            BigDecimal shiftsPerDay = BigDecimal.valueOf(context.lineConfig.getShiftsPerDay());
-            BigDecimal hoursPerShift = context.lineConfig.getHoursPerShift();
-            BigDecimal ct = context.product.getCycleTime();
+                for (String month : months) {
+                    BigDecimal demand = monthlyDemand.getOrDefault(month, BigDecimal.ZERO);
+                    int daysInMonth = monthDays.get(month);
+                    BigDecimal workingDaysPerMonth = BigDecimal.valueOf(daysInMonth)
+                            .multiply(BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek()))
+                            .divide(BigDecimal.valueOf(7), 10, RoundingMode.HALF_UP);
+                    LocalDate periodDate = LocalDate.parse(month + "-01");
+                    BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
 
-            for (String month : months) {
-                BigDecimal demand = monthlyDemand.getOrDefault(month, BigDecimal.ZERO);
-                int daysInMonth = monthDays.get(month);
-                BigDecimal workingDaysPerMonth = BigDecimal.valueOf(daysInMonth)
-                        .multiply(BigDecimal.valueOf(context.lineConfig.getWorkingDaysPerWeek()))
-                        .divide(BigDecimal.valueOf(7), 10, RoundingMode.HALF_UP);
-                LocalDate periodDate = LocalDate.parse(month + "-01");
-                BigDecimal manpowerFactor = resolveManpowerFactor(context.lineCode, periodDate);
+                    BigDecimal denominator = workingDaysPerMonth
+                            .multiply(shiftsPerDay)
+                            .multiply(hoursPerShift)
+                            .multiply(oeeDecimal)
+                            .multiply(BigDecimal.valueOf(3600))
+                            .multiply(manpowerFactor);
 
-                BigDecimal denominator = workingDaysPerMonth
-                        .multiply(shiftsPerDay)
-                        .multiply(hoursPerShift)
-                        .multiply(oeeDecimal)
-                        .multiply(BigDecimal.valueOf(3600))
-                        .multiply(manpowerFactor);
+                    BigDecimal load = BigDecimal.ZERO;
+                    if (denominator.compareTo(BigDecimal.ZERO) > 0) {
+                        load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                    }
 
-                BigDecimal load = BigDecimal.ZERO;
-                if (denominator.compareTo(BigDecimal.ZERO) > 0) {
-                    load = demand.multiply(ct).divide(denominator, 4, RoundingMode.HALF_UP);
+                    row.put(month + "_demand", demand);
+                    row.put(month + "_loading", load);
+                    row.put(month + "_manpowerFactor", manpowerFactor);
                 }
 
-                row.put(month + "_demand", demand);
-                row.put(month + "_loading", load);
-                row.put(month + "_manpowerFactor", manpowerFactor);
+                linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
             }
-
-            linesData.computeIfAbsent(context.lineCode, k -> new ArrayList<>()).add(row);
         }
     }
 
     private List<RoutingItem> findRoutingItemsByFinishedItem(String itemNumber, List<String> warnings) {
         List<Routing> routings = routingRepository.findAllByProductNumber(itemNumber);
         if (routings.isEmpty()) {
-            warnings.add("成品 [" + itemNumber + "] 在工艺路线表中未找到");
+            warnings.add("成品 [" + itemNumber + "] 在工艺路线中未找到");
             return Collections.emptyList();
         }
 
@@ -255,63 +269,74 @@ public class CapacityAssessmentService {
         return allRoutingItems;
     }
 
-    private Optional<ResolvedContext> resolveContext(String componentNumber, List<String> warnings) {
-        List<Product> componentProducts = productRepository.findByItemNumber(componentNumber);
-        if (componentProducts.isEmpty()) {
-            warnings.add("组件 [" + componentNumber + "] 在产品表中未找到");
-            return Optional.empty();
+    private List<ResolvedContext> resolveContextsFromCt(String componentNumber, List<String> warnings) {
+        // 对应关系：主备线=主 + 物料号=componentNumber + 生产线=lineCode
+        List<CtLineData> mappings = ctLineDataRepository.findByColDAndColCOrderByIdDesc("主", componentNumber);
+        if (mappings.isEmpty()) {
+            warnings.add("组件 [" + componentNumber + "] 在产线-产品表（主线）未找到对应关系");
+            return Collections.emptyList();
         }
 
-        String familyCode = componentProducts.get(0).getFamilyCode();
-        if (familyCode == null || familyCode.isEmpty()) {
-            warnings.add("组件 [" + componentNumber + "] 未设置编码族");
-            return Optional.empty();
-        }
+        Set<String> dedupLineCodes = new HashSet<>();
+        List<ResolvedContext> contexts = new ArrayList<>();
 
-        String lineCode = null;
-        for (FamilyLine fl : familyLineRepository.findAll()) {
-            if (fl.getFamilyCode().equals(familyCode)) {
-                lineCode = fl.getLineCode();
-                break;
+        for (CtLineData mapping : mappings) {
+            String lineCode = mapping.getColB() == null ? null : mapping.getColB().trim();
+            if (lineCode == null || lineCode.isEmpty() || !dedupLineCodes.add(lineCode)) {
+                continue;
             }
-        }
-        if (lineCode == null) {
-            warnings.add("编码族 [" + familyCode + "] 未找到定线信息");
-            return Optional.empty();
+
+            Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
+            if (lineConfigOpt.isEmpty() || !Boolean.TRUE.equals(lineConfigOpt.get().getIsActive())) {
+                warnings.add("产线 [" + lineCode + "] 未启用，组件 [" + componentNumber + "] 已跳过");
+                continue;
+            }
+
+            Integer workers = tryParseInteger(mapping.getColP());
+            BigDecimal ct = tryParseDecimal(mapping.getColF());
+            BigDecimal oee = tryParseDecimal(mapping.getColI());
+            if (workers == null || workers <= 0 || ct == null || ct.compareTo(BigDecimal.ZERO) <= 0 || oee == null || oee.compareTo(BigDecimal.ZERO) <= 0) {
+                warnings.add("产线-产品主线参数异常，line=" + lineCode + ", item=" + componentNumber + "（人数/CT/OEE）");
+                continue;
+            }
+
+            String pf = resolvePf(componentNumber, lineCode);
+            contexts.add(new ResolvedContext(lineCode, pf, lineConfigOpt.get(), workers, ct, oee));
         }
 
-        String pf = productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode)
-                .map(ProductFamily::getPf)
+        if (contexts.isEmpty()) {
+            warnings.add("组件 [" + componentNumber + "] 在产线-产品主线映射中无可用产线");
+        }
+        return contexts;
+    }
+
+    private String resolvePf(String componentNumber, String lineCode) {
+        return productRepository.findById(new com.capics.entity.ProductId(componentNumber, lineCode))
+                .map(Product::getFamilyCode)
+                .flatMap(familyCode -> productFamilyRepository.findByFamilyCodeAndLineCode(familyCode, lineCode).map(ProductFamily::getPf))
                 .orElse(null);
+    }
 
-        Optional<LineConfig> lineConfigOpt = lineConfigRepository.findById(lineCode);
-        if (lineConfigOpt.isEmpty() || !Boolean.TRUE.equals(lineConfigOpt.get().getIsActive())) {
-            warnings.add("产线 [" + lineCode + "] 未激活");
-            return Optional.empty();
-        }
-        LineConfig lineConfig = lineConfigOpt.get();
-
-        Product componentOnLine = null;
-        for (Product p : componentProducts) {
-            if (lineCode.equals(p.getLineCode())) {
-                componentOnLine = p;
-                break;
+    private Integer tryParseInteger(String value) {
+        try {
+            if (value == null || value.trim().isEmpty()) {
+                return null;
             }
+            return new BigDecimal(value.trim()).intValue();
+        } catch (Exception ex) {
+            return null;
         }
-        if (componentOnLine == null) {
-            warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 下无产品信息");
-            return Optional.empty();
-        }
+    }
 
-        BigDecimal ct = componentOnLine.getCycleTime();
-        BigDecimal oee = componentOnLine.getOee();
-        Integer workerCount = componentOnLine.getWorkerCount();
-        if (ct == null || oee == null || workerCount == null || ct.compareTo(BigDecimal.ZERO) <= 0) {
-            warnings.add("组件 [" + componentNumber + "] 在产线 [" + lineCode + "] 的CT/OEE/人力参数不完整");
-            return Optional.empty();
+    private BigDecimal tryParseDecimal(String value) {
+        try {
+            if (value == null || value.trim().isEmpty()) {
+                return null;
+            }
+            return new BigDecimal(value.trim());
+        } catch (Exception ex) {
+            return null;
         }
-
-        return Optional.of(new ResolvedContext(lineCode, pf, componentOnLine, lineConfig));
     }
 
     private Map<String, Object> buildBaseRow(
@@ -321,20 +346,21 @@ public class CapacityAssessmentService {
             ResolvedContext context) {
 
         BigDecimal shiftOutput = BigDecimal.valueOf(3600)
-                .divide(context.product.getCycleTime(), 10, RoundingMode.HALF_UP)
-                .multiply(context.product.getOee().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP))
+                .divide(context.ct, 10, RoundingMode.HALF_UP)
+                .multiply(context.oee.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP))
                 .multiply(context.lineConfig.getHoursPerShift())
                 .setScale(2, RoundingMode.HALF_UP);
 
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("itemNumber", itemNumber);
-        row.put("description", description);
+        // Description 统一取产品主数据中的 PF
+        row.put("description", context.pf == null ? "" : context.pf);
         row.put("componentNumber", componentNumber);
         row.put("pf", context.pf);
         row.put("shiftOutput", shiftOutput);
-        row.put("shiftWorkers", context.product.getWorkerCount());
-        row.put("ct", context.product.getCycleTime());
-        row.put("oee", context.product.getOee());
+        row.put("shiftWorkers", context.shiftWorkers);
+        row.put("ct", context.ct);
+        row.put("oee", context.oee);
         return row;
     }
 
@@ -355,14 +381,24 @@ public class CapacityAssessmentService {
     private static class ResolvedContext {
         private final String lineCode;
         private final String pf;
-        private final Product product;
         private final LineConfig lineConfig;
+        private final Integer shiftWorkers;
+        private final BigDecimal ct;
+        private final BigDecimal oee;
 
-        private ResolvedContext(String lineCode, String pf, Product product, LineConfig lineConfig) {
+        private ResolvedContext(
+                String lineCode,
+                String pf,
+                LineConfig lineConfig,
+                Integer shiftWorkers,
+                BigDecimal ct,
+                BigDecimal oee) {
             this.lineCode = lineCode;
             this.pf = pf;
-            this.product = product;
             this.lineConfig = lineConfig;
+            this.shiftWorkers = shiftWorkers;
+            this.ct = ct;
+            this.oee = oee;
         }
     }
 }

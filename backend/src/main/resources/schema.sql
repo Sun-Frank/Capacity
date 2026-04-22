@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS meeting_minutes CASCADE;
 DROP TABLE IF EXISTS routing_item CASCADE;
 DROP TABLE IF EXISTS routing CASCADE;
 DROP TABLE IF EXISTS line_config CASCADE;
+DROP TABLE IF EXISTS ct_line_data CASCADE;
 DROP TABLE IF EXISTS mrp_plan CASCADE;
 DROP TABLE IF EXISTS product CASCADE;
 DROP TABLE IF EXISTS product_family CASCADE;
@@ -150,6 +151,23 @@ CREATE TABLE line_config (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- CT-Line import data table
+CREATE TABLE ct_line_data (
+    id BIGSERIAL PRIMARY KEY,
+    col_b VARCHAR(255) NOT NULL,
+    col_c VARCHAR(255) NOT NULL,
+    col_d VARCHAR(255) NOT NULL,
+    col_f VARCHAR(255) NOT NULL,
+    col_i VARCHAR(255) NOT NULL,
+    col_p VARCHAR(255) NOT NULL,
+    col_w VARCHAR(255),
+    col_x VARCHAR(255),
+    created_by VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Line Profile Table (v2 fusion: line class / belong-to)
 CREATE TABLE line_profile (
     line_code VARCHAR(50) PRIMARY KEY,
@@ -214,6 +232,7 @@ CREATE INDEX idx_product_item ON product(item_number);
 CREATE INDEX idx_line_profile_class ON line_profile(line_class);
 CREATE INDEX idx_manpower_plan_class_date ON manpower_plan(line_class, plan_date);
 CREATE INDEX idx_meeting_minutes_version_item ON meeting_minutes(mps_version, item_no);
+CREATE INDEX idx_ct_line_data_created_at ON ct_line_data(created_at);
 
 -- Insert default admin user (password: admin123)
 INSERT INTO sys_user (username, password, real_name, email, enabled)

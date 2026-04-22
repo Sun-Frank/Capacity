@@ -47,6 +47,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/auth/**").permitAll()
                 .antMatchers("/api/health").permitAll()
                 .antMatchers("/api/lines/template").permitAll()
+                .antMatchers("/api/ct-lines/template").permitAll()
                 .anyRequest().authenticated()
             .and()
             .sessionManagement()

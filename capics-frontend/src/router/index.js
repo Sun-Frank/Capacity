@@ -71,6 +71,11 @@ const routes = [
         path: 'fusion-workbench',
         name: 'FusionWorkbench',
         component: () => import('@/views/FusionWorkbenchView.vue')
+      },
+      {
+        path: 'ct-line',
+        name: 'CtLine',
+        component: () => import('@/views/CtLineView.vue')
       }
     ]
   }

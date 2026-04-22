@@ -60,7 +60,8 @@ const typeLabel = computed(() => {
     product: '产品',
     mrp: 'MRP',
     routing: '工艺路线',
-    line: '生产线配置'
+    line: '生产线配置',
+    'ct-line': '产线-产品'
   }
   return labels[props.type] || props.type
 })

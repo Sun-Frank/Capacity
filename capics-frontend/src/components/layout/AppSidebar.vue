@@ -10,6 +10,7 @@
       <li class="nav-item"><router-link to="/products" class="nav-link" :class="{ active: $route.path === '/products' }">产品主数据</router-link></li>
       <li class="nav-item"><router-link to="/mrp" class="nav-link" :class="{ active: $route.path === '/mrp' }">MRP计划</router-link></li>
       <li class="nav-item"><router-link to="/routing" class="nav-link" :class="{ active: $route.path === '/routing' }">工艺路线</router-link></li>
+      <li class="nav-item"><router-link to="/ct-line" class="nav-link" :class="{ active: $route.path === '/ct-line' }">产线-产品</router-link></li>
 
       <li class="nav-section">生产线</li>
       <li class="nav-item"><router-link to="/lines" class="nav-link" :class="{ active: $route.path === '/lines' }">生产线配置</router-link></li>
