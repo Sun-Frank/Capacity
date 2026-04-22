@@ -1,5 +1,42 @@
 ﻿# CAPICS One-Click Deploy
 
+## Local Debug Deploy (Windows)
+
+1) Prepare local env file:
+
+```powershell
+Copy-Item deploy/.env.local.example deploy/.env.local
+```
+
+Update at least:
+- `DB_PASSWORD`
+- `POSTGRES_ADMIN_PASSWORD`
+- `JWT_SECRET`
+- `APP_CORS_ALLOWED_ORIGINS` (keep `http://localhost:3000`)
+- `PSQL_BIN` (if your PostgreSQL path is different)
+
+2) One-click local deploy (DB init + build + start):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-deploy.ps1
+```
+
+Optional: prepare only (do not start backend/frontend):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-deploy.ps1 -NoStart
+```
+
+3) Stop local backend/frontend:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-stop.ps1
+```
+
+Local default URLs:
+- Frontend: `http://127.0.0.1:3000/login`
+- Backend health: `http://127.0.0.1:8080/api/health`
+
 ## 1) Prepare env file
 
 ```bash

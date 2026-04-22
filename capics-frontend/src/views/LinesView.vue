@@ -1,13 +1,17 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">生产线配置</h1>
       <p class="page-subtitle">生产线基础参数</p>
     </div>
+
     <div class="table-wrapper">
       <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
         <button class="btn btn-primary" @click="showAddModal">添加产线</button>
+        <button class="btn btn-primary" @click="showImportModal">批量导入</button>
+        <button class="btn" @click="handleDownloadTemplate">模板下载</button>
       </div>
+
       <table>
         <thead>
           <tr>
@@ -45,19 +49,32 @@
       @close="closeModal"
       @confirm="handleConfirm"
     />
+
+    <ImportModal
+      :show="showImport"
+      type="line"
+      :isImporting="isImporting"
+      @close="showImport = false"
+      @confirm="handleImport"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-import { getLines, createLine, updateLine } from '@/api/line'
+import { useToast } from '@/composables/useToast'
+import { getLines, createLine, updateLine, importLines, downloadLineTemplate } from '@/api/line'
 import EditLineModal from '@/components/lines/EditLineModal.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
 
 const { token, currentUser } = useAuth()
+const { showToast } = useToast()
 const lines = ref([])
 const showModal = ref(false)
 const selectedLine = ref(null)
+const showImport = ref(false)
+const isImporting = ref(false)
 
 const loadLines = async () => {
   try {
@@ -71,6 +88,10 @@ const loadLines = async () => {
 const showAddModal = () => {
   selectedLine.value = null
   showModal.value = true
+}
+
+const showImportModal = () => {
+  showImport.value = true
 }
 
 const editLine = (line) => {
@@ -100,7 +121,47 @@ const handleConfirm = async (formData) => {
     loadLines()
   } catch (err) {
     console.error('Save line error:', err)
-    alert('保存失败')
+    showToast('保存失败', 'error')
+  }
+}
+
+const handleImport = async ({ file }) => {
+  if (!file) {
+    showToast('请选择文件', 'warning')
+    return
+  }
+
+  isImporting.value = true
+  try {
+    const result = await importLines(token.value, file)
+    if (result?.success) {
+      showToast(result.message || '导入成功', 'success')
+      showImport.value = false
+      await loadLines()
+    } else {
+      showToast(result?.message || '导入失败', 'error')
+    }
+  } catch (err) {
+    showToast(err?.message || '导入失败', 'error')
+  } finally {
+    isImporting.value = false
+  }
+}
+
+const handleDownloadTemplate = async () => {
+  try {
+    const blob = await downloadLineTemplate(token.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = '生产线配置导入模板.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('模板下载成功', 'success')
+  } catch (err) {
+    showToast(err?.message || '模板下载失败', 'error')
   }
 }
 

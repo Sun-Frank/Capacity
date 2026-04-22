@@ -8,8 +8,10 @@ capics-frontend/node_modules/
 
 # Local deployment secrets
 deploy/.env.prod
+deploy/.env.local
 
 # Local/temporary tooling files
 .claude/
+.tmp/
 frontend/
 .gitnore
