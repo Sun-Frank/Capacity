@@ -70,6 +70,28 @@ export function getMonthlyReportByFile(token, createdBy, fileName) {
   ).then(res => res.json())
 }
 
+export async function exportWeeklyReport(token, createdBy, fileName) {
+  const res = await fetch(
+    `${API_BASE}/mrp/reports/weekly/export?createdBy=${encodeURIComponent(createdBy)}&fileName=${encodeURIComponent(fileName)}`,
+    { headers: { 'Authorization': `Bearer ${token}` } }
+  )
+  if (!res.ok) {
+    throw new Error(`鍛ㄦ姤琛ㄥ鍑哄け璐?(HTTP ${res.status})`)
+  }
+  return res.blob()
+}
+
+export async function exportMonthlyReport(token, createdBy, fileName) {
+  const res = await fetch(
+    `${API_BASE}/mrp/reports/monthly/export?createdBy=${encodeURIComponent(createdBy)}&fileName=${encodeURIComponent(fileName)}`,
+    { headers: { 'Authorization': `Bearer ${token}` } }
+  )
+  if (!res.ok) {
+    throw new Error(`鏈堟姤琛ㄥ鍑哄け璐?(HTTP ${res.status})`)
+  }
+  return res.blob()
+}
+
 export function getWeeklyDemandSingle(token, createdBy, fileName, version) {
   return fetch(
     `${API_BASE}/mrp/reports/weekly/single?createdBy=${encodeURIComponent(createdBy)}&fileName=${encodeURIComponent(fileName)}&version=${encodeURIComponent(version)}`,

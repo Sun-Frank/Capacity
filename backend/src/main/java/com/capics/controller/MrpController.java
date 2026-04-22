@@ -11,13 +11,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @RestController
 @RequestMapping("/api/mrp")
@@ -53,7 +61,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(versions));
     }
 
-    // 获取最新导入的MRP文件信息
+    // 鑾峰彇鏈€鏂板鍏ョ殑MRP鏂囦欢淇℃伅
     @GetMapping("/latest-file")
     public ResponseEntity<ApiResponse> getLatestMrpFile() {
         Map<String, String> fileInfo = mrpPlanService.getLatestMrpFileInfo();
@@ -101,7 +109,7 @@ public class MrpController {
 
     @GetMapping("/plans/template")
     public ResponseEntity<Resource> downloadMrpTemplate() throws IOException {
-        String fileName = "MRP导入模板-v2.xlsx";
+        String fileName = "MRP瀵煎叆妯℃澘-v2.xlsx";
         File localFile = new File("import_templates", fileName);
         Resource resource;
         if (localFile.exists()) {
@@ -163,7 +171,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 周报表 - 按导入人+文件名，多版本对比
+    // 鍛ㄦ姤琛?- 鎸夊鍏ヤ汉+鏂囦欢鍚嶏紝澶氱増鏈姣?
     @GetMapping("/reports/weekly/by-file")
     public ResponseEntity<ApiResponse> getWeeklyReportByFile(
             @RequestParam String createdBy,
@@ -172,7 +180,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 月报表 - 按导入人+文件名，多版本对比
+    // 鏈堟姤琛?- 鎸夊鍏ヤ汉+鏂囦欢鍚嶏紝澶氱増鏈姣?
     @GetMapping("/reports/monthly/by-file")
     public ResponseEntity<ApiResponse> getMonthlyReportByFile(
             @RequestParam String createdBy,
@@ -181,7 +189,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 单版本周需求汇总 - 按导入人+文件名+版本
+    // 鍗曠増鏈懆闇€姹傛眹鎬?- 鎸夊鍏ヤ汉+鏂囦欢鍚?鐗堟湰
     @GetMapping("/reports/weekly/single")
     public ResponseEntity<ApiResponse> getWeeklyDemandSingle(
             @RequestParam String createdBy,
@@ -191,7 +199,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 单版本月需求汇总 - 按导入人+文件名+版本
+    // 鍗曠増鏈湀闇€姹傛眹鎬?- 鎸夊鍏ヤ汉+鏂囦欢鍚?鐗堟湰
     @GetMapping("/reports/monthly/single")
     public ResponseEntity<ApiResponse> getMonthlyDemandSingle(
             @RequestParam String createdBy,
@@ -205,5 +213,96 @@ public class MrpController {
     public ResponseEntity<ApiResponse> getMonthlyReport(@RequestParam String version) {
         List<Map<String, Object>> report = mrpPlanService.getMonthlyReport(version);
         return ResponseEntity.ok(ApiResponse.success(report));
+    }
+
+    @GetMapping("/reports/weekly/export")
+    public ResponseEntity<byte[]> exportWeeklyReport(
+            @RequestParam String createdBy,
+            @RequestParam String fileName) throws IOException {
+        List<Map<String, Object>> report = mrpPlanService.getWeeklyReportByCreatedByAndFileName(createdBy, fileName);
+        String outputFileName = "MRP-weekly-report-" +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+        return buildExportResponse(report, outputFileName, true);
+    }
+
+    @GetMapping("/reports/monthly/export")
+    public ResponseEntity<byte[]> exportMonthlyReport(
+            @RequestParam String createdBy,
+            @RequestParam String fileName) throws IOException {
+        List<Map<String, Object>> report = mrpPlanService.getMonthlyReportByCreatedByAndFileName(createdBy, fileName);
+        String outputFileName = "MRP-monthly-report-" +
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+        return buildExportResponse(report, outputFileName, false);
+    }
+
+    private ResponseEntity<byte[]> buildExportResponse(
+            List<Map<String, Object>> report, String fileName, boolean weekly) throws IOException {
+        byte[] bytes = buildReportWorkbook(report, weekly);
+        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(bytes);
+    }
+
+    @SuppressWarnings("unchecked")
+    private byte[] buildReportWorkbook(List<Map<String, Object>> report, boolean weekly) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet(weekly ? "Weekly Report" : "Monthly Report");
+
+            if (report == null || report.isEmpty()) {
+                Row header = sheet.createRow(0);
+                header.createCell(0).setCellValue("Item Number");
+                header.createCell(1).setCellValue("Description");
+                workbook.write(output);
+                return output.toByteArray();
+            }
+
+            Map<String, Object> wrapper = report.get(0);
+            List<Map<String, String>> columns = (List<Map<String, String>>) wrapper.get("columns");
+            List<Map<String, Object>> data = (List<Map<String, Object>>) wrapper.get("data");
+
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("Item Number");
+            header.createCell(1).setCellValue("Description");
+            for (int i = 0; i < columns.size(); i++) {
+                Map<String, String> col = columns.get(i);
+                String groupLabel = weekly ? col.get("weekLabel") : col.get("monthLabel");
+                String title = (groupLabel == null ? col.get("key") : groupLabel) + " | " + col.get("version");
+                header.createCell(i + 2).setCellValue(title);
+            }
+
+            int rowIndex = 1;
+            for (Map<String, Object> rowData : data) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(stringValue(rowData.get("itemNumber")));
+                row.createCell(1).setCellValue(stringValue(rowData.get("description")));
+
+                for (int i = 0; i < columns.size(); i++) {
+                    String key = columns.get(i).get("key");
+                    Object value = rowData.get(key);
+                    if (value == null) {
+                        continue;
+                    }
+                    if (value instanceof Number) {
+                        row.createCell(i + 2, CellType.NUMERIC).setCellValue(((Number) value).doubleValue());
+                    } else {
+                        row.createCell(i + 2).setCellValue(value.toString());
+                    }
+                }
+            }
+
+            for (int i = 0; i < columns.size() + 2; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 }

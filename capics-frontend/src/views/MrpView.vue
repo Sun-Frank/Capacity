@@ -14,7 +14,6 @@
       ]"
     />
 
-    <!-- Plans Tab -->
     <div v-if="mrpTab === 'plans'" class="tab-content">
       <div class="filters-row">
         <BaseSelect
@@ -43,7 +42,6 @@
       <PlansTable :plans="mrpPlans" />
     </div>
 
-    <!-- Weekly Report Tab -->
     <div v-if="mrpTab === 'weekly'" class="tab-content tab-content-scrollable">
       <div class="filters-row">
         <BaseSelect
@@ -60,6 +58,7 @@
           @update:modelValue="onWeeklyFileNameChange"
         />
         <button class="btn btn-primary" @click="loadWeeklyReportData" :disabled="!weeklyCreatedBy || !weeklyFileName">查询</button>
+        <button class="btn" @click="handleExportWeeklyReport" :disabled="!weeklyCreatedBy || !weeklyFileName">导出周报表</button>
       </div>
       <WeeklyReportTable
         :columns="weeklyColumns"
@@ -69,7 +68,6 @@
       />
     </div>
 
-    <!-- Monthly Report Tab -->
     <div v-if="mrpTab === 'monthly'" class="tab-content tab-content-scrollable">
       <div class="filters-row">
         <BaseSelect
@@ -86,6 +84,7 @@
           @update:modelValue="onMonthlyFileNameChange"
         />
         <button class="btn btn-primary" @click="loadMonthlyReportData" :disabled="!monthlyCreatedBy || !monthlyFileName">查询</button>
+        <button class="btn" @click="handleExportMonthlyReport" :disabled="!monthlyCreatedBy || !monthlyFileName">导出月报表</button>
       </div>
       <MonthlyReportTable
         :columns="monthlyColumns"
@@ -110,7 +109,13 @@ import { ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useMrpFilters } from '@/composables/useMrpFilters'
 import { useToast } from '@/composables/useToast'
-import { importMrpPlans, getMonthlyReportByFile, downloadMrpTemplate } from '@/api/mrp'
+import {
+  importMrpPlans,
+  getMonthlyReportByFile,
+  downloadMrpTemplate,
+  exportWeeklyReport,
+  exportMonthlyReport
+} from '@/api/mrp'
 import BaseTabs from '@/components/common/BaseTabs.vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import PlansTable from '@/components/mrp/PlansTable.vue'
@@ -141,9 +146,7 @@ const {
   loadMrpPlans: loadPlans,
   onWeeklyCreatedByChange,
   onWeeklyFileNameChange,
-  loadWeeklyReportData: loadWeekly,
-  restoreMrpCache,
-  restoreWeeklyCache
+  loadWeeklyReportData: loadWeekly
 } = useMrpFilters(token)
 
 const { showToast } = useToast()
@@ -152,14 +155,13 @@ const mrpTab = ref('plans')
 const mrpPlans = ref([])
 const showImport = ref(false)
 const isImporting = ref(false)
-const importFileName = ref('')
 
-// Monthly report state
 const monthlyCreatedBy = ref('')
 const monthlyFileNames = ref([])
 const monthlyFileName = ref('')
 const monthlyColumns = ref([])
 const monthlyReport = ref([])
+
 const handleDownloadMrpTemplate = async () => {
   try {
     const blob = await downloadMrpTemplate(token.value)
@@ -179,7 +181,7 @@ const handleDownloadMrpTemplate = async () => {
 
 const loadMrpPlans = async () => {
   if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
-    showToast('请选择完整的筛选条件（导入人、文件、版本）', 'warning')
+    showToast('请选择完整筛选条件（导入人、文件、版本）', 'warning')
     return
   }
   try {
@@ -209,7 +211,6 @@ const loadMonthlyReportData = async () => {
     const result = data.data && data.data[0]
     if (result) {
       const cols = result.columns || []
-      // Add versionIndex for alternating colors
       const versionGroups = {}
       let versionIndex = 0
       for (const col of cols) {
@@ -231,6 +232,48 @@ const loadMonthlyReportData = async () => {
   }
 }
 
+const handleExportWeeklyReport = async () => {
+  if (!weeklyCreatedBy.value || !weeklyFileName.value) {
+    showToast('请先选择导入人和文件', 'warning')
+    return
+  }
+  try {
+    const blob = await exportWeeklyReport(token.value, weeklyCreatedBy.value, weeklyFileName.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'MRP周报表.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('周报表导出成功', 'success')
+  } catch (err) {
+    showToast(err?.message || '周报表导出失败', 'error')
+  }
+}
+
+const handleExportMonthlyReport = async () => {
+  if (!monthlyCreatedBy.value || !monthlyFileName.value) {
+    showToast('请先选择导入人和文件', 'warning')
+    return
+  }
+  try {
+    const blob = await exportMonthlyReport(token.value, monthlyCreatedBy.value, monthlyFileName.value)
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'MRP月报表.xlsx'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+    showToast('月报表导出成功', 'success')
+  } catch (err) {
+    showToast(err?.message || '月报表导出失败', 'error')
+  }
+}
+
 const onMonthlyCreatedByChange = async () => {
   monthlyFileName.value = ''
   monthlyColumns.value = []
@@ -247,7 +290,7 @@ const onMonthlyFileNameChange = () => {
   monthlyColumns.value = []
 }
 
-const showImportModal = (type) => {
+const showImportModal = () => {
   showImport.value = true
 }
 
@@ -267,13 +310,11 @@ const handleImport = async ({ file, fileName }) => {
     if (result.success) {
       showToast('导入成功: ' + result.message, 'success')
       showImport.value = false
-      importFileName.value = ''
-      // Reload filters and auto-select
       await loadCreatedBys()
-      selectedCreatedBy.value = currentUser.value
-      await loadFileNames(currentUser.value)
+      selectedCreatedBy.value = createdBy
+      await loadFileNames(createdBy)
       selectedFileName.value = fileName
-      loadMrpPlans()
+      await loadMrpPlans()
     } else {
       showToast('导入失败: ' + result.message, 'error')
     }
@@ -284,7 +325,6 @@ const handleImport = async ({ file, fileName }) => {
   }
 }
 
-// Helper to reload file names after import
 const loadFileNames = async (createdBy) => {
   if (!createdBy) return
   const { getFileNamesByCreatedBy } = await import('@/api/mrp')
@@ -294,11 +334,10 @@ const loadFileNames = async (createdBy) => {
 
 onMounted(() => {
   loadCreatedBys().then(() => {
-    // 恢复MRP计划缓存
     if (mrpPlansCache.value) {
       mrpPlans.value = mrpPlansCache.value.data || []
     }
-    // 如果有恢复的筛选条件，需要重新加载下拉选项
+
     if (selectedCreatedBy.value) {
       loadFileNames(selectedCreatedBy.value).then(() => {
         if (selectedFileName.value) {
@@ -306,13 +345,12 @@ onMounted(() => {
         }
       })
     }
-    // 恢复周报缓存
+
     if (weeklyReportCache.value) {
       const result = weeklyReportCache.value?.data?.[0]
       if (result) {
         weeklyColumns.value = result.columns || []
         weeklyReport.value = result.data || []
-        // 重建columnGroups
         const cols = weeklyColumns.value
         const groups = []
         let currentWeek = null
@@ -320,7 +358,7 @@ onMounted(() => {
         for (const col of cols) {
           if (col.week !== currentWeek) {
             if (currentGroup) groups.push(currentGroup)
-            currentGroup = { week: col.week, weekLabel: col.weekLabel, versions: [], versionIndices: [] }
+            currentGroup = { week: col.week, weekLabel: col.weekLabel, versions: [] }
             currentWeek = col.week
           }
           currentGroup.versions.push(col)
@@ -329,7 +367,7 @@ onMounted(() => {
         weeklyColumnGroups.value = groups
       }
     }
-    // 如果有恢复的周报筛选条件，需要重新加载下拉选项
+
     if (weeklyCreatedBy.value) {
       loadFileNames(weeklyCreatedBy.value).then(() => {
         weeklyFileNames.value = fileNames.value
@@ -360,5 +398,3 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 </style>
-
-

@@ -52,6 +52,17 @@ export function searchProducts(token, keyword) {
   }).then(res => res.json())
 }
 
+export function updateProduct(token, itemNumber, lineCode, data, updatedBy) {
+  return fetch(`${API_BASE}/products/${encodeURIComponent(itemNumber)}/${encodeURIComponent(lineCode)}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ...data, updatedBy })
+  }).then(res => res.json())
+}
+
 export function importFamilies(token, file, createdBy) {
   const formData = new FormData()
   formData.append('file', file)

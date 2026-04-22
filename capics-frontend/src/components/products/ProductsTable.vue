@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="table-wrapper">
     <table>
       <thead>
@@ -11,21 +11,41 @@
           <th>CT(秒)</th>
           <th>OEE(%)</th>
           <th>人数</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="p in products" :key="p.itemNumber + p.lineCode">
+        <tr v-for="p in products" :key="rowKey(p)">
           <td>{{ p.itemNumber }}</td>
           <td>{{ p.lineCode }}</td>
-          <td>{{ p.familyCode }}</td>
-          <td>{{ p.pf || '-' }}</td>
-          <td>{{ p.description }}</td>
-          <td>{{ p.cycleTime }}</td>
-          <td>{{ formatOee(p.oee) }}</td>
-          <td>{{ p.workerCount }}</td>
+
+          <template v-if="isEditing(p)">
+            <td><input class="table-input" v-model="editForm.familyCode" /></td>
+            <td>{{ p.pf || '-' }}</td>
+            <td><input class="table-input" v-model="editForm.description" /></td>
+            <td><input class="table-input" v-model.number="editForm.cycleTime" type="number" step="0.01" /></td>
+            <td><input class="table-input" v-model.number="editForm.oee" type="number" step="0.01" /></td>
+            <td><input class="table-input" v-model.number="editForm.workerCount" type="number" step="1" /></td>
+            <td>
+              <button class="btn btn-small btn-primary" @click="saveEdit(p)">保存</button>
+              <button class="btn btn-small" @click="cancelEdit">取消</button>
+            </td>
+          </template>
+
+          <template v-else>
+            <td>{{ p.familyCode }}</td>
+            <td>{{ p.pf || '-' }}</td>
+            <td>{{ p.description }}</td>
+            <td>{{ p.cycleTime }}</td>
+            <td>{{ formatOee(p.oee) }}</td>
+            <td>{{ p.workerCount }}</td>
+            <td>
+              <button class="btn btn-small" @click="startEdit(p)">编辑</button>
+            </td>
+          </template>
         </tr>
         <tr v-if="products.length === 0">
-          <td colspan="8" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+          <td colspan="9" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
         </tr>
       </tbody>
     </table>
@@ -33,12 +53,62 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref } from 'vue'
+
+const props = defineProps({
   products: {
     type: Array,
     default: () => []
   }
 })
+
+const emit = defineEmits(['save'])
+
+const editingKey = ref('')
+const editForm = ref({
+  familyCode: '',
+  description: '',
+  cycleTime: null,
+  oee: null,
+  workerCount: null
+})
+
+const rowKey = (p) => `${p.itemNumber}::${p.lineCode}`
+
+const isEditing = (p) => editingKey.value === rowKey(p)
+
+const startEdit = (p) => {
+  editingKey.value = rowKey(p)
+  editForm.value = {
+    familyCode: p.familyCode || '',
+    description: p.description || '',
+    cycleTime: p.cycleTime ?? null,
+    oee: p.oee ?? null,
+    workerCount: p.workerCount ?? null,
+    version: p.version || ''
+  }
+}
+
+const cancelEdit = () => {
+  editingKey.value = ''
+}
+
+const saveEdit = (p) => {
+  emit('save', {
+    itemNumber: p.itemNumber,
+    lineCode: p.lineCode,
+    data: {
+      ...p,
+      familyCode: editForm.value.familyCode,
+      description: editForm.value.description,
+      cycleTime: editForm.value.cycleTime,
+      oee: editForm.value.oee,
+      workerCount: editForm.value.workerCount,
+      version: editForm.value.version
+    },
+    done: cancelEdit
+  })
+}
 
 const formatOee = (value) => {
   if (value === null || value === undefined) return '-'
@@ -47,3 +117,14 @@ const formatOee = (value) => {
   return num.toFixed(2) + '%'
 }
 </script>
+
+<style scoped>
+.table-input {
+  width: 100%;
+  min-width: 80px;
+  border: 1px solid var(--border, #dcdfe6);
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.85rem;
+}
+</style>

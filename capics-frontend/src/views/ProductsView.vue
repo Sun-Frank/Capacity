@@ -59,7 +59,7 @@
         <button class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
         <button class="btn" @click="handleDownloadProductTemplate">模板下载</button>
       </div>
-      <ProductsTable :products="products" />
+      <ProductsTable :products="products" @save="handleUpdateProduct" />
     </div>
 
     <ImportModal
@@ -98,7 +98,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine, downloadFamilyTemplate, downloadFamilyLineTemplate, downloadProductTemplate } from '@/api/product'
+import { getFamilies, searchFamilies, getProducts, searchProducts, importFamilies, importProducts, updateFamily, updateProduct, checkFamilyImportDuplicates, checkProductImportDuplicates, getFamilyLines, searchFamilyLines, importFamilyLines, checkFamilyLineImportDuplicates, updateFamilyLine, downloadFamilyTemplate, downloadFamilyLineTemplate, downloadProductTemplate } from '@/api/product'
 import BaseTabs from '@/components/common/BaseTabs.vue'
 import FamiliesTable from '@/components/products/FamiliesTable.vue'
 import ProductsTable from '@/components/products/ProductsTable.vue'
@@ -386,6 +386,29 @@ const handleUpdateFamilyLine = async (formData) => {
     }
   } catch (err) {
     showToast('更新失败: ' + err.message, 'error')
+  }
+}
+
+const handleUpdateProduct = async ({ itemNumber, lineCode, data, done }) => {
+  try {
+    const result = await updateProduct(
+      token.value,
+      itemNumber,
+      lineCode,
+      data,
+      currentUser.value
+    )
+    if (result && result.success) {
+      showToast('更新成功', 'success')
+      if (typeof done === 'function') {
+        done()
+      }
+      loadProducts()
+    } else {
+      showToast('更新失败: ' + (result?.message || '未知错误'), 'error')
+    }
+  } catch (err) {
+    showToast('更新失败: ' + (err?.message || '未知错误'), 'error')
   }
 }
 
