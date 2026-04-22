@@ -3,6 +3,7 @@ package com.capics.service;
 import com.capics.dto.MrpPlanDto;
 import com.capics.entity.MrpPlan;
 import com.capics.repository.MrpPlanRepository;
+import com.capics.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,11 +27,15 @@ class MrpPlanServiceTest {
     @Mock
     private MrpPlanRepository repository;
 
+    @Mock
+    private ProductRepository productRepository;
+
     private MrpPlanService service;
 
     @BeforeEach
     void setUp() {
-        service = new MrpPlanService(repository);
+        service = new MrpPlanService(repository, productRepository);
+        lenient().when(productRepository.findAll()).thenReturn(Collections.emptyList());
     }
 
     @Test
