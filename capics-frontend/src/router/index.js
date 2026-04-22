@@ -28,6 +28,11 @@ const routes = [
         component: () => import('@/views/MrpView.vue')
       },
       {
+        path: 'mrp-compare',
+        name: 'MrpCompare',
+        component: () => import('@/views/MrpCompareView.vue')
+      },
+      {
         path: 'routing',
         name: 'Routing',
         component: () => import('@/views/RoutingView.vue')

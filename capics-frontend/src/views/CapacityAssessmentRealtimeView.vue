@@ -611,20 +611,20 @@ const summaryData = computed(() => {
     totalRow.loadings[week] = totalLoad
   })
 
-  // 2. 鎸?PF 鍒嗙粍璁＄畻LOAD
-  const pfGroups = {}
+  // 2. 按 Description 分组计算 LOAD
+  const descriptionGroups = {}
   items.forEach(item => {
-    const pf = item.pf || '未分类'
-    if (!pfGroups[pf]) {
-      pfGroups[pf] = { dimension: pf, loadings: {} }
+    const description = (item.description || '').trim() || '未描述'
+    if (!descriptionGroups[description]) {
+      descriptionGroups[description] = { dimension: description, loadings: {} }
     }
     weeksVal.forEach(week => {
-      if (!pfGroups[pf].loadings[week]) pfGroups[pf].loadings[week] = 0
-      pfGroups[pf].loadings[week] += calcLoading(item, week)
+      if (!descriptionGroups[description].loadings[week]) descriptionGroups[description].loadings[week] = 0
+      descriptionGroups[description].loadings[week] += calcLoading(item, week)
     })
   })
 
-  return [totalRow, ...Object.values(pfGroups)]
+  return [totalRow, ...Object.values(descriptionGroups)]
 })
 
 // 鍒ゆ柇鍗曞厓鏍兼槸鍚﹀浜庣紪杈戠姸鎬?

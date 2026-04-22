@@ -9,13 +9,22 @@ async function parseJsonSafe(res) {
 }
 
 async function postFormExpectApi(url, token, formData, fallbackMessage) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-    body: formData
-  })
+  let res
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    })
+  } catch (e) {
+    const reason = e?.message || 'Network error'
+    throw new Error(`网络请求失败（${reason}）。请确认前端可访问 /api，且后端服务已启动。`)
+  }
   const json = await parseJsonSafe(res)
   if (!res.ok) {
+    if (res.status === 413) {
+      throw new Error('上传文件过大（HTTP 413），请减小文件或提高网关/后端上传大小限制。')
+    }
     const msg = json?.message || json?.error || fallbackMessage
     throw new Error(msg)
   }

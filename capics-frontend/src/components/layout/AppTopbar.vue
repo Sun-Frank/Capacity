@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="topbar">
     <div class="title-wrap">
       <div class="topbar-title">{{ pageTitle }}</div>
@@ -23,6 +23,7 @@ const pageTitles = {
   '/': '仪表盘',
   '/products': '产品主数据',
   '/mrp': 'MRP计划管理',
+  '/mrp-compare': 'MRP对比',
   '/routing': '工艺路线',
   '/ct-line': '产线-产品',
   '/lines': '生产线配置',
@@ -39,6 +40,7 @@ const pageSubtitles = {
   '/': '产能评估总览',
   '/products': '基础主数据维护',
   '/mrp': 'MRP导入与版本管理',
+  '/mrp-compare': '按产品描述汇总两个文件的数量差异',
   '/routing': '产品工艺路径管理',
   '/ct-line': '产线与产品参数映射',
   '/lines': '线体基础参数维护',

@@ -1,19 +1,16 @@
 <template>
   <div class="page">
-    <div class="page-header">
-      <h1 class="page-title">动态产能模拟（月）</h1>
-      <p class="page-subtitle">月度动态产能模拟模块 - 双击或右键编辑单元格</p>
-    </div>
-
     <!-- MRP筛选条件 -->
     <div class="filters-row">
       <BaseSelect
+        class="filter-select filter-select-created-by"
         v-model="selectedCreatedBy"
         :options="createdBys.map(c => ({ value: c, label: c }))"
         placeholder="选择导入人"
         @update:modelValue="onCreatedByChange"
       />
       <BaseSelect
+        class="filter-select filter-select-file-name"
         v-model="selectedFileName"
         :options="fileNames.map(f => ({ value: f, label: f }))"
         placeholder="选择文件"
@@ -21,6 +18,7 @@
         @update:modelValue="onFileNameChange"
       />
       <BaseSelect
+        class="filter-select filter-select-version"
         v-model="selectedVersion"
         :options="versions.map(v => ({ value: v, label: v }))"
         placeholder="选择版本"
@@ -79,7 +77,7 @@
     >
       <div class="summary-title">
         <span>{{ formatLineLabel(selectedLine) }}</span>
-        <button class="close-btn" @click="closeSummary">×</button>
+        <button class="close-btn" @click="closeSummary">脳</button>
       </div>
       <div class="summary-scroll">
         <table class="summary-table">
@@ -375,7 +373,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3>保存快照</h3>
-          <button class="close-btn" @click="showSnapshotModal = false">×</button>
+          <button class="close-btn" @click="showSnapshotModal = false">脳</button>
         </div>
         <div class="modal-body">
           <label class="form-label">快照名称</label>
@@ -616,20 +614,20 @@ const summaryData = computed(() => {
     totalRow.loadings[month] = totalLoad
   })
 
-  // 2. 按 PF 分组计算LOAD
-  const pfGroups = {}
+  // 2. 按 Description 分组计算 LOAD
+  const descriptionGroups = {}
   items.forEach(item => {
-    const pf = item.pf || '未分类'
-    if (!pfGroups[pf]) {
-      pfGroups[pf] = { dimension: pf, loadings: {} }
+    const description = (item.description || '').trim() || '未描述'
+    if (!descriptionGroups[description]) {
+      descriptionGroups[description] = { dimension: description, loadings: {} }
     }
     monthsVal.forEach(month => {
-      if (!pfGroups[pf].loadings[month]) pfGroups[pf].loadings[month] = 0
-      pfGroups[pf].loadings[month] += calcLoading(item, month)
+      if (!descriptionGroups[description].loadings[month]) descriptionGroups[description].loadings[month] = 0
+      descriptionGroups[description].loadings[month] += calcLoading(item, month)
     })
   })
 
-  return [totalRow, ...Object.values(pfGroups)]
+  return [totalRow, ...Object.values(descriptionGroups)]
 })
 
 // 判断单元格是否处于编辑状态
@@ -944,18 +942,38 @@ onMounted(() => {
 /* === Filters === */
 .filters-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.filters-row .btn {
+  padding: 0.45rem 0.7rem;
+}
+
+.filter-select-created-by {
+  width: 116px;
+  min-width: 116px;
+}
+
+.filter-select-file-name {
+  width: 136px;
+  min-width: 136px;
+}
+
+.filter-select-version {
+  width: 116px;
+  min-width: 116px;
 }
 
 .line-filter-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
 }
 
