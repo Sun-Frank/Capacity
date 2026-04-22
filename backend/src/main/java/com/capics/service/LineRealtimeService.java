@@ -111,11 +111,16 @@ public class LineRealtimeService {
                     entity.setOee(product.getOee());
                     entity.setShiftWorkers(product.getWorkerCount());
 
+                    BigDecimal cycleTime = product.getCycleTime();
+                    BigDecimal oee = product.getOee();
                     BigDecimal hoursPerShift = line.getHoursPerShift();
-                    BigDecimal oeeDecimal = product.getOee().divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+                    if (cycleTime == null || cycleTime.compareTo(BigDecimal.ZERO) <= 0) continue;
+                    if (oee == null || hoursPerShift == null) continue;
+
+                    BigDecimal oeeDecimal = oee.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
 
                     BigDecimal shiftOutput = BigDecimal.valueOf(3600)
-                            .divide(product.getCycleTime(), 4, RoundingMode.HALF_UP)
+                            .divide(cycleTime, 4, RoundingMode.HALF_UP)
                             .multiply(oeeDecimal)
                             .multiply(hoursPerShift)
                             .setScale(2, RoundingMode.HALF_UP);
