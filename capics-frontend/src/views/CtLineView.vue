@@ -9,6 +9,7 @@
       <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
         <button class="btn btn-primary" @click="showImport = true">导入数据</button>
         <button class="btn" @click="handleDownloadTemplate">模板下载</button>
+        <button class="btn" @click="handleExportCtLines">数据导出</button>
       </div>
 
       <table>
@@ -80,6 +81,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import ImportModal from '@/components/common/ImportModal.vue'
 import { downloadCtLineTemplate, getCtLines, importCtLines, updateCtLine } from '@/api/ctLine'
+import { downloadCsv } from '@/utils/export'
 
 const { token } = useAuth()
 const { showToast } = useToast()
@@ -194,6 +196,31 @@ const handleDownloadTemplate = async () => {
   } catch (err) {
     showToast(err?.message || '模板下载失败', 'error')
   }
+}
+
+const handleExportCtLines = () => {
+  const headers = [
+    { key: 'colB', label: '生产线' },
+    { key: 'colC', label: '物料号' },
+    { key: 'colD', label: '主备线' },
+    { key: 'colF', label: 'CT(秒)' },
+    { key: 'colI', label: 'OEE' },
+    { key: 'colP', label: '人数' },
+    { key: 'colW', label: '最后修改日期' },
+    { key: 'colX', label: '最后修改人' }
+  ]
+  const exportRows = (rows.value || []).map(r => ({
+    colB: r.colB || '',
+    colC: r.colC || '',
+    colD: r.colD || '',
+    colF: r.colF || '',
+    colI: r.colI || '',
+    colP: r.colP || '',
+    colW: r.colW || '',
+    colX: r.colX || ''
+  }))
+  downloadCsv('产线-产品.csv', headers, exportRows)
+  showToast('导出成功', 'success')
 }
 
 onMounted(loadRows)

@@ -14,6 +14,7 @@
       >
       <button class="btn btn-primary" @click="showImportModal">导入工艺路线</button>
       <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
+      <button class="btn" @click="handleExportRoutings">数据导出</button>
     </div>
     <div class="table-wrapper">
       <table>
@@ -86,6 +87,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate } from '@/api/routing'
+import { downloadCsv } from '@/utils/export'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
@@ -162,6 +164,25 @@ const handleDownloadRoutingTemplate = async () => {
   } catch (err) {
     showToast('模板下载失败: ' + (err?.message || '未知错误'), 'error')
   }
+}
+
+const handleExportRoutings = () => {
+  const headers = [
+    { key: 'productNumber', label: '成品物料号' },
+    { key: 'routingDescription', label: '描述' },
+    { key: 'componentNumber', label: '组件物料号' },
+    { key: 'lineCode', label: '生产线' },
+    { key: 'bomLevel', label: 'BOM层级' }
+  ]
+  const rows = (routings.value || []).map(r => ({
+    productNumber: r.productNumber || '',
+    routingDescription: r.routingDescription || '',
+    componentNumber: r.componentNumber || '',
+    lineCode: r.lineCode || '',
+    bomLevel: r.bomLevel ?? ''
+  }))
+  downloadCsv('工艺路线.csv', headers, rows)
+  showToast('导出成功', 'success')
 }
 
 const handleImport = async ({ file }) => {

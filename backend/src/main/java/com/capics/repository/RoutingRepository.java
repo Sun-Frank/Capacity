@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface RoutingRepository extends JpaRepository<Routing, Long> {
     Optional<Routing> findByProductNumber(String productNumber);
     List<Routing> findAllByProductNumber(String productNumber);
+    List<Routing> findByProductNumberIn(List<String> productNumbers);
 }

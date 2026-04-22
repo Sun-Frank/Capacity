@@ -23,7 +23,7 @@ const pageTitles = {
   '/routing': '工艺路线',
   '/ct-line': '产线-产品',
   '/lines': '生产线配置',
-  '/product-line': '产品定线',
+  '/product-line': '产线一览',
   '/capacity-assessment': '静态产能核算（周）',
   '/capacity-assessment-monthly': '静态产能核算（月）',
   '/capacity-realtime': '动态产能模拟（周）',

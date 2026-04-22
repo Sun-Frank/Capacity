@@ -26,6 +26,7 @@
         >
         <button class="btn btn-primary" @click="showImportModal('family')">导入编码族</button>
         <button class="btn" @click="handleDownloadFamilyTemplate">模板下载</button>
+        <button class="btn" @click="handleExportFamilies">数据导出</button>
       </div>
       <FamiliesTable :families="families" @edit="handleEditFamily" />
     </div>
@@ -42,6 +43,7 @@
         >
         <button class="btn btn-primary" @click="showImportModal('family-line')">导入编码族定线</button>
         <button class="btn" @click="handleDownloadFamilyLineTemplate">模板下载</button>
+        <button class="btn" @click="handleExportFamilyLines">数据导出</button>
       </div>
       <FamilyLinesTable :family-lines="familyLines" @edit="handleEditFamilyLine" />
     </div>
@@ -58,6 +60,7 @@
         >
         <button class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
         <button class="btn" @click="handleDownloadProductTemplate">模板下载</button>
+        <button class="btn" @click="handleExportProducts">数据导出</button>
       </div>
       <ProductsTable :products="products" @save="handleUpdateProduct" />
     </div>
@@ -107,6 +110,7 @@ import ImportModal from '@/components/common/ImportModal.vue'
 import EditFamilyModal from '@/components/products/EditFamilyModal.vue'
 import EditFamilyLineModal from '@/components/products/EditFamilyLineModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { downloadCsv } from '@/utils/export'
 
 const { token, currentUser } = useAuth()
 const { showToast } = useToast()
@@ -129,6 +133,84 @@ const showConfirmModal = ref(false)
 const confirmTitle = ref('')
 const confirmItems = ref([])
 const pendingFile = ref(null)
+
+const formatDateTime = (value) => {
+  if (!value) return ''
+  return String(value).replace('T', ' ').slice(0, 19)
+}
+
+const handleExportFamilies = () => {
+  const headers = [
+    { key: 'familyCode', label: '编码族' },
+    { key: 'lineCode', label: '生产线' },
+    { key: 'description', label: '描述' },
+    { key: 'pf', label: 'PF' },
+    { key: 'codingRule', label: '编码规则' },
+    { key: 'cycleTime', label: '周期时间(秒)' },
+    { key: 'oee', label: 'OEE(%)' },
+    { key: 'workerCount', label: '人数' },
+    { key: 'updatedBy', label: '创建/修改人' },
+    { key: 'updatedAt', label: '创建/修改时间' }
+  ]
+  const rows = (families.value || []).map(f => ({
+    familyCode: f.familyCode || '',
+    lineCode: f.lineCode || '',
+    description: f.description || '',
+    pf: f.pf || '',
+    codingRule: f.codingRule || '',
+    cycleTime: f.cycleTime ?? '',
+    oee: f.oee ?? '',
+    workerCount: f.workerCount ?? '',
+    updatedBy: f.updatedBy || f.createdBy || '',
+    updatedAt: formatDateTime(f.updatedAt || f.createdAt)
+  }))
+  downloadCsv('产品主数据-编码族.csv', headers, rows)
+  showToast('导出成功', 'success')
+}
+
+const handleExportFamilyLines = () => {
+  const headers = [
+    { key: 'familyCode', label: '编码族' },
+    { key: 'lineCode', label: '生产线' },
+    { key: 'description', label: '描述' },
+    { key: 'updatedBy', label: '创建/修改人' },
+    { key: 'updatedAt', label: '创建/修改时间' }
+  ]
+  const rows = (familyLines.value || []).map(f => ({
+    familyCode: f.familyCode || '',
+    lineCode: f.lineCode || '',
+    description: f.description || '',
+    updatedBy: f.updatedBy || f.createdBy || '',
+    updatedAt: formatDateTime(f.updatedAt || f.createdAt)
+  }))
+  downloadCsv('产品主数据-编码族定线.csv', headers, rows)
+  showToast('导出成功', 'success')
+}
+
+const handleExportProducts = () => {
+  const headers = [
+    { key: 'itemNumber', label: '物料号' },
+    { key: 'lineCode', label: '生产线' },
+    { key: 'familyCode', label: '编码族' },
+    { key: 'pf', label: 'PF' },
+    { key: 'description', label: '描述' },
+    { key: 'cycleTime', label: 'CT(秒)' },
+    { key: 'oee', label: 'OEE(%)' },
+    { key: 'workerCount', label: '人数' }
+  ]
+  const rows = (products.value || []).map(p => ({
+    itemNumber: p.itemNumber || '',
+    lineCode: p.lineCode || '',
+    familyCode: p.familyCode || '',
+    pf: p.pf || '',
+    description: p.description || '',
+    cycleTime: p.cycleTime ?? '',
+    oee: p.oee ?? '',
+    workerCount: p.workerCount ?? ''
+  }))
+  downloadCsv('产品主数据-产品列表.csv', headers, rows)
+  showToast('导出成功', 'success')
+}
 
 const handleDownloadFamilyTemplate = async () => {
   try {

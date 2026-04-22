@@ -1,54 +1,59 @@
-/* ========================================
-   BUTTONS - Apple Style
-   ======================================== */
-
+/* Buttons */
 .btn {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 500;
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  background: var(--muted);
+  font-weight: 600;
+  padding: 0.58rem 0.95rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7fc 100%);
   color: var(--foreground);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
 }
 
 .btn:hover {
-  background: var(--border-light);
+  border-color: #b8c8df;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: white;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 100%);
+  color: var(--primary-foreground);
+  border-color: #00478f;
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  background: linear-gradient(135deg, var(--primary-hover) 0%, #006fbb 100%);
 }
 
 .btn-secondary {
-  background: var(--foreground);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-color: #334155;
   color: white;
 }
 
 .btn-secondary:hover {
-  opacity: 0.9;
+  filter: brightness(1.04);
 }
 
-/* ========================================
-   FORMS - Apple Style
-   ======================================== */
-
+/* Forms */
 .form-group {
   margin-bottom: var(--space-5);
 }
@@ -57,18 +62,18 @@
   display: block;
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--foreground);
   margin-bottom: var(--space-2);
 }
 
 .form-input {
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: 0.66rem 0.84rem;
   font-family: var(--font-body);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   border: 1px solid var(--border);
-  background: white;
+  background: var(--surface);
   color: var(--foreground);
   border-radius: var(--radius-sm);
   transition: all 0.15s ease;
@@ -76,20 +81,17 @@
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgba(0, 78, 162, 0.17);
 }
 
 .form-input::placeholder {
   color: var(--muted-foreground);
 }
 
-/* ========================================
-   CARDS - Apple Style
-   ======================================== */
-
+/* Cards */
 .card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-light);
   padding: var(--space-5);
   border-radius: var(--radius-md);
@@ -99,12 +101,13 @@
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  border-color: #d8e3f3;
 }
 
 .card-label {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted-foreground);
   margin-bottom: var(--space-2);
 }
@@ -112,7 +115,7 @@
 .card-value {
   font-family: var(--font-display);
   font-size: var(--text-3xl);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1;
   color: var(--foreground);
 }
@@ -120,68 +123,56 @@
 .card-unit {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 400;
   color: var(--muted-foreground);
   margin-top: var(--space-2);
 }
 
-/* ========================================
-   GRID
-   ======================================== */
-
+/* Grid */
 .grid {
   display: grid;
   gap: var(--space-5);
 }
 
-.grid-4 {
-  grid-template-columns: repeat(4, 1fr);
-}
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
 
-.grid-3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.grid-2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-/* ========================================
-   TABLE - Apple Style
-   ======================================== */
-
+/* Table */
 .table-wrapper {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 280px);
-  background: white;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
 }
 
 th {
   font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 700;
   text-align: left;
-  padding: var(--space-3) var(--space-4);
-  background: var(--muted);
-  color: var(--foreground);
+  padding: 0.72rem 0.84rem;
+  background: #eef3fb;
+  color: #334155;
   border-bottom: 1px solid var(--border-light);
   white-space: nowrap;
 }
 
 td {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-light);
+  padding: 0.68rem 0.84rem;
+  border-bottom: 1px solid #edf2f8;
   font-family: var(--font-body);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   color: var(--foreground);
 }
 
@@ -190,54 +181,55 @@ tr:last-child td {
 }
 
 tr:hover td {
-  background: var(--muted);
+  background: #f8fbff;
 }
 
-/* ========================================
-   TABS - Apple Style
-   ======================================== */
-
+/* Tabs */
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--border-light);
   margin-bottom: var(--space-5);
+  gap: var(--space-1);
 }
 
 .tab {
   font-family: var(--font-body);
-  font-size: var(--text-base);
-  font-weight: 500;
-  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 0.6rem 0.95rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.15s ease;
-  position: relative;
   margin-bottom: -1px;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
 }
 
 .tab:hover {
   color: var(--foreground);
+  background: #f2f6fd;
 }
 
 .tab.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
+  background: #edf7f5;
 }
 
-/* ========================================
-   PAGE
-   ======================================== */
-
+/* Page */
 .page {
   padding: var(--space-6);
   height: calc(100vh - var(--topbar-height));
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--muted);
+  background:
+    radial-gradient(80rem 34rem at 15% -15%, rgba(0, 78, 162, 0.12) 0%, transparent 60%),
+    radial-gradient(72rem 30rem at 100% 0%, rgba(0, 145, 219, 0.1) 0%, transparent 56%),
+    var(--background);
 }
 
 .page-content {
@@ -247,15 +239,11 @@ tr:hover td {
   flex-direction: column;
 }
 
-/* ========================================
-   TABLE CONTAINER
-   ======================================== */
-
 .table-container {
   flex: 1;
   overflow: auto;
   position: relative;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
 }
@@ -264,13 +252,12 @@ tr:hover td {
   min-width: 100%;
 }
 
-/* Sticky columns for table-container */
 .table-container th.sticky-left,
 .table-container td.sticky-left {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: white;
+  background: var(--surface);
 }
 
 .table-container th.sticky-left-80,
@@ -278,14 +265,14 @@ tr:hover td {
   position: sticky;
   left: 80px;
   z-index: 2;
-  background: white;
+  background: var(--surface);
 }
 
 .table-container thead th {
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--muted);
+  background: #eef3fb;
 }
 
 .table-container thead th.sticky-left {
@@ -294,9 +281,10 @@ tr:hover td {
 
 .page-header {
   margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-light);
-  background: white;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(247, 250, 255, 0.9) 100%);
+  border: 1px solid rgba(211, 220, 235, 0.75);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
   padding: var(--space-5);
   border-radius: var(--radius-md);
 }
@@ -304,22 +292,19 @@ tr:hover td {
 .page-title {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.2;
   margin-bottom: var(--space-1);
+  letter-spacing: -0.01em;
 }
 
 .page-subtitle {
   font-family: var(--font-body);
-  font-size: var(--text-base);
-  font-weight: 400;
+  font-size: var(--text-sm);
   color: var(--muted-foreground);
 }
 
-/* ========================================
-   STATS GRID
-   ======================================== */
-
+/* Stats */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -329,20 +314,22 @@ tr:hover td {
 
 .stat-card {
   padding: var(--space-5);
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .stat-label {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted-foreground);
   margin-bottom: var(--space-2);
 }
@@ -350,7 +337,7 @@ tr:hover td {
 .stat-value {
   font-family: var(--font-display);
   font-size: var(--text-3xl);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1;
   margin-bottom: var(--space-2);
 }
@@ -358,13 +345,8 @@ tr:hover td {
 .stat-unit {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 400;
   color: var(--muted-foreground);
 }
-
-/* ========================================
-   DASHBOARD
-   ======================================== */
 
 .dashboard-header {
   display: flex;
@@ -379,22 +361,22 @@ tr:hover td {
   align-items: center;
 }
 
-/* ========================================
-   LOGIN PAGE
-   ======================================== */
-
+/* Login */
 .login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
-  background: var(--muted);
+  background:
+    radial-gradient(44rem 28rem at 0% 0%, rgba(0, 78, 162, 0.15) 0%, transparent 62%),
+    radial-gradient(44rem 28rem at 100% 100%, rgba(0, 145, 219, 0.14) 0%, transparent 62%),
+    var(--background);
 }
 
 .login-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
 }
 
 .login-header {
@@ -405,23 +387,23 @@ tr:hover td {
 .login-title {
   font-family: var(--font-display);
   font-size: var(--text-4xl);
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: 800;
+  line-height: 1.05;
   margin-bottom: var(--space-2);
 }
 
 .login-subtitle {
   font-family: var(--font-body);
   font-size: var(--text-base);
-  font-weight: 400;
   color: var(--muted-foreground);
 }
 
 .login-form {
-  background: white;
+  background: var(--surface);
   padding: var(--space-6);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
 }
 
 .login-footer {
@@ -432,73 +414,46 @@ tr:hover td {
   color: var(--muted-foreground);
 }
 
-/* ========================================
-   NOTIFICATION / TOAST - Apple Style
-   ======================================== */
-
-.notification {
-  position: fixed;
-  top: var(--space-5);
-  right: var(--space-5);
-  padding: var(--space-4) var(--space-5);
-  background: var(--foreground);
-  color: white;
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 1000;
-  animation: slideIn 0.2s ease-out;
-}
-
-.notification.error {
-  background: var(--error);
-}
-
+/* Toast / notification */
+.notification,
 .toast {
   position: fixed;
   top: var(--space-5);
   right: var(--space-5);
-  padding: var(--space-4) var(--space-5);
-  background: var(--foreground);
-  color: white;
+  padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   font-family: var(--font-body);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   z-index: 2000;
-  min-width: 280px;
+  min-width: 260px;
+  animation: slideIn 0.2s ease-out;
 }
 
-.toast.success {
-  background: var(--success);
+.notification,
+.toast {
+  background: #0f172a;
+  color: white;
 }
 
-.toast.error {
-  background: var(--error);
-}
-
-.toast.warning {
-  background: var(--warning);
-}
+.toast.success,
+.notification.success { background: var(--success); }
+.toast.error,
+.notification.error { background: var(--error); }
+.toast.warning,
+.notification.warning { background: var(--warning); }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
+  from { transform: translateX(110%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* ========================================
-   IMPORT MODAL
-   ======================================== */
-
+/* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -506,50 +461,32 @@ tr:hover td {
 }
 
 .modal-content {
-  width: 480px;
-  background: white;
+  width: min(520px, 92vw);
+  background: var(--surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
   padding: var(--space-6);
 }
 
-.modal-header {
-  margin-bottom: var(--space-5);
-}
-
+.modal-header { margin-bottom: var(--space-5); }
 .modal-title {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--text-xl);
 }
-
-.modal-body {
-  margin-bottom: var(--space-5);
-}
-
+.modal-body { margin-bottom: var(--space-5); }
 .modal-footer {
   display: flex;
   gap: var(--space-3);
   justify-content: flex-end;
 }
 
-.import-loading {
-  text-align: center;
-  padding: var(--space-6);
-}
-
-.import-loading-text {
-  font-size: var(--text-xl);
-  margin-bottom: var(--space-4);
-}
-
-/* ========================================
-   SIDEBAR - Apple Style
-   ======================================== */
-
+/* Sidebar */
 .sidebar {
   width: var(--sidebar-width);
-  background: white;
+  background:
+    linear-gradient(175deg, #f8fbff 0%, #eef4ff 25%, #ecf6ff 100%);
   border-right: 1px solid var(--border-light);
   padding: var(--space-5) 0;
   position: fixed;
@@ -566,83 +503,73 @@ tr:hover td {
 .sidebar-title {
   font-family: var(--font-display);
   font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--foreground);
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-subtitle {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 400;
   color: var(--muted-foreground);
   margin-top: var(--space-1);
 }
 
-.nav-menu {
-  list-style: none;
-  padding: 0;
-}
-
-.nav-item {
-  padding: 0;
-}
+.nav-menu { list-style: none; padding: 0; }
+.nav-item { padding: 0; }
 
 .nav-link {
   display: block;
-  padding: var(--space-3) var(--space-5);
+  margin: 0.1rem 0.55rem;
+  padding: 0.56rem 0.78rem;
   font-family: var(--font-body);
-  font-size: var(--text-base);
-  font-weight: 500;
-  color: var(--foreground);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #1e293b;
   text-decoration: none;
   transition: all 0.15s ease;
-  position: relative;
-  cursor: pointer;
-  border-radius: 0;
+  border-radius: 10px;
 }
 
 .nav-link:hover {
-  background: var(--muted);
+  background: rgba(0, 78, 162, 0.08);
+  color: #0f172a;
 }
 
 .nav-link.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 100%);
   color: white;
+  box-shadow: 0 8px 18px rgba(0, 78, 162, 0.28);
 }
 
 .nav-section {
   padding: var(--space-3) var(--space-5);
   font-family: var(--font-body);
-  font-size: var(--text-xs);
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-foreground);
+  letter-spacing: 0.08em;
+  color: #64748b;
   margin-top: var(--space-3);
 }
 
-/* ========================================
-   MAIN CONTENT
-   ======================================== */
-
+/* Main content */
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-width);
   height: 100vh;
-  background: var(--muted);
+  background: var(--background);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* ========================================
-   TOPBAR - Apple Style
-   ======================================== */
-
+/* Topbar */
 .topbar {
   height: var(--topbar-height);
-  background: white;
+  background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid var(--border-light);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -655,7 +582,8 @@ tr:hover td {
 .topbar-title {
   font-family: var(--font-display);
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .topbar-user {
@@ -667,17 +595,10 @@ tr:hover td {
   color: var(--muted-foreground);
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-
+/* Responsive */
 @media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
@@ -688,17 +609,9 @@ tr:hover td {
     border-right: none;
     border-bottom: 1px solid var(--border-light);
   }
-  .main-content {
-    margin-left: 0;
-  }
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .grid-4,
-  .grid-3,
-  .grid-2 {
-    grid-template-columns: 1fr;
-  }
+  .main-content { margin-left: 0; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
   .dashboard-header {
     flex-direction: column;
     gap: var(--space-4);

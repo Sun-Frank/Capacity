@@ -8,6 +8,7 @@ import java.util.List;
 @Repository
 public interface RoutingItemRepository extends JpaRepository<RoutingItem, Long> {
     List<RoutingItem> findByRoutingId(Long routingId);
+    List<RoutingItem> findByRoutingIdIn(List<Long> routingIds);
     List<RoutingItem> findByComponentNumberAndLineCode(String componentNumber, String lineCode);
     void deleteByRoutingId(Long routingId);
 }

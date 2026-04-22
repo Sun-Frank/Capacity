@@ -1,31 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
 :root {
-  /* Colors - Apple Style */
-  --background: #FFFFFF;
-  --foreground: #1D1D1F;
-  --muted: #F5F5F7;
-  --muted-foreground: #86868B;
-  --accent: #0071E3;
-  --accent-foreground: #FFFFFF;
-  --border: #D2D2D7;
-  --border-light: #E5E5E7;
-  --ring: #0071E3;
+  /* Yanfeng brand palette */
+  --background: #f4f7fc;
+  --surface: #ffffff;
+  --surface-soft: #f7faff;
+  --foreground: #1f2937;
+  --muted: #edf2f8;
+  --muted-foreground: #6b7280;
+  --accent: #0091db;
+  --accent-foreground: #ffffff;
+  --border: #d5dbe5;
+  --border-light: #e6ebf3;
+  --ring: #004ea2;
 
-  /* Primary Colors - Apple Blue */
-  --primary: #0071E3;
-  --primary-hover: #0077ED;
-  --primary-foreground: #FFFFFF;
+  /* Primary */
+  --primary: #004ea2;
+  --primary-hover: #003f84;
+  --primary-foreground: #ffffff;
 
-  /* Status Colors */
-  --success: #34C759;
-  --warning: #FF9500;
-  --error: #FF3B30;
+  /* Secondary brand */
+  --brand-cyan: #0091db;
+  --brand-grey-dark: #4c4948;
+  --brand-grey-light: #c1c6c8;
+
+  /* Status */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
 
   /* Typography */
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  --font-display: 'Open Sans', 'Noto Sans SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Open Sans', 'Noto Sans SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Consolas', monospace;
 
-  /* Font Sizes */
+  /* Type scale */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -45,24 +54,20 @@
   --space-6: 2rem;
   --space-8: 3rem;
 
-  /* Borders */
-  --border-width: 1px;
-  --border-width-thick: 2px;
-
-  /* Border Radius - Apple Style */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
-  /* Shadows - Soft and subtle */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
-  --shadow-xl: 0 16px 48px rgba(0,0,0,0.15);
+  /* Shadow */
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.09);
+  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.12);
+  --shadow-xl: 0 28px 56px rgba(15, 23, 42, 0.14);
 
   /* Layout */
-  --sidebar-width: 260px;
+  --sidebar-width: 268px;
   --topbar-height: 64px;
 }

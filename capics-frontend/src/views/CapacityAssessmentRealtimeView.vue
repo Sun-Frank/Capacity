@@ -30,6 +30,13 @@
         {{ loading ? '加载中...' : '加载数据' }}
       </button>
       <button
+        v-if="selectedLine && editableData.length > 0"
+        class="btn"
+        @click="handleExportRealtimeWeekly"
+      >
+        数据导出
+      </button>
+      <button
         v-if="Object.keys(linesData).length > 0"
         class="btn btn-secondary"
         @click="showSnapshotModal = true"
@@ -396,6 +403,7 @@ import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileNa
 import { getCapacityAssessment } from '@/api/capacityRealtime'
 import { getLines } from '@/api/line'
 import { saveSnapshot as saveSnapshotApi } from '@/api/simulationSnapshot'
+import { downloadCsv } from '@/utils/export'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 
 const { token } = useAuth()
@@ -840,6 +848,46 @@ const formatDemand = (demand) => {
 const formatLoading = (loading) => {
   if (loading === 0) return '-'
   return (loading * 100).toFixed(2) + '%'
+}
+
+const handleExportRealtimeWeekly = () => {
+  if (!selectedLine.value || editableData.value.length === 0) {
+    showToast('暂无可导出数据', 'warning')
+    return
+  }
+  const headers = [
+    { key: 'lineCode', label: '生产线' },
+    { key: 'itemNumber', label: 'Item Number' },
+    { key: 'description', label: 'Description' },
+    { key: 'componentNumber', label: 'Component Code' },
+    { key: 'shiftOutput', label: '班产量' },
+    { key: 'shiftWorkers', label: '班人数' },
+    { key: 'ct', label: 'CT' },
+    { key: 'oee', label: 'OEE(%)' }
+  ]
+  weeks.value.forEach(week => {
+    headers.push({ key: `${week}_demand`, label: `${getWeekDate(week)}_需求量` })
+    headers.push({ key: `${week}_loading`, label: `${getWeekDate(week)}_LOADING` })
+  })
+  const rows = editableData.value.map(item => {
+    const row = {
+      lineCode: formatLineLabel(selectedLine.value),
+      itemNumber: item.itemNumber || '',
+      description: item.description || '',
+      componentNumber: item.componentNumber || '',
+      shiftOutput: Math.round(calcShiftOutput(item)) || '',
+      shiftWorkers: item.shiftWorkers ?? '',
+      ct: item.ct ?? '',
+      oee: item.oee ?? ''
+    }
+    weeks.value.forEach(week => {
+      row[`${week}_demand`] = item[`${week}_demand`] ?? ''
+      row[`${week}_loading`] = (calcLoading(item, week) * 100).toFixed(2) + '%'
+    })
+    return row
+  })
+  downloadCsv(`动态产能模拟-周-${selectedLine.value || '全部'}.csv`, headers, rows)
+  showToast('导出成功', 'success')
 }
 
 onMounted(() => {
