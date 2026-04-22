@@ -33,10 +33,10 @@ public class LineRealtime {
     @Column(precision = 10, scale = 2)
     private BigDecimal ct;
 
-    @Column(precision = 5, scale = 4)
+    @Column(precision = 7, scale = 4)
     private BigDecimal oee;
 
-    @Column(columnDefinition = "jsonb")
+    @Column(columnDefinition = "text")
     private String weeklyDemand;
 
     @Column(length = 10)

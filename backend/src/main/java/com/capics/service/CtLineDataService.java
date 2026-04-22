@@ -10,8 +10,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,6 +37,8 @@ public class CtLineDataService {
 
     private final CtLineDataRepository repository;
     private final DataFormatter dataFormatter = new DataFormatter();
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public CtLineDataService(CtLineDataRepository repository) {
         this.repository = repository;
@@ -100,7 +105,9 @@ public class CtLineDataService {
         }
     }
 
+    @Transactional(timeout = 12)
     public CtLineDataDto updateById(Long id, CtLineDataDto input, String updatedBy) throws IOException {
+        applyWriteTimeout();
         CtLineData entity = repository.findById(id)
                 .orElseThrow(() -> new IOException("未找到数据: id=" + id));
 
@@ -116,7 +123,7 @@ public class CtLineDataService {
         entity.setColX(isBlank(input.getColX()) ? null : input.getColX().trim());
         entity.setUpdatedBy(updatedBy);
 
-        CtLineData saved = repository.save(entity);
+        CtLineData saved = repository.saveAndFlush(entity);
         return toDto(saved);
     }
 
@@ -186,6 +193,11 @@ public class CtLineDataService {
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private void applyWriteTimeout() {
+        entityManager.createNativeQuery("SET LOCAL lock_timeout = '5s'").executeUpdate();
+        entityManager.createNativeQuery("SET LOCAL statement_timeout = '10s'").executeUpdate();
     }
 
     private CtLineDataDto toDto(CtLineData entity) {

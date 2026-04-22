@@ -2,25 +2,27 @@
 .btn {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  font-weight: 600;
-  padding: 0.58rem 0.95rem;
+  font-weight: 700;
+  padding: 0.5rem 0.88rem;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, #ffffff 0%, #f4f7fc 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
   color: var(--foreground);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset, 0 3px 10px rgba(13, 41, 84, 0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .btn:hover {
-  border-color: #b8c8df;
+  border-color: #92add2;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 18px rgba(13, 41, 84, 0.14);
 }
 
 .btn:active {
@@ -34,18 +36,18 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 100%);
+  background: linear-gradient(135deg, #004ea2 0%, #006fc1 42%, #0091db 100%);
   color: var(--primary-foreground);
-  border-color: #00478f;
+  border-color: #0a5eb5;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-hover) 0%, #006fbb 100%);
+  background: linear-gradient(135deg, #003f84 0%, #005ea7 42%, #007fc2 100%);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  border-color: #334155;
+  background: linear-gradient(135deg, #29466d 0%, #3b618f 100%);
+  border-color: #3b618f;
   color: white;
 }
 
@@ -69,20 +71,20 @@
 
 .form-input {
   width: 100%;
-  padding: 0.66rem 0.84rem;
+  padding: 0.58rem 0.72rem;
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid #b9cbe4;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
   color: var(--foreground);
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px rgba(0, 78, 162, 0.17);
+  border-color: #0b67c2;
+  box-shadow: 0 0 0 3px rgba(0, 101, 189, 0.2);
 }
 
 .form-input::placeholder {
@@ -92,16 +94,27 @@
 /* Cards */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border-light);
+  border: 1px solid #d4e0f2;
   padding: var(--space-5);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 20px rgba(9, 39, 78, 0.08);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: #d8e3f3;
+  box-shadow: 0 16px 30px rgba(9, 39, 78, 0.13);
+  border-color: #afc4e2;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #004ea2 0%, #0091db 100%);
 }
 
 .card-label {
@@ -139,13 +152,20 @@
 
 /* Table */
 .table-wrapper {
-  border: 1px solid var(--border-light);
+  border: 1px solid #cdd9eb;
   border-radius: var(--radius-md);
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 280px);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 18px rgba(8, 34, 72, 0.08);
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: linear-gradient(180deg, #f4f8ff 0%, #e9f1fe 100%);
 }
 
 table {
@@ -157,14 +177,14 @@ table {
 th {
   font-family: var(--font-body);
   font-size: var(--text-xs);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   font-weight: 700;
   text-align: left;
   padding: 0.72rem 0.84rem;
-  background: #eef3fb;
-  color: #334155;
-  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #f4f8ff 0%, #e9f1fe 100%);
+  color: #254164;
+  border-bottom: 1px solid #cfddef;
   white-space: nowrap;
 }
 
@@ -181,7 +201,7 @@ tr:last-child td {
 }
 
 tr:hover td {
-  background: #f8fbff;
+  background: #f2f7ff;
 }
 
 /* Tabs */
@@ -216,7 +236,7 @@ tr:hover td {
 .tab.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
-  background: #edf7f5;
+  background: #ecf4ff;
 }
 
 /* Page */
@@ -227,9 +247,17 @@ tr:hover td {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(80rem 34rem at 15% -15%, rgba(0, 78, 162, 0.12) 0%, transparent 60%),
-    radial-gradient(72rem 30rem at 100% 0%, rgba(0, 145, 219, 0.1) 0%, transparent 56%),
+    radial-gradient(80rem 34rem at 15% -15%, rgba(0, 78, 162, 0.14) 0%, transparent 60%),
+    radial-gradient(72rem 30rem at 100% 0%, rgba(0, 145, 219, 0.12) 0%, transparent 56%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(0, 78, 162, 0.02) 0px,
+      rgba(0, 78, 162, 0.02) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
     var(--background);
+  animation: pageFadeIn 0.35s ease;
 }
 
 .page-content {
@@ -280,13 +308,7 @@ tr:hover td {
 }
 
 .page-header {
-  margin-bottom: var(--space-5);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(247, 250, 255, 0.9) 100%);
-  border: 1px solid rgba(211, 220, 235, 0.75);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(6px);
-  padding: var(--space-5);
-  border-radius: var(--radius-md);
+  display: none !important;
 }
 
 .page-title {
@@ -486,17 +508,18 @@ tr:hover td {
 .sidebar {
   width: var(--sidebar-width);
   background:
-    linear-gradient(175deg, #f8fbff 0%, #eef4ff 25%, #ecf6ff 100%);
-  border-right: 1px solid var(--border-light);
+    linear-gradient(190deg, #0f2b4f 0%, #123763 45%, #114a7d 100%);
+  border-right: 1px solid rgba(124, 160, 206, 0.35);
   padding: var(--space-5) 0;
   position: fixed;
   height: 100vh;
   overflow-y: auto;
+  box-shadow: 8px 0 24px rgba(5, 24, 51, 0.22);
 }
 
 .sidebar-header {
   padding: 0 var(--space-5) var(--space-5);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(156, 187, 225, 0.25);
   margin-bottom: var(--space-4);
 }
 
@@ -504,14 +527,14 @@ tr:hover td {
   font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: 800;
-  color: #0f172a;
+  color: #f2f7ff;
   letter-spacing: -0.01em;
 }
 
 .sidebar-subtitle {
   font-family: var(--font-body);
   font-size: var(--text-sm);
-  color: var(--muted-foreground);
+  color: #c4d9f4;
   margin-top: var(--space-1);
 }
 
@@ -525,21 +548,21 @@ tr:hover td {
   font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: 600;
-  color: #1e293b;
+  color: #d7e7fc;
   text-decoration: none;
   transition: all 0.15s ease;
   border-radius: 10px;
 }
 
 .nav-link:hover {
-  background: rgba(0, 78, 162, 0.08);
-  color: #0f172a;
+  background: rgba(118, 171, 234, 0.2);
+  color: #ffffff;
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 100%);
+  background: linear-gradient(135deg, #0a69c0 0%, #0b8ad5 55%, #27acef 100%);
   color: white;
-  box-shadow: 0 8px 18px rgba(0, 78, 162, 0.28);
+  box-shadow: 0 8px 20px rgba(15, 158, 255, 0.32);
 }
 
 .nav-section {
@@ -549,7 +572,7 @@ tr:hover td {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: #9ebce2;
   margin-top: var(--space-3);
 }
 
@@ -567,9 +590,9 @@ tr:hover td {
 /* Topbar */
 .topbar {
   height: var(--topbar-height);
-  background: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid var(--border-light);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid #cfdced;
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -581,9 +604,10 @@ tr:hover td {
 
 .topbar-title {
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.02em;
+  color: #183154;
 }
 
 .topbar-user {
@@ -593,6 +617,17 @@ tr:hover td {
   align-items: center;
   gap: var(--space-4);
   color: var(--muted-foreground);
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive */

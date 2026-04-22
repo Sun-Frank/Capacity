@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   /* Yanfeng brand palette */
-  --background: #f4f7fc;
+  --background: #eaf1fb;
   --surface: #ffffff;
-  --surface-soft: #f7faff;
-  --foreground: #1f2937;
-  --muted: #edf2f8;
-  --muted-foreground: #6b7280;
+  --surface-soft: #f6f9ff;
+  --foreground: #172333;
+  --muted: #edf3fb;
+  --muted-foreground: #5b6b84;
   --accent: #0091db;
   --accent-foreground: #ffffff;
-  --border: #d5dbe5;
-  --border-light: #e6ebf3;
+  --border: #c8d4e8;
+  --border-light: #dde6f4;
   --ring: #004ea2;
 
   /* Primary */
@@ -30,8 +30,8 @@
   --error: #ef4444;
 
   /* Typography */
-  --font-display: 'Open Sans', 'Noto Sans SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  --font-body: 'Open Sans', 'Noto Sans SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Rajdhani', 'Barlow', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Barlow', 'Segoe UI', 'Microsoft YaHei', sans-serif;
   --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Consolas', monospace;
 
   /* Type scale */
@@ -55,17 +55,17 @@
   --space-8: 3rem;
 
   /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
   /* Shadow */
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.09);
-  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.12);
-  --shadow-xl: 0 28px 56px rgba(15, 23, 42, 0.14);
+  --shadow-sm: 0 2px 10px rgba(7, 31, 71, 0.08);
+  --shadow-md: 0 10px 24px rgba(7, 31, 71, 0.12);
+  --shadow-lg: 0 18px 38px rgba(7, 31, 71, 0.16);
+  --shadow-xl: 0 26px 60px rgba(7, 31, 71, 0.2);
 
   /* Layout */
   --sidebar-width: 268px;

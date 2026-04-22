@@ -18,4 +18,7 @@ public interface SimulationSnapshotRepository extends JpaRepository<SimulationSn
 
     List<SimulationSnapshot> findByCreatedByAndFileNameAndVersionAndSnapshotName(
             String createdBy, String fileName, String version, String snapshotName);
+
+    List<SimulationSnapshot> findByCreatedByAndFileNameAndVersionAndSnapshotNameAndSourceAndDimension(
+            String createdBy, String fileName, String version, String snapshotName, String source, String dimension);
 }

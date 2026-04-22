@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">产线-产品</h1>
@@ -6,7 +6,12 @@
     </div>
 
     <div class="table-wrapper">
-      <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+      <div class="ctline-toolbar">
+        <input
+          v-model.trim="searchKeyword"
+          class="form-input search-input"
+          placeholder="搜索生产线 / 物料号 / 主备线 / 修改人"
+        />
         <button class="btn btn-primary" @click="showImport = true">导入数据</button>
         <button class="btn" @click="handleDownloadTemplate">模板下载</button>
         <button class="btn" @click="handleExportCtLines">数据导出</button>
@@ -27,7 +32,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in rows" :key="row.id">
+          <tr v-for="row in filteredRows" :key="row.id">
             <template v-if="editingId === row.id">
               <td><input v-model.trim="editForm.colB" class="form-input" /></td>
               <td><input v-model.trim="editForm.colC" class="form-input" /></td>
@@ -58,7 +63,7 @@
               </td>
             </template>
           </tr>
-          <tr v-if="rows.length === 0">
+          <tr v-if="filteredRows.length === 0">
             <td colspan="9" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
@@ -76,7 +81,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import ImportModal from '@/components/common/ImportModal.vue'
@@ -89,6 +94,7 @@ const { showToast } = useToast()
 const rows = ref([])
 const showImport = ref(false)
 const isImporting = ref(false)
+const searchKeyword = ref('')
 
 const editingId = ref(null)
 const isSaving = ref(false)
@@ -101,6 +107,17 @@ const editForm = ref({
   colP: '',
   colW: '',
   colX: ''
+})
+
+const filteredRows = computed(() => {
+  const keyword = (searchKeyword.value || '').trim().toLowerCase()
+  if (!keyword) {
+    return rows.value
+  }
+  return (rows.value || []).filter((row) => {
+    const targets = [row.colB, row.colC, row.colD, row.colX]
+    return targets.some((v) => String(v || '').toLowerCase().includes(keyword))
+  })
 })
 
 const loadRows = async () => {
@@ -132,7 +149,7 @@ const cancelEdit = () => {
 
 const saveEdit = async (id) => {
   if (!editForm.value.colB || !editForm.value.colC || !editForm.value.colD || !editForm.value.colF || !editForm.value.colI || !editForm.value.colP) {
-    showToast('生产线/物料号/主备线/CT(秒)/OEE/人数 不能为空', 'warning')
+    showToast('生产线、物料号、主备线、CT(秒)、OEE、人数不能为空', 'warning')
     return
   }
 
@@ -140,7 +157,7 @@ const saveEdit = async (id) => {
   try {
     const res = await updateCtLine(token.value, id, editForm.value)
     if (res.success) {
-      const idx = rows.value.findIndex(r => r.id === id)
+      const idx = rows.value.findIndex((r) => r.id === id)
       if (idx >= 0 && res.data) {
         rows.value[idx] = { ...rows.value[idx], ...res.data }
       } else {
@@ -209,7 +226,7 @@ const handleExportCtLines = () => {
     { key: 'colW', label: '最后修改日期' },
     { key: 'colX', label: '最后修改人' }
   ]
-  const exportRows = (rows.value || []).map(r => ({
+  const exportRows = (rows.value || []).map((r) => ({
     colB: r.colB || '',
     colC: r.colC || '',
     colD: r.colD || '',
@@ -225,3 +242,26 @@ const handleExportCtLines = () => {
 
 onMounted(loadRows)
 </script>
+
+<style scoped>
+.ctline-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  background: var(--surface, #fff);
+}
+
+.search-input {
+  width: 320px;
+  max-width: 40vw;
+}
+
+.table-wrapper thead th {
+  top: 56px;
+}
+</style>

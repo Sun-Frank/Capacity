@@ -6,9 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class SimulationSnapshotService {
@@ -32,6 +36,19 @@ public class SimulationSnapshotService {
             Object linesData,
             List<String> dates,
             Map<String, String> dateLabels) throws Exception {
+        createdBy = normalizeKey(createdBy);
+        fileName = normalizeKey(fileName);
+        version = normalizeKey(version);
+        snapshotName = normalizeKey(snapshotName);
+        source = normalizeKind(source, "dynamic");
+        dimension = normalizeKind(dimension, "week");
+
+        List<SimulationSnapshot> existing = repository
+                .findByCreatedByAndFileNameAndVersionAndSnapshotNameAndSourceAndDimension(
+                        createdBy, fileName, version, snapshotName, source, dimension);
+        if (!existing.isEmpty()) {
+            repository.deleteAll(existing);
+        }
 
         SimulationSnapshot snapshot = new SimulationSnapshot();
         snapshot.setCreatedBy(createdBy);
@@ -48,52 +65,77 @@ public class SimulationSnapshotService {
     }
 
     public List<String> getSnapshotNames(String createdBy, String fileName, String version, String source, String dimension) {
-        // 查询 week 和 month 两个维度，返回所有匹配的快照名
-        List<SimulationSnapshot> weekSnapshots = repository.findByCreatedByAndFileNameAndVersionAndSourceAndDimensionOrderByCreatedAtDesc(
-                createdBy, fileName, version, source, "week");
-        List<SimulationSnapshot> monthSnapshots = repository.findByCreatedByAndFileNameAndVersionAndSourceAndDimensionOrderByCreatedAtDesc(
-                createdBy, fileName, version, source, "month");
-        java.util.Set<String> names = new java.util.LinkedHashSet<>();
-        // 按时间倒序添加：先加 month（最新），再加 week
-        for (SimulationSnapshot s : monthSnapshots) names.add(s.getSnapshotName());
-        for (SimulationSnapshot s : weekSnapshots) names.add(s.getSnapshotName());
-        return new java.util.ArrayList<>(names);
+        createdBy = normalizeKey(createdBy);
+        fileName = normalizeKey(fileName);
+        version = normalizeKey(version);
+        source = normalizeKind(source, "dynamic");
+        dimension = normalizeKind(dimension, "week");
+
+        List<SimulationSnapshot> snapshots = repository
+                .findByCreatedByAndFileNameAndVersionAndSourceAndDimensionOrderByCreatedAtDesc(
+                        createdBy, fileName, version, source, dimension);
+        Set<String> names = new LinkedHashSet<>();
+        for (SimulationSnapshot snapshot : snapshots) {
+            names.add(snapshot.getSnapshotName());
+        }
+        return new ArrayList<>(names);
     }
 
-    public Map<String, Object> getSnapshot(String createdBy, String fileName, String version,
-                                          String snapshotName, String source, String dimension) throws Exception {
+    public Map<String, Object> getSnapshot(
+            String createdBy,
+            String fileName,
+            String version,
+            String snapshotName,
+            String source,
+            String dimension) throws Exception {
+        createdBy = normalizeKey(createdBy);
+        fileName = normalizeKey(fileName);
+        version = normalizeKey(version);
+        snapshotName = normalizeKey(snapshotName);
+        source = normalizeKind(source, "dynamic");
+        dimension = normalizeKind(dimension, "week");
+
         List<SimulationSnapshot> snapshots = repository.findByCreatedByAndFileNameAndVersionAndSnapshotName(
                 createdBy, fileName, version, snapshotName);
 
-        // Filter by source and dimension; if not found, try the other dimension
         String otherDimension = "week".equals(dimension) ? "month" : "week";
         SimulationSnapshot found = null;
-        for (SimulationSnapshot s : snapshots) {
-            if (source.equals(s.getSource()) && dimension.equals(s.getDimension())) {
-                found = s;
+        for (SimulationSnapshot snapshot : snapshots) {
+            if (source.equals(snapshot.getSource()) && dimension.equals(snapshot.getDimension())) {
+                found = snapshot;
                 break;
             }
         }
         if (found == null) {
-            for (SimulationSnapshot s : snapshots) {
-                if (source.equals(s.getSource()) && otherDimension.equals(s.getDimension())) {
-                    found = s;
+            for (SimulationSnapshot snapshot : snapshots) {
+                if (source.equals(snapshot.getSource()) && otherDimension.equals(snapshot.getDimension())) {
+                    found = snapshot;
                     break;
                 }
             }
         }
 
-        if (found != null) {
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("source", found.getSource());
-            result.put("dimension", found.getDimension());
-            result.put("snapshotName", found.getSnapshotName());
-            result.put("dates", objectMapper.readValue(found.getDates(), List.class));
-            result.put("dateLabels", objectMapper.readValue(found.getDateLabels(), Map.class));
-            result.put("linesData", objectMapper.readValue(found.getLinesData(), Map.class));
-            result.put("createdAt", found.getCreatedAt().toString());
-            return result;
+        if (found == null) {
+            return null;
         }
-        return null;
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("source", found.getSource());
+        result.put("dimension", found.getDimension());
+        result.put("snapshotName", found.getSnapshotName());
+        result.put("dates", objectMapper.readValue(found.getDates(), List.class));
+        result.put("dateLabels", objectMapper.readValue(found.getDateLabels(), Map.class));
+        result.put("linesData", objectMapper.readValue(found.getLinesData(), Map.class));
+        result.put("createdAt", found.getCreatedAt().toString());
+        return result;
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String normalizeKind(String value, String defaultValue) {
+        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        return normalized.isEmpty() ? defaultValue : normalized;
     }
 }

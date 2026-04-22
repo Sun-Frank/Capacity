@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,7 +112,7 @@ public class CapacityAssessmentService {
 
         Map<String, List<Map<String, Object>>> linesData = new LinkedHashMap<>();
         for (Map<String, Object> mrpItem : mrpItems) {
-            String itemNumber = (String) mrpItem.get("itemNumber");
+            String itemNumber = normalize((String) mrpItem.get("itemNumber"));
             @SuppressWarnings("unchecked")
             Map<String, BigDecimal> weeklyDemand = (Map<String, BigDecimal>) mrpItem.get("weeks");
             processOneFinishedProductWeekly(itemNumber, weeklyDemand, weeks, weekDateRanges, linesData, cache);
@@ -164,7 +165,7 @@ public class CapacityAssessmentService {
 
         Map<String, List<Map<String, Object>>> linesData = new LinkedHashMap<>();
         for (Map<String, Object> mrpItem : mrpItems) {
-            String itemNumber = (String) mrpItem.get("itemNumber");
+            String itemNumber = normalize((String) mrpItem.get("itemNumber"));
             @SuppressWarnings("unchecked")
             Map<String, BigDecimal> monthlyDemand = (Map<String, BigDecimal>) mrpItem.get("months");
             processOneFinishedProductMonthly(itemNumber, monthlyDemand, months, monthDays, linesData, cache);
@@ -184,8 +185,8 @@ public class CapacityAssessmentService {
             LinkedHashSet<String> warningSet) {
 
         Set<String> finishedItems = mrpItems.stream()
-                .map(item -> (String) item.get("itemNumber"))
-                .filter(v -> v != null && !v.isBlank())
+                .map(item -> normalize((String) item.get("itemNumber")))
+                .filter(v -> v != null)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Map<String, List<String>> componentsByFinishedItem = new HashMap<>();
@@ -193,13 +194,7 @@ public class CapacityAssessmentService {
             return new RequestCache(componentsByFinishedItem, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
         }
 
-        Map<String, String> itemDescriptionByItemNumber = productRepository.findByItemNumberIn(new ArrayList<>(finishedItems)).stream()
-                .filter(p -> p.getItemNumber() != null && p.getDescription() != null && !p.getDescription().isBlank())
-                .collect(Collectors.toMap(
-                        Product::getItemNumber,
-                        Product::getDescription,
-                        (first, second) -> first,
-                        LinkedHashMap::new));
+        Map<String, String> itemDescriptionByItemNumber = buildItemDescriptionMap(finishedItems);
 
         List<Routing> routings = routingRepository.findByProductNumberIn(new ArrayList<>(finishedItems));
         Map<String, List<Long>> routingIdsByProduct = new HashMap<>();
@@ -499,10 +494,11 @@ public class CapacityAssessmentService {
                 .multiply(context.lineConfig.getHoursPerShift())
                 .setScale(2, RoundingMode.HALF_UP);
 
-        String itemDescription = cache.itemDescriptionByItemNumber.get(itemNumber);
+        String normalizedItemNumber = normalize(itemNumber);
+        String itemDescription = normalizedItemNumber == null ? "" : cache.itemDescriptionByItemNumber.get(normalizedItemNumber);
 
         Map<String, Object> row = new LinkedHashMap<>();
-        row.put("itemNumber", itemNumber);
+        row.put("itemNumber", normalizedItemNumber == null ? "" : normalizedItemNumber);
         row.put("description", itemDescription == null ? "" : itemDescription);
         row.put("componentNumber", componentNumber);
         row.put("pf", context.pf);
@@ -511,6 +507,28 @@ public class CapacityAssessmentService {
         row.put("ct", context.ct);
         row.put("oee", context.oee);
         return row;
+    }
+
+    private Map<String, String> buildItemDescriptionMap(Set<String> itemNumbers) {
+        if (itemNumbers == null || itemNumbers.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+
+        List<Product> products = productRepository.findByItemNumberIn(new ArrayList<>(itemNumbers));
+        products.sort(Comparator.comparing(
+                (Product p) -> p.getUpdatedAt() != null ? p.getUpdatedAt() : p.getCreatedAt(),
+                Comparator.nullsLast(Comparator.reverseOrder())));
+
+        Map<String, String> descriptions = new LinkedHashMap<>();
+        for (Product product : products) {
+            String itemNumber = normalize(product.getItemNumber());
+            String description = normalize(product.getDescription());
+            if (itemNumber == null || description == null) {
+                continue;
+            }
+            descriptions.putIfAbsent(itemNumber, description);
+        }
+        return descriptions;
     }
 
     private BigDecimal resolveManpowerFactor(RequestCache cache, String lineCode, LocalDate date) {

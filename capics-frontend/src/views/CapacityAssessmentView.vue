@@ -1,4 +1,4 @@
-<template>
+﻿<template>
 
   <div class="page">
 
@@ -51,8 +51,19 @@
         placeholder="选择版本"
 
         :disabled="!selectedFileName"
+        @update:modelValue="onVersionChange"
 
       />
+
+      <BaseSelect
+        v-model="selectedSavedResultVersion"
+        :options="savedResultVersions.map(v => ({ value: v, label: v }))"
+        placeholder="已计算结果版本"
+        :disabled="!selectedVersion"
+      />
+      <button class="btn" @click="loadSavedResult" :disabled="loading || !selectedSavedResultVersion">加载结果</button>
+      <input v-model.trim="newResultVersion" class="form-input result-version-input" type="text" maxlength="100" placeholder="输入结果版本号" />
+      <button class="btn btn-secondary" @click="saveComputedResult" :disabled="loading || !canSaveComputedResult">保存结果</button>
 
       <button class="btn btn-primary" @click="loadCapacityAssessment" :disabled="loading">
 
@@ -263,6 +274,7 @@ import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileNa
 
 import { getCapacityAssessment } from '@/api/capacity'
 import { getLines } from '@/api/line'
+import { saveSnapshot, getSnapshotNames, getSnapshot } from '@/api/simulationSnapshot'
 import { downloadCsv } from '@/utils/export'
 
 import BaseSelect from '@/components/common/BaseSelect.vue'
@@ -283,6 +295,9 @@ const saveState = () => {
       selectedCreatedBy: selectedCreatedBy.value,
       selectedFileName: selectedFileName.value,
       selectedVersion: selectedVersion.value,
+      selectedSavedResultVersion: selectedSavedResultVersion.value,
+      newResultVersion: newResultVersion.value,
+      savedResultVersions: savedResultVersions.value,
       linesData: linesData.value,
       weeks: weeks.value,
       weekDates: weekDates.value,
@@ -303,6 +318,9 @@ const restoreState = () => {
       selectedCreatedBy.value = state.selectedCreatedBy || ''
       selectedFileName.value = state.selectedFileName || ''
       selectedVersion.value = state.selectedVersion || ''
+      selectedSavedResultVersion.value = state.selectedSavedResultVersion || ''
+      newResultVersion.value = state.newResultVersion || ''
+      savedResultVersions.value = state.savedResultVersions || []
       linesData.value = state.linesData || {}
       weeks.value = state.weeks || []
       weekDates.value = state.weekDates || {}
@@ -331,6 +349,9 @@ const selectedCreatedBy = ref('')
 const selectedFileName = ref('')
 
 const selectedVersion = ref('')
+const selectedSavedResultVersion = ref('')
+const savedResultVersions = ref([])
+const newResultVersion = ref('')
 const lineNameMap = ref({})
 
 
@@ -385,6 +406,14 @@ const selectedLineData = computed(() => {
 
 })
 
+const canSaveComputedResult = computed(() => {
+  return !!selectedCreatedBy.value
+    && !!selectedFileName.value
+    && !!selectedVersion.value
+    && !!newResultVersion.value
+    && Object.keys(linesData.value || {}).length > 0
+})
+
 const loadLineNames = async (lineCodes) => {
   try {
     const response = await getLines(token.value)
@@ -427,6 +456,9 @@ const onCreatedByChange = async () => {
   selectedFileName.value = ''
 
   selectedVersion.value = ''
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
+  newResultVersion.value = ''
 
   fileNames.value = []
 
@@ -457,6 +489,9 @@ const onCreatedByChange = async () => {
 const onFileNameChange = async () => {
 
   selectedVersion.value = ''
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
+  newResultVersion.value = ''
 
   versions.value = []
 
@@ -597,6 +632,117 @@ const loadCapacityAssessment = async () => {
 
 }
 
+const loadSavedResultVersions = async () => {
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
+  if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
+    return
+  }
+  try {
+    const data = await getSnapshotNames(
+      token.value,
+      selectedCreatedBy.value,
+      selectedFileName.value,
+      selectedVersion.value,
+      'static',
+      'week'
+    )
+    if (data.success) {
+      savedResultVersions.value = data.data || []
+    } else {
+      showToast(data.message || '加载已计算结果失败', 'warning')
+    }
+  } catch (err) {
+    console.error('Load static snapshots error:', err)
+  }
+}
+
+const saveComputedResult = async () => {
+  if (!canSaveComputedResult.value) {
+    showToast('请先计算结果并输入结果版本号', 'warning')
+    return
+  }
+  const snapshotName = (newResultVersion.value || '').trim()
+  if (!snapshotName) {
+    showToast('请输入结果版本号', 'warning')
+    return
+  }
+  try {
+    const payload = {
+      createdBy: selectedCreatedBy.value,
+      fileName: selectedFileName.value,
+      version: selectedVersion.value,
+      snapshotName,
+      source: 'static',
+      dimension: 'week',
+      linesData: linesData.value,
+      dates: weeks.value,
+      dateLabels: weekDates.value
+    }
+    const data = await saveSnapshot(token.value, payload)
+    if (data.success) {
+      showToast('计算结果已保存', 'success')
+      await loadSavedResultVersions()
+      selectedSavedResultVersion.value = snapshotName
+      saveState()
+    } else {
+      showToast(data.message || '保存结果失败', 'error')
+    }
+  } catch (err) {
+    console.error('Save static snapshot error:', err)
+    showToast('保存结果失败', 'error')
+  }
+}
+
+const loadSavedResult = async () => {
+  if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
+    showToast('请先选择导入人、文件和版本', 'warning')
+    return
+  }
+  if (!selectedSavedResultVersion.value) {
+    showToast('请选择已计算结果版本', 'warning')
+    return
+  }
+  loading.value = true
+  error.value = ''
+  resetData()
+  try {
+    const data = await getSnapshot(
+      token.value,
+      selectedCreatedBy.value,
+      selectedFileName.value,
+      selectedVersion.value,
+      selectedSavedResultVersion.value,
+      'static',
+      'week'
+    )
+    if (!data.success || !data.data) {
+      error.value = data.message || '加载结果失败'
+      showToast(error.value, 'error')
+      return
+    }
+
+    const snapshot = data.data
+    linesData.value = snapshot.linesData || {}
+    weeks.value = snapshot.dates || []
+    weekDates.value = snapshot.dateLabels || {}
+    warnings.value = []
+    const lineCodes = Object.keys(linesData.value)
+    if (lineCodes.length > 0) {
+      selectedLine.value = lineCodes[0]
+      await loadLineNames(lineCodes)
+    }
+    saveState()
+    showToast('已加载计算结果', 'success')
+  } catch (err) {
+    console.error('Load static snapshot error:', err)
+    error.value = '加载结果失败'
+    showToast('加载结果失败', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
 
 
 const getWeekDate = (week) => {
@@ -631,6 +777,10 @@ const formatLoading = (loading) => {
 
   return num.toFixed(2)
 
+}
+
+const onVersionChange = async () => {
+  await loadSavedResultVersions()
 }
 
 const handleExportCapacity = () => {
@@ -680,6 +830,21 @@ onMounted(() => {
   loadCreatedBys().then(async () => {
     // 恢复状态
     restoreState()
+    if (selectedCreatedBy.value) {
+      const fileNameResp = await getFileNamesByCreatedBy(token.value, selectedCreatedBy.value)
+      fileNames.value = fileNameResp.data || []
+      if (selectedFileName.value) {
+        const versionResp = await getVersionsByCreatedByAndFileName(
+          token.value,
+          selectedCreatedBy.value,
+          selectedFileName.value
+        )
+        versions.value = versionResp.data || []
+        if (selectedVersion.value) {
+          await onVersionChange()
+        }
+      }
+    }
     const lineCodes = Object.keys(linesData.value || {})
     if (lineCodes.length > 0) {
       await loadLineNames(lineCodes)
@@ -1468,4 +1633,9 @@ tbody td.sticky-col-7 {
 
 }
 
+.result-version-input {
+  min-width: 170px;
+}
+
 </style>
+

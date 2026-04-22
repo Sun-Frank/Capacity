@@ -78,6 +78,7 @@ public class LineRealtimeService {
 
         List<MrpPlan> mrpPlans = mrpPlanRepository.findByVersion(mrpVersion);
         List<LineConfig> lineConfigs = lineConfigRepository.findByIsActiveTrue();
+        Set<String> insertedKeys = new HashSet<>();
 
         int count = 0;
 
@@ -89,6 +90,11 @@ public class LineRealtimeService {
 
             for (LineConfig line : lineConfigs) {
                 for (var item : routingItems) {
+                    String dedupeKey = line.getLineCode() + "|" + plan.getItemNumber() + "|" + item.getComponentNumber();
+                    if (!insertedKeys.add(dedupeKey)) {
+                        continue;
+                    }
+
                     LineRealtime entity = new LineRealtime();
                     entity.setLineCode(line.getLineCode());
                     entity.setItemNumber(plan.getItemNumber());

@@ -1,4 +1,23 @@
 const API_BASE = '/api'
+const REQUEST_TIMEOUT_MS = 15000
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    })
+  } catch (e) {
+    if (e?.name === 'AbortError') {
+      throw new Error(`请求超时（>${Math.floor(timeoutMs / 1000)}秒）`)
+    }
+    throw e
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 async function parseJsonSafe(res) {
   try {
@@ -9,7 +28,7 @@ async function parseJsonSafe(res) {
 }
 
 export function getCtLines(token) {
-  return fetch(`${API_BASE}/ct-lines`, {
+  return fetchWithTimeout(`${API_BASE}/ct-lines`, {
     headers: { Authorization: `Bearer ${token}` }
   }).then(res => res.json())
 }
@@ -18,11 +37,11 @@ export async function importCtLines(token, file) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch(`${API_BASE}/ct-lines/import`, {
+  const res = await fetchWithTimeout(`${API_BASE}/ct-lines/import`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData
-  })
+  }, 30000)
 
   const json = await parseJsonSafe(res)
   if (!res.ok) {
@@ -32,7 +51,7 @@ export async function importCtLines(token, file) {
 }
 
 export async function updateCtLine(token, id, payload) {
-  const res = await fetch(`${API_BASE}/ct-lines/${id}`, {
+  const res = await fetchWithTimeout(`${API_BASE}/ct-lines/${id}`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -49,7 +68,7 @@ export async function updateCtLine(token, id, payload) {
 }
 
 export async function downloadCtLineTemplate(token) {
-  const res = await fetch(`${API_BASE}/ct-lines/template`, {
+  const res = await fetchWithTimeout(`${API_BASE}/ct-lines/template`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   if (!res.ok) {

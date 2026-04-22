@@ -211,8 +211,8 @@ CREATE TABLE line_realtime (
     shift_output DECIMAL(12,2),
     shift_workers INTEGER,
     ct DECIMAL(10,2),
-    oee DECIMAL(5,4),
-    weekly_demand JSONB,
+    oee DECIMAL(7,4),
+    weekly_demand TEXT,
     mrp_version VARCHAR(10),
     calculated_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (line_code, item_number, component_number, mrp_version)

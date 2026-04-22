@@ -1,19 +1,16 @@
-<template>
+﻿<template>
   <div class="page">
-    <div class="page-header">
-      <h1 class="page-title">动态产能模拟（周）</h1>
-      <p class="page-subtitle">动态产能模拟（周）模块 - 双击或右键编辑单元格</p>
-    </div>
-
     <!-- MRP筛选条件 -->
     <div class="filters-row">
       <BaseSelect
+        class="filter-select filter-select-created-by"
         v-model="selectedCreatedBy"
         :options="createdBys.map(c => ({ value: c, label: c }))"
         placeholder="选择导入人"
         @update:modelValue="onCreatedByChange"
       />
       <BaseSelect
+        class="filter-select filter-select-file-name"
         v-model="selectedFileName"
         :options="fileNames.map(f => ({ value: f, label: f }))"
         placeholder="选择文件"
@@ -21,6 +18,7 @@
         @update:modelValue="onFileNameChange"
       />
       <BaseSelect
+        class="filter-select filter-select-version"
         v-model="selectedVersion"
         :options="versions.map(v => ({ value: v, label: v }))"
         placeholder="选择版本"
@@ -79,7 +77,7 @@
     >
       <div class="summary-title">
         <span>{{ formatLineLabel(selectedLine) }}</span>
-        <button class="close-btn" @click="closeSummary">×</button>
+        <button class="close-btn" @click="closeSummary">脳</button>
       </div>
       <div class="summary-scroll">
         <table class="summary-table">
@@ -112,7 +110,7 @@
       <div v-if="loading" class="loading-state">加载中...</div>
       <div v-else-if="error" class="error-state">{{ error }}</div>
       <div v-else-if="Object.keys(linesData).length === 0" class="empty-state">
-        请选择筛选条件并点击"加载数据"
+        请选择筛选条件并点击“加载数据”
       </div>
       <div v-else-if="!selectedLine" class="empty-state">
         请选择生产线查看产能评估表
@@ -161,9 +159,9 @@
                 <td class="sticky-col sticky-col-1">{{ item.itemNumber }}</td>
                 <td class="sticky-col sticky-col-2">{{ item.description || '-' }}</td>
                 <td class="sticky-col sticky-col-3">{{ item.componentNumber || '-' }}</td>
-                <!-- 班产量 - 自动计算，只读 -->
+                <!-- 鐝骇閲?- 鑷姩璁＄畻锛屽彧璇?-->
                 <td class="sticky-col sticky-col-4 data-cell">{{ formatShiftOutput(calcShiftOutput(item)) }}</td>
-                <!-- 班人数 - 可编辑 -->
+                <!-- 鐝汉鏁?- 鍙紪杈?-->
                 <td
                   class="sticky-col sticky-col-5 editable-cell"
                   :class="{ 'is-editing': isCellEditing(item, 'shiftWorkers') }"
@@ -187,7 +185,7 @@
                     <span class="cell-display">{{ item.shiftWorkers ?? '-' }}</span>
                   </template>
                 </td>
-                <!-- CT - 可编辑 -->
+                <!-- CT - 鍙紪杈?-->
                 <td
                   class="sticky-col sticky-col-6 editable-cell"
                   :class="{ 'is-editing': isCellEditing(item, 'ct') }"
@@ -212,7 +210,7 @@
                     <span class="cell-display">{{ item.ct ?? '-' }}</span>
                   </template>
                 </td>
-                <!-- OEE - 可编辑 -->
+                <!-- OEE - 鍙紪杈?-->
                 <td
                   class="sticky-col sticky-col-7 editable-cell"
                   :class="{ 'is-editing': isCellEditing(item, 'oee') }"
@@ -238,9 +236,9 @@
                     <span class="cell-display">{{ item.oee ? item.oee + '%' : '-' }}</span>
                   </template>
                 </td>
-                <!-- 需求量和LOADING -->
+                <!-- 闇€姹傞噺鍜孡OADING -->
                 <template v-for="(week, idx) in weeks" :key="'data-' + idx">
-                  <!-- 需求量 - 可编辑 -->
+                  <!-- 闇€姹傞噺 - 鍙紪杈?-->
                   <td
                     class="data-cell editable-cell"
                     :class="{ 'is-editing': isCellEditing(item, week + '_demand') }"
@@ -264,7 +262,7 @@
                       <span class="cell-display">{{ formatDemand(item[week + '_demand']) }}</span>
                     </template>
                   </td>
-                  <!-- LOADING - 只读 -->
+                  <!-- LOADING - 鍙 -->
                   <td
                     class="data-cell loading-cell"
                     :class="{ 'high-load': calcLoading(item, week) > 0.85 }"
@@ -375,7 +373,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3>保存快照</h3>
-          <button class="close-btn" @click="showSnapshotModal = false">×</button>
+          <button class="close-btn" @click="showSnapshotModal = false">脳</button>
         </div>
         <div class="modal-body">
           <label class="form-label">快照名称</label>
@@ -412,7 +410,7 @@ const { showToast } = useToast()
 // sessionStorage keys
 const SESSION_KEY = 'capics_capacity_realtime'
 
-// 保存状态到sessionStorage
+// 淇濆瓨鐘舵€佸埌sessionStorage
 const saveState = () => {
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({
@@ -431,7 +429,7 @@ const saveState = () => {
   }
 }
 
-// 从sessionStorage恢复状态
+// 浠巗essionStorage鎭㈠鐘舵€?
 const restoreState = () => {
   try {
     const saved = sessionStorage.getItem(SESSION_KEY)
@@ -454,18 +452,18 @@ const restoreState = () => {
   return false
 }
 
-// 汇总表拖动状态
+// 姹囨€昏〃鎷栧姩鐘舵€?
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
 const summaryPosition = ref({ x: 926, y: 1 })
 const showSummary = ref(true)
 
-// 汇总表显示的周数（全部）
+// 姹囨€昏〃鏄剧ず鐨勫懆鏁帮紙鍏ㄩ儴锛?
 const displayWeeks = computed(() => {
   return weeks.value
 })
 
-// 拖动相关函数
+// 鎷栧姩鐩稿叧鍑芥暟
 const startDrag = (e) => {
   if (e.target.closest('.close-btn')) return
   isDragging.value = true
@@ -495,7 +493,7 @@ const closeSummary = () => {
   showSummary.value = false
 }
 
-// MRP筛选条件
+// MRP绛涢€夋潯浠?
 const createdBys = ref([])
 const fileNames = ref([])
 const versions = ref([])
@@ -503,32 +501,32 @@ const selectedCreatedBy = ref('')
 const selectedFileName = ref('')
 const selectedVersion = ref('')
 
-// 生产线筛选
+// 鐢熶骇绾跨瓫閫?
 const selectedLine = ref('')
 const linesData = ref({})
 const weeks = ref([])
 const weekDates = ref({})
 const warnings = ref([])
 
-// 产线配置 - 按生产线存储
+// 浜х嚎閰嶇疆 - 鎸夌敓浜х嚎瀛樺偍
 const lineConfigs = ref({})
 const lineNameMap = ref({})
 
 const loading = ref(false)
 const error = ref('')
 
-// 保存快照状态
+// 淇濆瓨蹇収鐘舵€?
 const showSnapshotModal = ref(false)
 const snapshotName = ref('')
 
-// 保存快照
+// 淇濆瓨蹇収
 const saveSnapshot = async () => {
   if (!snapshotName.value) {
     showToast('请输入快照名称', 'warning')
     return
   }
   try {
-    // 深拷贝 linesData，并重新计算所有 loading 字段
+    // 娣辨嫹璐?linesData锛屽苟閲嶆柊璁＄畻鎵€鏈?loading 瀛楁
     const snapshotLinesData = JSON.parse(JSON.stringify(linesData.value))
     for (const lineCode of Object.keys(snapshotLinesData)) {
       for (const item of snapshotLinesData[lineCode]) {
@@ -562,13 +560,13 @@ const saveSnapshot = async () => {
   }
 }
 
-// 编辑状态追踪
+// 缂栬緫鐘舵€佽拷韪?
 const editingCell = ref(null) // { item, field }
 const editingConfig = ref(null)
 const editInputRef = ref(null)
 const configInputRef = ref(null)
 
-// 可用的生产线列表
+// 鍙敤鐨勭敓浜х嚎鍒楄〃
 const availableLines = computed(() => {
   return Object.keys(linesData.value).sort()
 })
@@ -579,7 +577,7 @@ const formatLineLabel = (lineCode) => {
   return lineName ? `${lineCode} - ${lineName}` : lineCode
 }
 
-// 当前选中的生产线数据
+// 褰撳墠閫変腑鐨勭敓浜х嚎鏁版嵁
 const selectedLineData = computed(() => {
   if (!selectedLine.value || !linesData.value[selectedLine.value]) {
     return []
@@ -587,23 +585,23 @@ const selectedLineData = computed(() => {
   return linesData.value[selectedLine.value]
 })
 
-// 可编辑的本地数据（直接引用selectedLineData，不要副本）
+// 鍙紪杈戠殑鏈湴鏁版嵁锛堢洿鎺ュ紩鐢╯electedLineData锛屼笉瑕佸壇鏈級
 const editableData = computed(() => {
   return selectedLineData.value
 })
 
-// 当前选中产线的配置
+// 褰撳墠閫変腑浜х嚎鐨勯厤缃?
 const currentLineConfig = computed(() => {
   if (!selectedLine.value) return { workingDaysPerWeek: 5, shiftsPerDay: 2, hoursPerShift: 8 }
   return lineConfigs.value[selectedLine.value] || { workingDaysPerWeek: 5, shiftsPerDay: 2, hoursPerShift: 8 }
 })
 
-// 汇总数据
+// 姹囨€绘暟鎹?
 const summaryData = computed(() => {
   const items = selectedLineData.value
   const weeksVal = weeks.value
 
-  // 1. 计算生产线总计LOAD
+  // 1. 璁＄畻鐢熶骇绾挎€昏LOAD
   const totalRow = { dimension: '总计', loadings: {} }
   weeksVal.forEach(week => {
     let totalLoad = 0
@@ -613,7 +611,7 @@ const summaryData = computed(() => {
     totalRow.loadings[week] = totalLoad
   })
 
-  // 2. 按 PF 分组计算LOAD
+  // 2. 鎸?PF 鍒嗙粍璁＄畻LOAD
   const pfGroups = {}
   items.forEach(item => {
     const pf = item.pf || '未分类'
@@ -629,7 +627,7 @@ const summaryData = computed(() => {
   return [totalRow, ...Object.values(pfGroups)]
 })
 
-// 判断单元格是否处于编辑状态
+// 鍒ゆ柇鍗曞厓鏍兼槸鍚﹀浜庣紪杈戠姸鎬?
 const isCellEditing = (item, field) => {
   if (!editingCell.value) return false
   const key = item.itemNumber + '_' + item.componentNumber
@@ -637,7 +635,7 @@ const isCellEditing = (item, field) => {
   return editKey === key && editingCell.value.field === field
 }
 
-// 开始编辑单元格
+// 寮€濮嬬紪杈戝崟鍏冩牸
 const startEdit = async (item, field, event) => {
   editingCell.value = { item, field }
   await nextTick()
@@ -647,23 +645,23 @@ const startEdit = async (item, field, event) => {
   }
 }
 
-// 完成编辑
+// 瀹屾垚缂栬緫
 const finishEdit = (item, field) => {
   editingCell.value = null
 }
 
-// 取消编辑
+// 鍙栨秷缂栬緫
 const cancelEdit = (item, field) => {
   editingCell.value = null
 }
 
-// 关闭所有编辑状态
+// 鍏抽棴鎵€鏈夌紪杈戠姸鎬?
 const closeAllEditing = () => {
   editingCell.value = null
   editingConfig.value = null
 }
 
-// 开始编辑产线配置
+// 寮€濮嬬紪杈戜骇绾块厤缃?
 const startConfigEdit = async (field, event) => {
   editingConfig.value = field
   await nextTick()
@@ -673,7 +671,7 @@ const startConfigEdit = async (field, event) => {
   }
 }
 
-// 完成/取消产线配置编辑
+// 瀹屾垚/鍙栨秷浜х嚎閰嶇疆缂栬緫
 const finishConfigEdit = () => {
   editingConfig.value = null
 }
@@ -731,7 +729,7 @@ const resetData = () => {
   closeAllEditing()
 }
 
-// 加载产线配置
+// 鍔犺浇浜х嚎閰嶇疆
 const loadLineConfigs = async (lineCodes) => {
   try {
     const response = await getLines(token.value)
@@ -782,16 +780,16 @@ const loadCapacityAssessment = async () => {
         weekDates.value = result.weekDates || {}
         warnings.value = result.warnings || []
 
-        // 自动选中第一条生产线
+        // 鑷姩閫変腑绗竴鏉＄敓浜х嚎
         const lineCodes = Object.keys(result.lines)
         if (lineCodes.length > 0) {
           selectedLine.value = lineCodes[0]
         }
 
-        // 保存状态
+        // 淇濆瓨鐘舵€?
         saveState()
 
-        // 加载各产线配置
+        // 鍔犺浇鍚勪骇绾块厤缃?
         await loadLineConfigs(lineCodes)
       } else {
         linesData.value = {}
@@ -813,7 +811,7 @@ const getWeekDate = (week) => {
   return weekDates.value[week] || week
 }
 
-// 计算班产量 = (3600 / CT) × (OEE / 100) × hoursPerShift
+// 璁＄畻鐝骇閲?= (3600 / CT) 脳 (OEE / 100) 脳 hoursPerShift
 const calcShiftOutput = (item) => {
   const ct = parseFloat(item.ct) || 0
   const oee = parseFloat(item.oee) || 0
@@ -822,7 +820,7 @@ const calcShiftOutput = (item) => {
   return (3600 / ct) * (oee / 100) * hours
 }
 
-// 计算LOAD = (需求量 × CT) / (工作天数 × 班数 × 每班时长 × OEE/100 × 3600)
+// 璁＄畻LOAD = (闇€姹傞噺 脳 CT) / (宸ヤ綔澶╂暟 脳 鐝暟 脳 姣忕彮鏃堕暱 脳 OEE/100 脳 3600)
 const calcLoading = (item, week) => {
   const demand = parseFloat(item[week + '_demand']) || 0
   const ct = parseFloat(item.ct) || 0
@@ -892,8 +890,7 @@ const handleExportRealtimeWeekly = () => {
 
 onMounted(() => {
   loadCreatedBys().then(() => {
-    // 恢复状态
-    restoreState()
+    // 鎭㈠鐘舵€?    restoreState()
     const lineCodes = Object.keys(linesData.value || {})
     if (lineCodes.length > 0) {
       loadLineConfigs(lineCodes)
@@ -935,18 +932,38 @@ onMounted(() => {
 /* === Filters === */
 .filters-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.filters-row .btn {
+  padding: 0.45rem 0.7rem;
+}
+
+.filter-select-created-by {
+  width: 116px;
+  min-width: 116px;
+}
+
+.filter-select-file-name {
+  width: 136px;
+  min-width: 136px;
+}
+
+.filter-select-version {
+  width: 116px;
+  min-width: 116px;
 }
 
 .line-filter-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -1523,3 +1540,4 @@ tbody td.sticky-col-7 {
   border-color: var(--primary);
 }
 </style>
+
