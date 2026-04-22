@@ -50,7 +50,7 @@ except Exception as e:
     print(f"[ERROR] {hint}: invalid JSON: {e}")
     sys.exit(1)
 if not obj.get("success", False):
-    print(f"[ERROR] {hint}: success=false, message={obj.get(\"message\")}")
+    print(f"[ERROR] {hint}: success=false, message={obj.get('message')}")
     sys.exit(1)
 print(f"PASS {hint}")' "${hint}"
 }
