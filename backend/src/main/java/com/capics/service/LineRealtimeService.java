@@ -74,9 +74,11 @@ public class LineRealtimeService {
 
     @Transactional
     public int calculate(String mrpVersion) {
-        realtimeRepository.deleteByMrpVersion(mrpVersion);
+        String versionKey = mrpVersion == null ? "" : mrpVersion.trim();
+        realtimeRepository.deleteByMrpVersion(versionKey);
+        realtimeRepository.flush();
 
-        List<MrpPlan> mrpPlans = mrpPlanRepository.findByVersion(mrpVersion);
+        List<MrpPlan> mrpPlans = mrpPlanRepository.findByVersion(versionKey);
         List<LineConfig> lineConfigs = lineConfigRepository.findByIsActiveTrue();
         Set<String> insertedKeys = new HashSet<>();
 
@@ -99,7 +101,7 @@ public class LineRealtimeService {
                     entity.setLineCode(line.getLineCode());
                     entity.setItemNumber(plan.getItemNumber());
                     entity.setComponentNumber(item.getComponentNumber());
-                    entity.setMrpVersion(mrpVersion);
+                    entity.setMrpVersion(versionKey);
 
                     Product product = productRepository.findById(
                             new ProductId(item.getComponentNumber(), line.getLineCode())
@@ -128,7 +130,7 @@ public class LineRealtimeService {
                     entity.setShiftOutput(shiftOutput);
 
                     Map<String, BigDecimal> weeklyDemand = calculateWeeklyDemand(
-                            plan.getItemNumber(), item.getComponentNumber(), mrpVersion);
+                            plan.getItemNumber(), item.getComponentNumber(), versionKey);
                     entity.setWeeklyDemand(toJson(weeklyDemand));
 
                     realtimeRepository.save(entity);
