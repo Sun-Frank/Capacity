@@ -72,6 +72,17 @@ export function updateProduct(token, itemNumber, lineCode, data, updatedBy) {
   }).then(res => res.json())
 }
 
+export function createProduct(token, data, createdBy) {
+  return fetch(`${API_BASE}/products`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ...data, createdBy, updatedBy: createdBy })
+  }).then(res => res.json())
+}
+
 export function importFamilies(token, file, createdBy) {
   const formData = new FormData()
   formData.append('file', file)
@@ -127,6 +138,17 @@ export function updateFamily(token, familyCode, lineCode, data, updatedBy) {
   }).then(res => res.json())
 }
 
+export function createFamily(token, data, createdBy) {
+  return fetch(`${API_BASE}/products/families`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ...data, createdBy, updatedBy: createdBy })
+  }).then(res => res.json())
+}
+
 // Family Lines API
 export function getFamilyLines(token) {
   return fetch(`${API_BASE}/products/family-lines`, {
@@ -173,6 +195,17 @@ export function updateFamilyLine(token, familyCode, lineCode, data, updatedBy) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ ...data, updatedBy })
+  }).then(res => res.json())
+}
+
+export function createFamilyLine(token, data, createdBy) {
+  return fetch(`${API_BASE}/products/family-lines`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ...data, createdBy, updatedBy: createdBy })
   }).then(res => res.json())
 }
 

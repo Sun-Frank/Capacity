@@ -6,18 +6,24 @@
     </div>
     <div class="topbar-user">
       <span>{{ currentUser }}</span>
-      <button class="btn" @click="handleLogout">退出</button>
+      <button class="btn" @click="onLogout">退出</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
+const router = useRouter()
 const { currentUser, handleLogout } = useAuth()
+
+const onLogout = async () => {
+  await handleLogout()
+  await router.replace('/login')
+}
 
 const pageTitles = {
   '/': '仪表盘',

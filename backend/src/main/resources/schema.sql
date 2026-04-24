@@ -236,7 +236,7 @@ CREATE INDEX idx_ct_line_data_created_at ON ct_line_data(created_at);
 
 -- Insert default admin user (password: admin123)
 INSERT INTO sys_user (username, password, real_name, email, enabled)
-VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'System Admin', 'admin@capics.com', true);
+VALUES ('admin', '$2a$10$gE4boVDgo9xJa7zrH4FPAOMz6Xq59S/gHQXRgnHfA4WYOCx2moKUW', 'System Admin', 'admin@capics.com', true);
 
 INSERT INTO sys_role (role_code, role_name, description)
 VALUES ('ADMIN', 'Administrator', 'System administrator with full access');

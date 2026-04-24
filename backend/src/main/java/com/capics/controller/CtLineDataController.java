@@ -2,6 +2,7 @@ package com.capics.controller;
 
 import com.capics.dto.ApiResponse;
 import com.capics.dto.CtLineDataDto;
+import com.capics.dto.CtLineImportTaskDto;
 import com.capics.service.CtLineDataService;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -21,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ct-lines")
@@ -37,14 +40,49 @@ public class CtLineDataController {
         return ResponseEntity.ok(ApiResponse.success(ctLineDataService.getCtLinePageData()));
     }
 
+    @PostMapping
+    public ResponseEntity<ApiResponse> create(@RequestBody CtLineDataDto dto, Principal principal) {
+        try {
+            String createdBy = principal != null ? principal.getName() : "system";
+            CtLineDataDto saved = ctLineDataService.create(dto, createdBy);
+            return ResponseEntity.ok(ApiResponse.success("Create success", saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Create failed: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/import")
     public ResponseEntity<ApiResponse> importData(@RequestParam("file") MultipartFile file, Principal principal) {
         try {
             String createdBy = principal != null ? principal.getName() : "system";
             int count = ctLineDataService.importFromExcel(file, createdBy);
-            return ResponseEntity.ok(ApiResponse.success("导入成功，共 " + count + " 条"));
+            return ResponseEntity.ok(ApiResponse.success("Import success, count=" + count));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("导入失败: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Import failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/import-async")
+    public ResponseEntity<ApiResponse> importDataAsync(@RequestParam("file") MultipartFile file, Principal principal) {
+        try {
+            String createdBy = principal != null ? principal.getName() : "system";
+            CtLineImportTaskDto task = ctLineDataService.startImportTask(file, createdBy);
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("taskId", task.getTaskId());
+            data.put("status", task.getStatus());
+            return ResponseEntity.ok(ApiResponse.success("Import task created", data));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Create import task failed: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/import-tasks/{taskId}")
+    public ResponseEntity<ApiResponse> getImportTask(@PathVariable String taskId) {
+        try {
+            CtLineImportTaskDto task = ctLineDataService.getImportTask(taskId);
+            return ResponseEntity.ok(ApiResponse.success(task));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Query import task failed: " + e.getMessage()));
         }
     }
 
@@ -53,16 +91,16 @@ public class CtLineDataController {
         try {
             String updatedBy = principal != null ? principal.getName() : "system";
             CtLineDataDto saved = ctLineDataService.updateById(id, dto, updatedBy);
-            return ResponseEntity.ok(ApiResponse.success("保存成功", saved));
+            return ResponseEntity.ok(ApiResponse.success("Save success", saved));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("保存失败: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Save failed: " + e.getMessage()));
         }
     }
 
     @GetMapping("/template")
     public ResponseEntity<Resource> downloadTemplate() throws Exception {
         byte[] bytes = ctLineDataService.buildTemplateFile();
-        String fileName = "产线-产品导入模板.xlsx";
+        String fileName = "ct-line-template.xlsx";
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString()).replaceAll("\\+", "%20");
         ByteArrayResource resource = new ByteArrayResource(bytes);
         return ResponseEntity.ok()

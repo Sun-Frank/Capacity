@@ -86,12 +86,19 @@
               <th class="sticky-col">统计维度</th>
               <th v-for="(week, idx) in displayWeeks" :key="week">{{ getWeekDate(week) }}</th>
             </tr>
+            <tr v-if="summaryTotalRow" class="summary-total-head">
+              <th class="sticky-col">{{ summaryTotalRow.dimension || '总计' }}</th>
+              <th v-for="(week, wIdx) in displayWeeks" :key="'total-' + week">
+                <span class="loading-value" :class="{ 'high-load': isSummaryTotalHighLoad(summaryTotalRow.loadings[week]) }">
+                  {{ formatLoading(summaryTotalRow.loadings[week]) }}
+                </span>
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr
-              v-for="(row, idx) in summaryData"
-              :key="idx"
-              :class="{ 'total-row': row.dimension === '总计' }"
+              v-for="(row, idx) in summaryDetailRows"
+              :key="row.dimension + '-' + idx"
             >
               <td class="sticky-col">{{ row.dimension }}</td>
               <td v-for="(week, wIdx) in displayWeeks" :key="week">
@@ -627,6 +634,21 @@ const summaryData = computed(() => {
   return [totalRow, ...Object.values(descriptionGroups)]
 })
 
+const summaryTotalRow = computed(() => {
+  return summaryData.value.find((row) => row.dimension === '总计') || summaryData.value[0] || null
+})
+
+const summaryDetailRows = computed(() => {
+  return summaryData.value.filter((row, idx) => row !== summaryTotalRow.value && idx !== 0)
+})
+
+const SPECIAL_SUMMARY_RED_LINES = new Set(['ICP1001N', 'FAL1007N'])
+
+const isSummaryTotalHighLoad = (value) => {
+  const threshold = SPECIAL_SUMMARY_RED_LINES.has(selectedLine.value) ? 2 : 1
+  return Number(value || 0) > threshold
+}
+
 // 鍒ゆ柇鍗曞厓鏍兼槸鍚﹀浜庣紪杈戠姸鎬?
 const isCellEditing = (item, field) => {
   if (!editingCell.value) return false
@@ -1031,6 +1053,7 @@ onMounted(() => {
 }
 
 .summary-table {
+  --summary-head-h: 32px;
   width: max-content;
   border-collapse: collapse;
   font-size: 0.75rem;
@@ -1065,6 +1088,18 @@ onMounted(() => {
 .summary-table th.sticky-col {
   background: var(--muted);
   z-index: 30;
+}
+
+.summary-table thead tr.summary-total-head th {
+  position: sticky;
+  top: var(--summary-head-h);
+  background: var(--muted);
+  z-index: 19;
+  font-weight: 700;
+}
+
+.summary-table thead tr.summary-total-head th.sticky-col {
+  z-index: 31;
 }
 
 .summary-table .total-row {

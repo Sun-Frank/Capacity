@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface CtLineDataRepository extends JpaRepository<CtLineData, Long> {
     Optional<CtLineData> findTopByColDAndColBAndColCOrderByIdDesc(String colD, String colB, String colC);
+    Optional<CtLineData> findTopByColBAndColCOrderByIdDesc(String colB, String colC);
     List<CtLineData> findByColDAndColCOrderByIdDesc(String colD, String colC);
     List<CtLineData> findByColDAndColCInOrderByIdDesc(String colD, List<String> colCList);
 }

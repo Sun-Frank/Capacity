@@ -37,6 +37,18 @@ Local default URLs:
 - Frontend: `http://127.0.0.1:3000/login`
 - Backend health: `http://127.0.0.1:8080/api/health`
 
+4) One-click start backend only:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-start-backend.ps1
+```
+
+Optional foreground mode (for direct console logs):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-start-backend.ps1 -Foreground
+```
+
 ## 1) Prepare env file
 
 ```bash

@@ -127,6 +127,19 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(familyLine));
     }
 
+    @PostMapping("/family-lines")
+    public ResponseEntity<ApiResponse> createFamilyLine(@RequestBody FamilyLineDto dto) {
+        String operator = dto.getUpdatedBy();
+        if (operator == null || operator.trim().isEmpty()) {
+            operator = dto.getCreatedBy();
+        }
+        if (operator == null || operator.trim().isEmpty()) {
+            operator = "system";
+        }
+        FamilyLineDto saved = familyLineService.save(dto, operator, dto.getFamilyCode(), dto.getLineCode());
+        return ResponseEntity.ok(ApiResponse.success("Created", saved));
+    }
+
     @PutMapping("/family-lines/{familyCode}/{lineCode}")
     public ResponseEntity<ApiResponse> updateFamilyLine(@PathVariable String familyCode, @PathVariable String lineCode,
                                                         @RequestBody FamilyLineDto dto) {

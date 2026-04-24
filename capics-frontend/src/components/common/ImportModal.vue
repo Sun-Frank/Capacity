@@ -6,8 +6,14 @@
       </div>
 
       <div v-if="isImporting" class="import-loading">
-        <div class="import-loading-text">导入中，请稍候...</div>
+        <div class="import-loading-text">{{ importLoadingText }}</div>
         <div class="import-loading-hint">大文件可能需要较长时间</div>
+        <div v-if="showProgressBar" class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-bar-inner" :style="{ width: `${safeProgress}%` }"></div>
+          </div>
+          <div class="progress-text">{{ safeProgress }}%</div>
+        </div>
       </div>
 
       <div v-else class="modal-body">
@@ -48,11 +54,28 @@ const props = defineProps({
   isImporting: {
     type: Boolean,
     default: false
+  },
+  importProgress: {
+    type: Number,
+    default: null
+  },
+  importLoadingText: {
+    type: String,
+    default: '导入中，请稍候...'
   }
 })
 
 const file = ref(null)
 const fileName = ref('')
+
+const safeProgress = computed(() => {
+  if (typeof props.importProgress !== 'number' || Number.isNaN(props.importProgress)) {
+    return 0
+  }
+  return Math.max(0, Math.min(100, Math.floor(props.importProgress)))
+})
+
+const showProgressBar = computed(() => typeof props.importProgress === 'number')
 
 const typeLabel = computed(() => {
   const labels = {
@@ -72,3 +95,29 @@ const handleFileUpload = (e) => {
 
 defineExpose({ fileName })
 </script>
+
+<style scoped>
+.progress-wrap {
+  margin-top: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5edf9;
+  overflow: hidden;
+}
+
+.progress-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #1890ff, #4aa8ff);
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 12px;
+}
+</style>
