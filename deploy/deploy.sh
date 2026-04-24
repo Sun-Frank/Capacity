@@ -23,6 +23,8 @@ required_vars=(
   NGINX_SERVER_NAME NGINX_WEB_ROOT NGINX_CONF_PATH
 )
 
+NGINX_CLIENT_MAX_BODY_SIZE="${NGINX_CLIENT_MAX_BODY_SIZE:-50m}"
+
 for var_name in "${required_vars[@]}"; do
   if [[ -z "${!var_name:-}" ]]; then
     echo "[ERROR] Required variable ${var_name} is empty in ${ENV_FILE}"
@@ -250,6 +252,7 @@ server {
 server {
     listen 443 ssl http2;
     server_name ${NGINX_SERVER_NAME};
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
 
     ssl_certificate ${SSL_CERT_PATH};
     ssl_certificate_key ${SSL_CERT_KEY_PATH};
@@ -286,6 +289,7 @@ else
 server {
     listen 80;
     server_name ${NGINX_SERVER_NAME};
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
 
     root ${NGINX_WEB_ROOT};
     index index.html;
