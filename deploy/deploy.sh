@@ -23,7 +23,7 @@ required_vars=(
   NGINX_SERVER_NAME NGINX_WEB_ROOT NGINX_CONF_PATH
 )
 
-NGINX_CLIENT_MAX_BODY_SIZE="${NGINX_CLIENT_MAX_BODY_SIZE:-50m}"
+NGINX_CLIENT_MAX_BODY_SIZE="${NGINX_CLIENT_MAX_BODY_SIZE:-256m}"
 
 for var_name in "${required_vars[@]}"; do
   if [[ -z "${!var_name:-}" ]]; then
