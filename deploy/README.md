@@ -1,6 +1,20 @@
 ﻿# CAPICS One-Click Deploy
 
-## Local Debug Deploy (Windows)
+## 标准服务器路径
+- 代码根目录：`/opt/capics`
+- 后端目录：`/opt/capics/backend`
+- 前端目录：`/opt/capics/capics-frontend`
+- 部署目录：`/opt/capics/deploy`
+
+## 文档信息
+- 更新日期：2026-04-25
+
+## 版本记录
+| 版本 | 日期 | 说明 |
+|---|---|---|
+
+
+Local Debug Deploy (Windows)
 
 1) Prepare local env file:
 
@@ -88,7 +102,13 @@ This does:
 bash deploy/e2e-smoke.sh deploy/.env.prod
 ```
 
-## 4) First release flow (recommended)
+## 4) Full smoke test
+
+```bash
+bash deploy/e2e-full-smoke.sh deploy/.env.prod
+```
+
+## 5) First release flow (recommended)
 
 ```bash
 bash deploy/first-release-run.sh deploy/.env.prod
@@ -110,3 +130,5 @@ This runs in order:
 - Defaults when omitted:
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem`
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem`
+
+
