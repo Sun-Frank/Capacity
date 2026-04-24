@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -122,7 +123,7 @@ public class MrpPlanService {
                 throw new IOException("Invalid MRP template: required headers are Item Number*, Release Date*, Due Date*, Quantity*, Reference*.");
             }
 
-            int count = 0;
+            List<MrpPlan> importCandidates = new ArrayList<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) {
@@ -154,11 +155,38 @@ public class MrpPlanService {
                     if (entity.getQuantityScheduled() == null) {
                         throw new IOException("Row " + (i + 1) + " missing required field: Quantity*");
                     }
-                    repository.save(entity);
-                    count++;
+                    importCandidates.add(entity);
                 }
             }
-            return count;
+
+            if (importCandidates.isEmpty()) {
+                return 0;
+            }
+
+            YearMonth startMonth = importCandidates.stream()
+                    .map(MrpPlan::getReleaseDate)
+                    .filter(Objects::nonNull)
+                    .map(YearMonth::from)
+                    .min(Comparator.naturalOrder())
+                    .orElse(null);
+            if (startMonth == null) {
+                return 0;
+            }
+            YearMonth endExclusive = startMonth.plusMonths(12);
+
+            List<MrpPlan> filteredPlans = importCandidates.stream()
+                    .filter(plan -> {
+                        LocalDate releaseDate = plan.getReleaseDate();
+                        if (releaseDate == null) {
+                            return false;
+                        }
+                        YearMonth ym = YearMonth.from(releaseDate);
+                        return !ym.isBefore(startMonth) && ym.isBefore(endExclusive);
+                    })
+                    .collect(Collectors.toList());
+
+            repository.saveAll(filteredPlans);
+            return filteredPlans.size();
         }
     }
 

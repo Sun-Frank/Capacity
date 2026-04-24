@@ -86,6 +86,7 @@
           @update:modelValue="onWeeklyFileNameChange"
         />
         <button class="btn btn-primary" :disabled="!weeklyCreatedBy || !weeklyFileName" @click="loadWeeklyDescriptionReportData">查询</button>
+        <button class="btn" :disabled="!weeklyDescriptionReport.length" @click="handleExportWeeklyDescriptionReport">导出描述分类周报表</button>
       </div>
       <WeeklyDescriptionReportTable
         :columns="weeklyDescriptionColumns"
@@ -137,6 +138,7 @@
           @update:modelValue="onMonthlyFileNameChange"
         />
         <button class="btn btn-primary" :disabled="!monthlyCreatedBy || !monthlyFileName" @click="loadMonthlyDescriptionReportData">查询</button>
+        <button class="btn" :disabled="!monthlyDescriptionReport.length" @click="handleExportMonthlyDescriptionReport">导出描述分类月报表</button>
       </div>
       <MonthlyDescriptionReportTable
         :columns="monthlyDescriptionColumns"
@@ -162,6 +164,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useMrpFilters } from '@/composables/useMrpFilters'
 import { useToast } from '@/composables/useToast'
 import { aggregateReportByDescription } from '@/composables/useMrpDescriptionReport'
+import { downloadCsv } from '@/utils/export'
 import {
   downloadMrpTemplate,
   exportMonthlyReport,
@@ -222,6 +225,34 @@ const weeklyDescriptionColumns = computed(() => weeklyColumns.value)
 const weeklyDescriptionReport = computed(() => aggregateReportByDescription(weeklyColumns.value, weeklyReport.value).rows)
 const monthlyDescriptionColumns = computed(() => monthlyColumns.value)
 const monthlyDescriptionReport = computed(() => aggregateReportByDescription(monthlyColumns.value, monthlyReport.value).rows)
+
+const buildDescriptionHeaders = (columns, periodLabel) => {
+  const headers = [
+    { key: 'descriptionGroup', label: '描述分类' },
+    { key: 'itemCount', label: '物料数' }
+  ]
+  ;(columns || []).forEach((column) => {
+    const groupLabel = column.weekLabel || column.monthLabel || ''
+    headers.push({
+      key: column.key,
+      label: `${groupLabel}_${column.version || ''}_${periodLabel}`
+    })
+  })
+  return headers
+}
+
+const buildDescriptionRows = (columns, rows) => {
+  return (rows || []).map((row) => {
+    const exportRow = {
+      descriptionGroup: row.descriptionGroup || '',
+      itemCount: row.itemCount ?? 0
+    }
+    ;(columns || []).forEach((column) => {
+      exportRow[column.key] = row[column.key] ?? 0
+    })
+    return exportRow
+  })
+}
 
 const handleDownloadMrpTemplate = async () => {
   try {
@@ -355,6 +386,28 @@ const handleExportMonthlyReport = async () => {
   } catch (err) {
     showToast(err?.message || '月报表导出失败', 'error')
   }
+}
+
+const handleExportWeeklyDescriptionReport = () => {
+  if (!weeklyDescriptionReport.value.length) {
+    showToast('暂无可导出数据', 'warning')
+    return
+  }
+  const headers = buildDescriptionHeaders(weeklyDescriptionColumns.value, '周需求量')
+  const rows = buildDescriptionRows(weeklyDescriptionColumns.value, weeklyDescriptionReport.value)
+  downloadCsv('MRP-按描述分类汇总周报表.csv', headers, rows)
+  showToast('导出成功', 'success')
+}
+
+const handleExportMonthlyDescriptionReport = () => {
+  if (!monthlyDescriptionReport.value.length) {
+    showToast('暂无可导出数据', 'warning')
+    return
+  }
+  const headers = buildDescriptionHeaders(monthlyDescriptionColumns.value, '月需求量')
+  const rows = buildDescriptionRows(monthlyDescriptionColumns.value, monthlyDescriptionReport.value)
+  downloadCsv('MRP-按描述分类汇总月报表.csv', headers, rows)
+  showToast('导出成功', 'success')
 }
 
 const onMonthlyCreatedByChange = async () => {

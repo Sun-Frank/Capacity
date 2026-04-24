@@ -25,6 +25,13 @@
           :options="versions.map((item) => ({ value: item, label: item }))"
           placeholder="选择版本"
           :disabled="!selectedFileName"
+          @update:modelValue="onVersionChange"
+        />
+        <BaseSelect
+          v-model="selectedSavedResultVersion"
+          :options="savedResultVersions.map((item) => ({ value: item, label: item }))"
+          placeholder="已计算结果版本"
+          :disabled="!selectedVersion"
         />
         <button class="btn btn-primary" :disabled="loading" @click="loadOverview">
           {{ loading ? '加载中...' : '加载数据' }}
@@ -178,9 +185,8 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { downloadCsv } from '@/utils/export'
 import { getCreatedBys, getFileNamesByCreatedBy, getVersionsByCreatedByAndFileName } from '@/api/mrp'
-import { getCapacityAssessment } from '@/api/capacity'
-import { getCapacityAssessmentMonthly } from '@/api/capacityMonthly'
 import { getLines } from '@/api/line'
+import { getSnapshot, getSnapshotNames } from '@/api/simulationSnapshot'
 import {
   ALL_PROCESS,
   buildProductLineOverview,
@@ -209,6 +215,8 @@ const versions = ref([])
 const selectedCreatedBy = ref('')
 const selectedFileName = ref('')
 const selectedVersion = ref('')
+const selectedSavedResultVersion = ref('')
+const savedResultVersions = ref([])
 
 const loading = ref(false)
 const pageError = ref('')
@@ -453,6 +461,8 @@ async function loadCreatedByOptions() {
 async function onCreatedByChange() {
   selectedFileName.value = ''
   selectedVersion.value = ''
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
   versions.value = []
   overviewData.value = { processOptions: [ALL_PROCESS], weekly: {}, monthly: {} }
   pageError.value = ''
@@ -471,6 +481,8 @@ async function onCreatedByChange() {
 
 async function onFileNameChange() {
   selectedVersion.value = ''
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
   overviewData.value = { processOptions: [ALL_PROCESS], weekly: {}, monthly: {} }
   pageError.value = ''
   if (!selectedCreatedBy.value || !selectedFileName.value) {
@@ -486,9 +498,48 @@ async function onFileNameChange() {
   }
 }
 
+async function onVersionChange() {
+  selectedSavedResultVersion.value = ''
+  savedResultVersions.value = []
+  if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
+    return
+  }
+  try {
+    const [weekSnapshots, monthSnapshots] = await Promise.all([
+      getSnapshotNames(
+        token.value,
+        selectedCreatedBy.value,
+        selectedFileName.value,
+        selectedVersion.value,
+        'static',
+        'week'
+      ),
+      getSnapshotNames(
+        token.value,
+        selectedCreatedBy.value,
+        selectedFileName.value,
+        selectedVersion.value,
+        'static',
+        'month'
+      )
+    ])
+    const weekNames = weekSnapshots?.success ? (weekSnapshots.data || []) : []
+    const monthNames = monthSnapshots?.success ? (monthSnapshots.data || []) : []
+    const monthSet = new Set(monthNames)
+    savedResultVersions.value = weekNames.filter((name) => monthSet.has(name))
+  } catch (error) {
+    console.error('Load saved result versions error:', error)
+    showToast('加载已计算结果版本失败', 'error')
+  }
+}
+
 async function loadOverview() {
   if (!selectedCreatedBy.value || !selectedFileName.value || !selectedVersion.value) {
     showToast('请选择完整的导入人、文件和版本', 'warning')
+    return
+  }
+  if (!selectedSavedResultVersion.value) {
+    showToast('请选择已计算结果版本', 'warning')
     return
   }
 
@@ -497,8 +548,24 @@ async function loadOverview() {
 
   try {
     const [weeklyRes, monthlyRes, linesRes] = await Promise.all([
-      getCapacityAssessment(token.value, selectedCreatedBy.value, selectedFileName.value, selectedVersion.value),
-      getCapacityAssessmentMonthly(token.value, selectedCreatedBy.value, selectedFileName.value, selectedVersion.value),
+      getSnapshot(
+        token.value,
+        selectedCreatedBy.value,
+        selectedFileName.value,
+        selectedVersion.value,
+        selectedSavedResultVersion.value,
+        'static',
+        'week'
+      ),
+      getSnapshot(
+        token.value,
+        selectedCreatedBy.value,
+        selectedFileName.value,
+        selectedVersion.value,
+        selectedSavedResultVersion.value,
+        'static',
+        'month'
+      ),
       getLines(token.value)
     ])
 
@@ -517,7 +584,17 @@ async function loadOverview() {
       lineNameMap[line.lineCode] = line.lineName || ''
     })
 
-    overviewData.value = buildProductLineOverview(weeklyRes.data, monthlyRes.data, lineNameMap)
+    const weeklyPayload = {
+      lines: weeklyRes.data?.linesData || {},
+      weeks: weeklyRes.data?.dates || [],
+      weekDates: weeklyRes.data?.dateLabels || {}
+    }
+    const monthlyPayload = {
+      lines: monthlyRes.data?.linesData || {},
+      months: monthlyRes.data?.dates || [],
+      monthDates: monthlyRes.data?.dateLabels || {}
+    }
+    overviewData.value = buildProductLineOverview(weeklyPayload, monthlyPayload, lineNameMap)
     selectedProcess.value = overviewData.value.processOptions.includes(selectedProcess.value) ? selectedProcess.value : ALL_PROCESS
     showToast('产线一览已更新', 'success')
   } catch (error) {

@@ -72,6 +72,7 @@
 
       </button>
       <button class="btn" @click="handleExportCapacityMonthly" :disabled="!selectedLine || selectedLineData.length === 0">数据导出</button>
+      <button class="btn" @click="handleExportCapacityMonthlyAllLines" :disabled="Object.keys(linesData).length === 0">全量数据导出</button>
 
     </div>
 
@@ -819,6 +820,52 @@ const handleExportCapacityMonthly = () => {
   })
   downloadCsv(`静态产能核算-月-${selectedLine.value || '全部'}.csv`, headers, rows)
   showToast('导出成功', 'success')
+}
+
+const handleExportCapacityMonthlyAllLines = () => {
+  const lineCodes = Object.keys(linesData.value || {})
+  if (!lineCodes.length) {
+    showToast('暂无可导出数据', 'warning')
+    return
+  }
+  const headers = [
+    { key: 'lineCode', label: '生产线' },
+    { key: 'itemNumber', label: 'Item Number' },
+    { key: 'description', label: 'Description' },
+    { key: 'componentNumber', label: 'Component Code' },
+    { key: 'shiftOutput', label: '班产量' },
+    { key: 'shiftWorkers', label: '班人数' },
+    { key: 'ct', label: 'CT' },
+    { key: 'oee', label: 'OEE(%)' }
+  ]
+  months.value.forEach(month => {
+    headers.push({ key: `${month}_demand`, label: `${getMonthDate(month)}_需求量` })
+    headers.push({ key: `${month}_loading`, label: `${getMonthDate(month)}_LOADING` })
+  })
+
+  const rows = lineCodes.flatMap((lineCode) => {
+    const lineRows = linesData.value[lineCode] || []
+    return lineRows.map((item) => {
+      const row = {
+        lineCode: formatLineLabel(lineCode),
+        itemNumber: item.itemNumber || '',
+        description: item.description || '',
+        componentNumber: item.componentNumber || '',
+        shiftOutput: item.shiftOutput ?? '',
+        shiftWorkers: item.shiftWorkers ?? '',
+        ct: item.ct ?? '',
+        oee: item.oee ?? ''
+      }
+      months.value.forEach((month) => {
+        row[`${month}_demand`] = item[`${month}_demand`] ?? ''
+        row[`${month}_loading`] = item[`${month}_loading`] ?? ''
+      })
+      return row
+    })
+  })
+
+  downloadCsv('静态产能核算-月-全量.csv', headers, rows)
+  showToast('全量导出成功', 'success')
 }
 
 
