@@ -8,61 +8,46 @@
 
 ## 文档信息
 - 更新日期：2026-04-25
+- 文档版本：v1.2.2
 
 ## 版本记录
 | 版本 | 日期 | 说明 |
 |---|---|---|
-
-
+| v1.2.2 | 2026-04-25 | 统一补齐文档更新日期与版本记录。 |
 Local Debug Deploy (Windows)
-
 1) Prepare local env file:
-
 ```powershell
 Copy-Item deploy/.env.local.example deploy/.env.local
 ```
-
 Update at least:
 - `DB_PASSWORD`
 - `POSTGRES_ADMIN_PASSWORD`
 - `JWT_SECRET`
 - `APP_CORS_ALLOWED_ORIGINS` (keep `http://localhost:3000`)
 - `PSQL_BIN` (if your PostgreSQL path is different)
-
 2) One-click local deploy (DB init + build + start):
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-deploy.ps1
 ```
-
 Optional: prepare only (do not start backend/frontend):
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-deploy.ps1 -NoStart
 ```
-
 3) Stop local backend/frontend:
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-stop.ps1
 ```
-
 Local default URLs:
 - Frontend: `http://127.0.0.1:3000/login`
 - Backend health: `http://127.0.0.1:8080/api/health`
-
 4) One-click start backend only:
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-start-backend.ps1
 ```
-
 Optional foreground mode (for direct console logs):
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-start-backend.ps1 -Foreground
 ```
-
 ## 1) Prepare env file
 
 ```bash
@@ -130,5 +115,3 @@ This runs in order:
 - Defaults when omitted:
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem`
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem`
-
-
