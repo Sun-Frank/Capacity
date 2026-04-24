@@ -147,9 +147,7 @@ print(json.dumps({
   "snapshotName": snap,
   "source": "static",
   "dimension": "week",
-  "linesData": {},
-  "dates": [],
-  "dateLabels": {}
+  "saveMode": "server-recompute"
 }, ensure_ascii=False))
 PY
 )"
@@ -172,9 +170,7 @@ print(json.dumps({
   "snapshotName": snap,
   "source": "static",
   "dimension": "month",
-  "linesData": {},
-  "dates": [],
-  "dateLabels": {}
+  "saveMode": "server-recompute"
 }, ensure_ascii=False))
 PY
 )"

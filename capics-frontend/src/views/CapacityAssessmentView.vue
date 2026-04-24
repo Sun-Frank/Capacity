@@ -676,9 +676,7 @@ const saveComputedResult = async () => {
       snapshotName,
       source: 'static',
       dimension: 'week',
-      linesData: linesData.value,
-      dates: weeks.value,
-      dateLabels: weekDates.value
+      saveMode: 'server-recompute'
     }
     const data = await saveSnapshot(token.value, payload)
     if (data.success) {

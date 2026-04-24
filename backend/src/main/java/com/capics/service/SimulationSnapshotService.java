@@ -19,10 +19,15 @@ public class SimulationSnapshotService {
 
     private final SimulationSnapshotRepository repository;
     private final ObjectMapper objectMapper;
+    private final CapacityAssessmentService capacityAssessmentService;
 
-    public SimulationSnapshotService(SimulationSnapshotRepository repository, ObjectMapper objectMapper) {
+    public SimulationSnapshotService(
+            SimulationSnapshotRepository repository,
+            ObjectMapper objectMapper,
+            CapacityAssessmentService capacityAssessmentService) {
         this.repository = repository;
         this.objectMapper = objectMapper;
+        this.capacityAssessmentService = capacityAssessmentService;
     }
 
     @Transactional
@@ -50,6 +55,23 @@ public class SimulationSnapshotService {
             repository.deleteAll(existing);
         }
 
+        if (isStaticSource(source)) {
+            RecomputedSnapshot recomputed = recomputeStaticSnapshot(createdBy, fileName, version, dimension);
+            linesData = recomputed.linesData;
+            dates = recomputed.dates;
+            dateLabels = recomputed.dateLabels;
+        }
+
+        if (linesData == null) {
+            linesData = new LinkedHashMap<>();
+        }
+        if (dates == null) {
+            dates = new ArrayList<>();
+        }
+        if (dateLabels == null) {
+            dateLabels = new LinkedHashMap<>();
+        }
+
         SimulationSnapshot snapshot = new SimulationSnapshot();
         snapshot.setCreatedBy(createdBy);
         snapshot.setFileName(fileName);
@@ -62,6 +84,58 @@ public class SimulationSnapshotService {
         snapshot.setDateLabels(objectMapper.writeValueAsString(dateLabels));
 
         return repository.save(snapshot);
+    }
+
+    private boolean isStaticSource(String source) {
+        return "static".equals(source);
+    }
+
+    private RecomputedSnapshot recomputeStaticSnapshot(
+            String createdBy,
+            String fileName,
+            String version,
+            String dimension) {
+        Map<String, Object> calculated;
+        if ("month".equals(dimension)) {
+            calculated = capacityAssessmentService.getCapacityAssessmentMonthly(createdBy, fileName, version);
+            return new RecomputedSnapshot(
+                    getMap(calculated, "lines"),
+                    getList(calculated, "months"),
+                    getStringMap(calculated, "monthDates"));
+        }
+
+        calculated = capacityAssessmentService.getCapacityAssessment(createdBy, fileName, version);
+        return new RecomputedSnapshot(
+                getMap(calculated, "lines"),
+                getList(calculated, "weeks"),
+                getStringMap(calculated, "weekDates"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getMap(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value instanceof Map) {
+            return (Map<String, Object>) value;
+        }
+        return new LinkedHashMap<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> getList(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value instanceof List) {
+            return (List<String>) value;
+        }
+        return new ArrayList<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> getStringMap(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        if (value instanceof Map) {
+            return (Map<String, String>) value;
+        }
+        return new LinkedHashMap<>();
     }
 
     public List<String> getSnapshotNames(String createdBy, String fileName, String version, String source, String dimension) {
@@ -137,5 +211,20 @@ public class SimulationSnapshotService {
     private String normalizeKind(String value, String defaultValue) {
         String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
         return normalized.isEmpty() ? defaultValue : normalized;
+    }
+
+    private static class RecomputedSnapshot {
+        private final Map<String, Object> linesData;
+        private final List<String> dates;
+        private final Map<String, String> dateLabels;
+
+        private RecomputedSnapshot(
+                Map<String, Object> linesData,
+                List<String> dates,
+                Map<String, String> dateLabels) {
+            this.linesData = linesData;
+            this.dates = dates;
+            this.dateLabels = dateLabels;
+        }
     }
 }
