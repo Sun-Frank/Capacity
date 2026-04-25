@@ -39,7 +39,8 @@ const pageTitles = {
   '/capacity-realtime': '动态产能模拟（周）',
   '/capacity-realtime-monthly': '动态产能模拟（月）',
   '/fusion-workbench': '融合工作台',
-  '/users': '用户管理'
+  '/users': '用户管理',
+  '/ai-config': 'AI后端环境配置'
 }
 
 const pageSubtitles = {
@@ -56,7 +57,8 @@ const pageSubtitles = {
   '/capacity-realtime': '可编辑仿真结果（周）',
   '/capacity-realtime-monthly': '可编辑仿真结果（月）',
   '/fusion-workbench': '融合分析与协同',
-  '/users': '系统账号与权限管理'
+  '/users': '系统账号与权限管理',
+  '/ai-config': 'AI Agent 连接参数维护'
 }
 
 const pageTitle = computed(() => pageTitles[route.path] || '')

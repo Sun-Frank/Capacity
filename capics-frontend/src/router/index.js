@@ -73,6 +73,11 @@ const routes = [
         component: () => import('@/views/UsersView.vue')
       },
       {
+        path: 'ai-config',
+        name: 'AiConfig',
+        component: () => import('@/views/AiConfigView.vue')
+      },
+      {
         path: 'fusion-workbench',
         name: 'FusionWorkbench',
         component: () => import('@/views/FusionWorkbenchView.vue')
@@ -95,8 +100,6 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('capics_token')
   if (to.meta.requiresAuth !== false && !token) {
     next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/')
   } else {
     next()
   }

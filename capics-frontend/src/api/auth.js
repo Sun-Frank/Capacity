@@ -8,8 +8,19 @@ async function parseJsonSafe(res) {
   try {
     return JSON.parse(text)
   } catch (e) {
-    throw new Error(`API did not return valid JSON (HTTP ${res.status})`)
+    return {
+      success: false,
+      message: `Request failed (HTTP ${res.status})`
+    }
   }
+}
+
+function buildHttpErrorMessage(status, fallback) {
+  if (fallback) return fallback
+  if (status === 401 || status === 403) {
+    return `登录已失效或无权限 (HTTP ${status})，请重新登录`
+  }
+  return `Request failed (HTTP ${status})`
 }
 
 export function authApi(token) {
@@ -46,7 +57,7 @@ export function login(username, password) {
     body: JSON.stringify({ username, password })
   }).then(async (res) => {
     const data = await parseJsonSafe(res)
-    if (!res.ok) throw new Error(data.message || `Login failed (HTTP ${res.status})`)
+    if (!res.ok) throw new Error(buildHttpErrorMessage(res.status, data.message))
     return data
   })
 }
@@ -57,7 +68,7 @@ export function logout(token) {
     headers: { 'Authorization': `Bearer ${token}` }
   }).then(async (res) => {
     const data = await parseJsonSafe(res)
-    if (!res.ok) throw new Error(data.message || `Logout failed (HTTP ${res.status})`)
+    if (!res.ok) throw new Error(buildHttpErrorMessage(res.status, data.message))
     return data
   })
 }
@@ -67,7 +78,7 @@ export function getCurrentUser(token) {
     headers: { 'Authorization': `Bearer ${token}` }
   }).then(async (res) => {
     const data = await parseJsonSafe(res)
-    if (!res.ok) throw new Error(data.message || `Get current user failed (HTTP ${res.status})`)
+    if (!res.ok) throw new Error(buildHttpErrorMessage(res.status, data.message))
     return data
   })
 }

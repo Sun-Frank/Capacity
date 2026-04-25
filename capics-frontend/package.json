@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:mrp-compare-page": "node tests/mrpComparePage.verify.js",
+    "verify:pages": "node tests/pageSmoke.verify.js",
+    "verify:critical-flows": "node tests/criticalFlows.verify.js"
   },
   "dependencies": {
     "echarts": "^6.0.0",
@@ -15,6 +18,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
+    "playwright": "^1.59.1",
     "vite": "^5.0.0"
   }
 }

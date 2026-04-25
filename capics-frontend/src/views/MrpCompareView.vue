@@ -75,6 +75,9 @@
         <button class="btn btn-primary" :disabled="loading" @click="loadCompareData">
           {{ loading ? '对比中...' : '开始对比' }}
         </button>
+        <button class="btn" :disabled="loading || !compareResult" @click="handleAiAnalyze">
+          {{ aiLoading ? 'AI分析中...' : 'AI分析差异' }}
+        </button>
       </div>
     </section>
 
@@ -106,6 +109,26 @@
         </article>
       </section>
 
+      <section class="table-wrapper ai-analysis-panel">
+        <div class="panel-header ai-panel-header">
+          <div>
+            <h2 class="panel-title">AI差异分析</h2>
+            <p class="panel-copy">基于当前对比结果自动提炼差异重点、可能原因和建议动作。</p>
+          </div>
+          <div class="ai-meta" v-if="aiResult?.provider">
+            <span class="ai-meta-tag">{{ aiResult.provider }}</span>
+            <span class="ai-meta-model">{{ aiResult.model }}</span>
+          </div>
+        </div>
+        <div v-if="aiLoading" class="state-panel">AI正在分析当前MRP差异...</div>
+        <div v-else-if="aiError" class="state-panel error">{{ aiError }}</div>
+        <div v-else-if="aiResult?.analysis" class="ai-analysis-content">
+          <pre class="ai-analysis-text">{{ aiResult.analysis }}</pre>
+          <p v-if="aiResult.note" class="ai-analysis-note">{{ aiResult.note }}</p>
+        </div>
+        <div v-else class="state-panel">点击“AI分析差异”生成分析结论。</div>
+      </section>
+
       <section class="table-wrapper compare-table-panel">
         <div class="panel-header compare-table-header">
           <div>
@@ -125,49 +148,69 @@
           </div>
         </div>
 
-        <div class="table-scroll">
-          <table class="main-table compare-matrix-table">
-            <thead>
-              <tr>
-                <th class="sticky-left sticky-name">产品描述 / Item Number</th>
-                <th class="sticky-left sticky-metric">指标</th>
-                <th v-for="period in compareResult.periods" :key="period.key" class="period-head">
-                  <strong>{{ period.key }}</strong>
-                  <span>{{ period.label }}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-for="group in compareResult.groups" :key="group.key">
-                <tr
-                  v-for="(row, rowIndex) in group.rows"
+        <div
+          ref="topScrollbarRef"
+          class="compare-top-scrollbar"
+          @scroll="handleTopScrollbarScroll"
+        >
+          <div
+            ref="topScrollbarInnerRef"
+            class="compare-top-scrollbar-inner"
+            :style="{ width: `${topScrollbarInnerWidth}px` }"
+          ></div>
+        </div>
+
+        <div
+          ref="tableScrollRef"
+          class="table-scroll"
+          @scroll="handleTableScroll"
+        >
+          <div ref="matrixContentRef" class="compare-matrix-content">
+            <table ref="matrixTableRef" class="main-table compare-matrix-table">
+              <thead>
+                <tr>
+                  <th class="sticky-left sticky-name">产品描述 / Item Number</th>
+                  <th class="sticky-left sticky-metric">指标</th>
+                  <th v-for="period in compareResult.periods" :key="period.key" class="period-head">
+                    <strong>{{ period.key }}</strong>
+                    <span>{{ period.label }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="group in compareResult.groups" :key="group.key">
+                  <tr
+                    v-for="(row, rowIndex) in group.rows"
                   :key="`${group.key}-${row.type}`"
                   :class="[
                     'matrix-row',
-                    `matrix-row-${row.type}`,
-                    { 'summary-sticky-row': group.key === 'summary' },
-                    group.key === 'summary' ? `summary-sticky-row-${rowIndex}` : ''
+                    `matrix-row-${row.type}`
                   ]"
                 >
-                  <th
-                    v-if="rowIndex === 0"
-                    :class="['sticky-left', 'sticky-name', 'group-name-cell', { 'group-name-summary': group.key === 'summary' }]"
-                    :rowspan="group.rows.length"
-                  >
-                    <span class="group-name">{{ group.name }}</span>
-                  </th>
-                  <th class="sticky-left sticky-metric metric-cell">{{ row.label }}</th>
-                  <td
-                    v-for="(value, valueIndex) in row.values"
-                    :key="`${group.key}-${row.type}-${compareResult.periods[valueIndex].key}`"
-                    :class="getCellClass(row.type, value, group.key === 'summary')"
-                  >
-                    {{ row.type === 'delta' ? formatDelta(value) : formatQty(value) }}
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
+                    <th
+                      v-if="rowIndex === 0"
+                      :class="['sticky-left', 'sticky-name', 'group-name-cell', { 'group-name-summary': group.key === 'summary' }]"
+                      :rowspan="group.rows.length"
+                    >
+                      <span class="group-name">{{ group.name }}</span>
+                    </th>
+                    <th
+                      :class="['sticky-left', 'sticky-metric', 'metric-cell', { 'summary-metric-cell': group.key === 'summary' }]"
+                    >
+                      {{ row.label }}
+                    </th>
+                    <td
+                      v-for="(value, valueIndex) in row.values"
+                      :key="`${group.key}-${row.type}-${compareResult.periods[valueIndex].key}`"
+                      :class="getCellClass(row.type, value, group.key === 'summary')"
+                    >
+                      {{ row.type === 'delta' ? formatDelta(value) : formatQty(value) }}
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </template>
@@ -175,7 +218,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
@@ -189,6 +232,7 @@ import {
 import { getProducts } from '@/api/product'
 import { buildMrpCompareMatrixExport, buildMrpCompareOverview } from '@/composables/useMrpCompareData'
 import { downloadCsv } from '@/utils/export'
+import { analyzeMrpCompare } from '@/api/ai'
 
 const { token } = useAuth()
 const { showToast } = useToast()
@@ -198,6 +242,17 @@ const loading = ref(false)
 const pageError = ref('')
 const viewType = ref('week')
 const compareResult = ref(null)
+const aiLoading = ref(false)
+const aiError = ref('')
+const aiResult = ref(null)
+const topScrollbarRef = ref(null)
+const topScrollbarInnerRef = ref(null)
+const tableScrollRef = ref(null)
+const matrixContentRef = ref(null)
+const matrixTableRef = ref(null)
+const topScrollbarInnerWidth = ref(0)
+let syncingScroll = false
+let resizeObserver = null
 
 function createFileState() {
   return reactive({
@@ -218,6 +273,8 @@ const fileBLabel = computed(() => (fileB.fileName && fileB.version ? `${fileB.fi
 function resetCompareResult() {
   compareResult.value = null
   pageError.value = ''
+  aiError.value = ''
+  aiResult.value = null
 }
 
 async function loadCreatedByOptions() {
@@ -293,6 +350,42 @@ function getCellClass(rowType, value, isSummary) {
   return ['matrix-cell', getDeltaIntensityClass(value), isSummary ? 'cell-summary' : '']
 }
 
+function syncHorizontalScroll(source, target) {
+  if (!source || !target || syncingScroll) return
+  syncingScroll = true
+  target.scrollLeft = source.scrollLeft
+  requestAnimationFrame(() => {
+    syncingScroll = false
+  })
+}
+
+function handleTopScrollbarScroll(event) {
+  syncHorizontalScroll(event.target, tableScrollRef.value)
+}
+
+function handleTableScroll(event) {
+  syncHorizontalScroll(event.target, topScrollbarRef.value)
+}
+
+function updateTopScrollbarWidth() {
+  const inner = topScrollbarInnerRef.value
+  const topScrollbar = topScrollbarRef.value
+  const tableScroll = tableScrollRef.value
+  const matrixContent = matrixContentRef.value
+  const matrixTable = matrixTableRef.value
+  if (!inner || !topScrollbar || !tableScroll || !matrixContent || !matrixTable) return
+
+  const scrollWidth = Math.max(
+    matrixTable.scrollWidth,
+    matrixContent.scrollWidth,
+    tableScroll.scrollWidth,
+    tableScroll.clientWidth
+  )
+  topScrollbarInnerWidth.value = scrollWidth
+  topScrollbar.scrollLeft = tableScroll.scrollLeft
+  topScrollbar.style.visibility = scrollWidth > tableScroll.clientWidth ? 'visible' : 'hidden'
+}
+
 async function loadCompareData() {
   if (!fileA.createdBy || !fileA.fileName || !fileA.version || !fileB.createdBy || !fileB.fileName || !fileB.version) {
     showToast('请选择完整的文件 A 和文件 B 条件', 'warning')
@@ -323,6 +416,11 @@ async function loadCompareData() {
       fileLabelB: fileBLabel.value
     })
 
+    aiError.value = ''
+    aiResult.value = null
+    await nextTick()
+    updateTopScrollbarWidth()
+
     showToast('MRP 对比结果已更新', 'success')
   } catch (error) {
     console.error('Load MRP compare error:', error)
@@ -331,6 +429,66 @@ async function loadCompareData() {
     showToast('加载 MRP 对比失败', 'error')
   } finally {
     loading.value = false
+  }
+}
+
+function buildAiPayload() {
+  if (!compareResult.value) return {}
+
+  const groups = compareResult.value.groups || []
+  const detailGroups = groups.filter((group) => group.key !== 'summary')
+
+  const topItems = detailGroups.slice(0, 15).map((group) => {
+    const rowA = group.rows.find((row) => row.type === 'qtyA')
+    const rowB = group.rows.find((row) => row.type === 'qtyB')
+    const rowDelta = group.rows.find((row) => row.type === 'delta')
+
+    return {
+      name: group.name,
+      totalQtyA: rowA?.total || 0,
+      totalQtyB: rowB?.total || 0,
+      totalDelta: rowDelta?.total || 0,
+      periodDeltas: (rowDelta?.values || []).slice(0, 24)
+    }
+  })
+
+  return {
+    viewType: viewType.value,
+    fileLabelA: compareResult.value.fileLabelA,
+    fileLabelB: compareResult.value.fileLabelB,
+    periods: (compareResult.value.periods || []).map((period) => ({
+      key: period.key,
+      label: period.label
+    })),
+    summary: compareResult.value.summary || {},
+    topItems
+  }
+}
+
+async function handleAiAnalyze() {
+  if (!compareResult.value) {
+    showToast('请先完成文件对比', 'warning')
+    return
+  }
+
+  aiLoading.value = true
+  aiError.value = ''
+
+  try {
+    const res = await analyzeMrpCompare(token.value, buildAiPayload())
+    aiResult.value = res.data || null
+    if (!aiResult.value?.analysis) {
+      aiError.value = 'AI未返回有效分析内容'
+    } else {
+      showToast('AI分析已完成', 'success')
+    }
+  } catch (error) {
+    console.error('AI analyze failed:', error)
+    aiError.value = error.message || 'AI分析失败'
+    aiResult.value = null
+    showToast('AI分析失败', 'error')
+  } finally {
+    aiLoading.value = false
   }
 }
 
@@ -346,6 +504,48 @@ function handleExportCompareMatrix() {
   showToast('导出成功', 'success')
 }
 
+watch(viewType, async () => {
+  await nextTick()
+  updateTopScrollbarWidth()
+})
+
+watch(compareResult, async () => {
+  await nextTick()
+  updateTopScrollbarWidth()
+  requestAnimationFrame(() => {
+    updateTopScrollbarWidth()
+  })
+})
+
+onMounted(() => {
+  window.addEventListener('resize', updateTopScrollbarWidth)
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      updateTopScrollbarWidth()
+    })
+    if (tableScrollRef.value) {
+      resizeObserver.observe(tableScrollRef.value)
+    }
+    if (matrixContentRef.value) {
+      resizeObserver.observe(matrixContentRef.value)
+    }
+    if (matrixTableRef.value) {
+      resizeObserver.observe(matrixTableRef.value)
+    }
+  }
+  nextTick(() => {
+    updateTopScrollbarWidth()
+  })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateTopScrollbarWidth)
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+})
+
 loadCreatedByOptions()
 </script>
 
@@ -357,7 +557,8 @@ loadCreatedByOptions()
 
 .compare-filter-panel,
 .compare-table-panel,
-.overview-stats {
+.overview-stats,
+.ai-analysis-panel {
   flex: 0 0 auto;
 }
 
@@ -417,6 +618,55 @@ loadCreatedByOptions()
   align-items: center;
   margin-top: 1rem;
   flex-wrap: wrap;
+}
+
+.ai-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ai-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-meta-tag {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3344aa;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ai-meta-model {
+  color: #5b6b7f;
+  font-size: 0.82rem;
+}
+
+.ai-analysis-content {
+  margin-top: 0.8rem;
+}
+
+.ai-analysis-text {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: #1d2735;
+  background: #f8fbff;
+  border: 1px solid #e1ecfa;
+  border-radius: 8px;
+  padding: 0.8rem;
+}
+
+.ai-analysis-note {
+  margin-top: 0.55rem;
+  color: #7a4b00;
+  font-size: 0.84rem;
 }
 
 .view-toggle {
@@ -479,6 +729,8 @@ loadCreatedByOptions()
 
 .compare-table-panel {
   padding: 1rem 1rem 1.1rem;
+  position: relative;
+  overflow: visible;
 }
 
 .compare-table-header {
@@ -557,11 +809,76 @@ loadCreatedByOptions()
 }
 
 .table-scroll {
-  overflow: auto;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+  scrollbar-width: thin;
+  scrollbar-color: #9eb6d8 #edf3fb;
+  -ms-overflow-style: auto;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 0;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: #edf3fb;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #9eb6d8;
+  border-radius: 999px;
+  border: 2px solid #edf3fb;
+}
+
+.compare-matrix-content {
+  width: max-content;
+  min-width: 100%;
+}
+
+.compare-top-scrollbar {
+  position: sticky;
+  top: 0;
+  z-index: 7;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 22px;
+  margin-bottom: 0.35rem;
+  background: linear-gradient(180deg, #f8fbff 0%, #edf4fc 100%);
+  border: 1px solid #d6e3f3;
+  border-radius: 8px 8px 0 0;
+  scrollbar-width: auto;
+  scrollbar-color: #5e8fcb #dfeaf7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.compare-top-scrollbar-inner {
+  height: 1px;
+}
+
+.compare-top-scrollbar::-webkit-scrollbar {
+  height: 14px;
+}
+
+.compare-top-scrollbar::-webkit-scrollbar-track {
+  background: #dfeaf7;
+  border-radius: 999px;
+}
+
+.compare-top-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7ea9da 0%, #4f80bd 100%);
+  border-radius: 999px;
+  border: 2px solid #dfeaf7;
+}
+
+.compare-top-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6e9cd2 0%, #3f6faa 100%);
 }
 
 .compare-matrix-table {
-  width: 100%;
+  width: max-content;
   min-width: 1080px;
   border-collapse: separate;
   border-spacing: 0;
@@ -578,8 +895,8 @@ loadCreatedByOptions()
 
 .compare-matrix-table thead th {
   position: sticky;
-  top: 0;
-  z-index: 4;
+  top: 22px;
+  z-index: 20;
   background: #f7faff;
   color: #28466f;
   font-weight: 700;
@@ -599,7 +916,7 @@ loadCreatedByOptions()
 }
 
 .compare-matrix-table thead .sticky-left {
-  z-index: 5;
+  z-index: 24;
   background: #f7faff;
 }
 
@@ -657,25 +974,9 @@ loadCreatedByOptions()
   background: #f8fafc;
 }
 
-.summary-sticky-row > th,
-.summary-sticky-row > td {
-  position: sticky;
-  z-index: 3;
-}
-
-.summary-sticky-row-0 > th,
-.summary-sticky-row-0 > td {
-  top: 57px;
-}
-
-.summary-sticky-row-1 > th,
-.summary-sticky-row-1 > td {
-  top: 104px;
-}
-
-.summary-sticky-row-2 > th,
-.summary-sticky-row-2 > td {
-  top: 151px;
+.group-name-summary,
+.summary-metric-cell {
+  background: #fff8e8;
 }
 
 .matrix-cell {

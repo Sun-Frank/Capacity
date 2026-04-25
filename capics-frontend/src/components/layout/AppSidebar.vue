@@ -25,6 +25,7 @@
       <li class="nav-item"><router-link to="/lines" class="nav-link" :class="{ active: $route.path === '/lines' }">生产线配置</router-link></li>
 
       <li class="nav-section">系统</li>
+      <li class="nav-item"><router-link to="/ai-config" class="nav-link" :class="{ active: $route.path === '/ai-config' }">AI环境配置</router-link></li>
       <li class="nav-item"><router-link to="/users" class="nav-link" :class="{ active: $route.path === '/users' }">用户管理</router-link></li>
     </ul>
   </aside>

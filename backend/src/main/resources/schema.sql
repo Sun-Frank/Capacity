@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS family_line CASCADE;
 DROP TABLE IF EXISTS sys_user_role CASCADE;
 DROP TABLE IF EXISTS sys_role CASCADE;
 DROP TABLE IF EXISTS sys_user CASCADE;
+DROP TABLE IF EXISTS ai_agent_config CASCADE;
 
 -- System User Tables
 CREATE TABLE sys_user (
@@ -45,6 +46,17 @@ CREATE TABLE sys_user_role (
     user_id BIGINT NOT NULL REFERENCES sys_user(id) ON DELETE CASCADE,
     role_id BIGINT NOT NULL REFERENCES sys_role(id) ON DELETE CASCADE,
     UNIQUE(user_id, role_id)
+);
+
+-- AI Agent Config Table
+CREATE TABLE ai_agent_config (
+    id INTEGER PRIMARY KEY,
+    api_key TEXT,
+    base_url VARCHAR(255),
+    model VARCHAR(120),
+    timeout_ms INTEGER,
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Product Family Table (编码族)
