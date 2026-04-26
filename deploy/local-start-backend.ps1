@@ -124,7 +124,7 @@ if ($Foreground) {
     exit 0
 }
 
-$proc = Start-Process -FilePath "powershell" -WorkingDirectory $backendDir -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $runScriptPath) -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
+$proc = Start-Process -FilePath "powershell" -WorkingDirectory $backendDir -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $runScriptPath) -RedirectStandardOutput $outLog -RedirectStandardError $errLog -WindowStyle Hidden -PassThru
 Set-Content -Path $pidFile -Value $proc.Id
 
 $ok = $false
@@ -147,4 +147,3 @@ if ($ok) {
     Write-Host $outLog
     Write-Host $errLog
 }
-

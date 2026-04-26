@@ -59,6 +59,7 @@ $frontendProc = Start-Process -FilePath $npmCmd.Source `
     -ArgumentList @("run", "dev", "--", "--host", "0.0.0.0", "--port", "$FrontendPort") `
     -RedirectStandardOutput $frontendOutLog `
     -RedirectStandardError $frontendErrLog `
+    -WindowStyle Hidden `
     -PassThru
 
 Set-Content -Path $frontendPidFile -Value $frontendProc.Id

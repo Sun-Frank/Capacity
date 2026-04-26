@@ -7,12 +7,13 @@
 - 部署目录：`/opt/capics/deploy`
 
 ## 文档信息
-- 更新日期：2026-04-25
-- 文档版本：v1.2.2
+- 更新日期：2026-04-26
+- 文档版本：v1.3.0
 
 ## 版本记录
 | 版本 | 日期 | 说明 |
 |---|---|---|
+| v1.3.0 | 2026-04-26 | 同步最新系统能力：MRP对比AI综合分析（互联网+系统内）、静默启动入口、本地启停脚本修复与文档更新。 |
 | v1.2.2 | 2026-04-25 | 统一补齐文档更新日期与版本记录。 |
 Local Debug Deploy (Windows)
 1) Prepare local env file:
@@ -48,6 +49,24 @@ Optional foreground mode (for direct console logs):
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy/local-start-backend.ps1 -Foreground
 ```
+5) One-click start frontend+backend (default port `3000`):
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy/local-start-all.ps1 -FrontendPort 3000
+```
+6) Silent start (no console window):
+```bat
+deploy\local-start-all-silent.bat
+```
+or
+```vbscript
+deploy\local-start-all-silent.vbs
+```
+
+Note:
+- `deploy/local-stop.ps1` now supports both pid layouts (`.tmp/*.pid` and `.tmp/pids/*.pid`).
+- If pid file is stale/missing, it will fallback to stop by port/process:
+  - backend: `8080` + `java`
+  - frontend: `3000/5173` + `node`
 ## 1) Prepare env file
 
 ```bash
@@ -115,3 +134,4 @@ This runs in order:
 - Defaults when omitted:
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/fullchain.pem`
   - `/etc/letsencrypt/live/${NGINX_SERVER_NAME}/privkey.pem`
+
