@@ -40,11 +40,14 @@ class AuthServiceTest {
     @Mock
     private CustomUserDetailsService userDetailsService;
 
+    @Mock
+    private LoginThrottleService loginThrottleService;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(authenticationManager, userRepository, jwtUtil, userDetailsService);
+        authService = new AuthService(authenticationManager, userRepository, jwtUtil, userDetailsService, loginThrottleService);
     }
 
     @Test
@@ -62,6 +65,7 @@ class AuthServiceTest {
         UserDetails userDetails = new User("admin", "encodedPassword", Collections.emptyList());
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.emptyList());
 
+        when(loginThrottleService.isBlocked("admin")).thenReturn(false);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(userDetailsService.loadUserByUsername("admin")).thenReturn(userDetails);
         when(jwtUtil.generateToken(userDetails)).thenReturn("test.jwt.token");
@@ -75,6 +79,7 @@ class AuthServiceTest {
         assertEquals("Admin User", response.getRealName());
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(loginThrottleService).onSuccess("admin");
         verify(jwtUtil).generateToken(userDetails);
         verify(userRepository).findByUsername("admin");
     }
@@ -85,12 +90,14 @@ class AuthServiceTest {
         request.setUsername("admin");
         request.setPassword("wrongPassword");
 
+        when(loginThrottleService.isBlocked("admin")).thenReturn(false);
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
         assertThrows(BadCredentialsException.class, () -> authService.login(request));
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        verify(loginThrottleService).onFailure("admin");
         verifyNoInteractions(jwtUtil);
         verifyNoInteractions(userRepository);
     }
@@ -104,6 +111,7 @@ class AuthServiceTest {
         UserDetails userDetails = new User("nonexistent", "password", Collections.emptyList());
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.emptyList());
 
+        when(loginThrottleService.isBlocked("nonexistent")).thenReturn(false);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(userDetailsService.loadUserByUsername("nonexistent")).thenReturn(userDetails);
         when(jwtUtil.generateToken(userDetails)).thenReturn("test.jwt.token");

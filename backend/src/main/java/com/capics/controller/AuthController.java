@@ -31,19 +31,15 @@ public class AuthController {
                 .map(user -> {
                     user.setPassword(passwordEncoder.encode(password));
                     userRepository.save(user);
-                    return ResponseEntity.ok(ApiResponse.success("Password reset successful for user: " + username));
+                    return ResponseEntity.ok(ApiResponse.success("Password reset successful"));
                 })
-                .orElse(ResponseEntity.badRequest().body(ApiResponse.error("User not found: " + username)));
+                .orElse(ResponseEntity.badRequest().body(ApiResponse.error("User not found")));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            LoginResponse response = authService.login(request);
-            return ResponseEntity.ok(ApiResponse.success("Login successful", response));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid credentials: " + e.getMessage()));
-        }
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
     @PostMapping("/logout")

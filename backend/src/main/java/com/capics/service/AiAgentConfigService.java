@@ -9,12 +9,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +29,14 @@ import java.util.Map;
 public class AiAgentConfigService {
 
     private static final int CONFIG_ID = 1;
+    private static final String API_KEY_ENC_PREFIX = "enc:v1:";
+    private static final int GCM_TAG_BITS = 128;
+    private static final int GCM_IV_BYTES = 12;
 
     private final AiAgentConfigRepository repository;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${AI_AGENT_API_KEY:}")
     private String envApiKey;
@@ -40,6 +50,9 @@ public class AiAgentConfigService {
     @Value("${AI_AGENT_TIMEOUT_MS:45000}")
     private Integer envTimeoutMs;
 
+    @Value("${AI_AGENT_CONFIG_ENCRYPTION_KEY:}")
+    private String encryptionKey;
+
     public AiAgentConfigService(AiAgentConfigRepository repository, ObjectMapper objectMapper) {
         this.repository = repository;
         this.objectMapper = objectMapper;
@@ -50,8 +63,9 @@ public class AiAgentConfigService {
 
     public RuntimeConfig getRuntimeConfig() {
         AiAgentConfig stored = repository.findById(CONFIG_ID).orElse(null);
+        String dbApiKey = stored == null ? null : decryptApiKey(stored.getApiKey());
 
-        String apiKey = coalesce(stored == null ? null : stored.getApiKey(), envApiKey);
+        String apiKey = coalesce(dbApiKey, envApiKey);
         String baseUrl = coalesce(stored == null ? null : stored.getBaseUrl(), envBaseUrl);
         String model = coalesce(stored == null ? null : stored.getModel(), envModel);
         Integer timeoutMs = (stored != null && stored.getTimeoutMs() != null && stored.getTimeoutMs() > 0)
@@ -90,7 +104,7 @@ public class AiAgentConfigService {
         });
 
         if (input.getApiKey() != null) {
-            entity.setApiKey(trimToNull(input.getApiKey()));
+            entity.setApiKey(encryptApiKey(trimToNull(input.getApiKey())));
         }
         entity.setBaseUrl(trimToNull(input.getBaseUrl()));
         entity.setModel(trimToNull(input.getModel()));
@@ -372,6 +386,91 @@ public class AiAgentConfigService {
         String raw = value.trim();
         if (raw.length() <= 8) return "********";
         return raw.substring(0, 4) + "****" + raw.substring(raw.length() - 4);
+    }
+
+    private String encryptApiKey(String plainText) {
+        if (!isNotBlank(plainText)) {
+            return null;
+        }
+
+        byte[] key = resolveEncryptionKey();
+        if (key == null) {
+            throw new IllegalStateException("AI_AGENT_CONFIG_ENCRYPTION_KEY is required to store API key in database");
+        }
+
+        try {
+            byte[] iv = new byte[GCM_IV_BYTES];
+            secureRandom.nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, iv));
+            byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+
+            byte[] payload = new byte[iv.length + encrypted.length];
+            System.arraycopy(iv, 0, payload, 0, iv.length);
+            System.arraycopy(encrypted, 0, payload, iv.length, encrypted.length);
+            return API_KEY_ENC_PREFIX + Base64.getEncoder().encodeToString(payload);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to encrypt AI API key", ex);
+        }
+    }
+
+    private String decryptApiKey(String storedValue) {
+        if (!isNotBlank(storedValue)) {
+            return null;
+        }
+        String value = storedValue.trim();
+        if (!value.startsWith(API_KEY_ENC_PREFIX)) {
+            // Legacy plaintext data from old versions.
+            return value;
+        }
+
+        byte[] key = resolveEncryptionKey();
+        if (key == null) {
+            throw new IllegalStateException("AI_AGENT_CONFIG_ENCRYPTION_KEY is required to read encrypted API key");
+        }
+
+        try {
+            byte[] payload = Base64.getDecoder().decode(value.substring(API_KEY_ENC_PREFIX.length()));
+            if (payload.length <= GCM_IV_BYTES) {
+                throw new IllegalStateException("Encrypted API key payload is invalid");
+            }
+
+            byte[] iv = new byte[GCM_IV_BYTES];
+            byte[] ciphertext = new byte[payload.length - GCM_IV_BYTES];
+            System.arraycopy(payload, 0, iv, 0, GCM_IV_BYTES);
+            System.arraycopy(payload, GCM_IV_BYTES, ciphertext, 0, ciphertext.length);
+
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(GCM_TAG_BITS, iv));
+            byte[] plain = cipher.doFinal(ciphertext);
+            return new String(plain, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to decrypt AI API key", ex);
+        }
+    }
+
+    private byte[] resolveEncryptionKey() {
+        String raw = trimToNull(encryptionKey);
+        if (raw == null) {
+            return null;
+        }
+
+        try {
+            byte[] decoded = Base64.getDecoder().decode(raw);
+            if (decoded.length == 16 || decoded.length == 24 || decoded.length == 32) {
+                return decoded;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // fallback to derived key below
+        }
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(raw.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to derive encryption key", ex);
+        }
     }
 
     public static class RuntimeConfig {

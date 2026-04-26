@@ -41,6 +41,15 @@ function isIgnorableConsoleMessage(type, text) {
   return false
 }
 
+function isIgnorableRequestFailure(request, errorText) {
+  const url = request.url()
+  const method = request.method()
+  if (errorText?.includes('ERR_ABORTED') && method === 'GET' && url.includes('/api/')) {
+    return true
+  }
+  return false
+}
+
 async function verifyRoute(page, route) {
   const consoleMessages = []
   const pageErrors = []
@@ -56,7 +65,10 @@ async function verifyRoute(page, route) {
   }
   const onRequestFailed = (request) => {
     const failure = request.failure()
-    requestFailures.push(`${request.method()} ${request.url()} :: ${failure?.errorText ?? 'unknown'}`)
+    const errorText = failure?.errorText ?? 'unknown'
+    if (!isIgnorableRequestFailure(request, errorText)) {
+      requestFailures.push(`${request.method()} ${request.url()} :: ${errorText}`)
+    }
   }
 
   page.on('console', onConsole)

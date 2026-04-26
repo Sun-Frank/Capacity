@@ -246,15 +246,9 @@ CREATE INDEX idx_manpower_plan_class_date ON manpower_plan(line_class, plan_date
 CREATE INDEX idx_meeting_minutes_version_item ON meeting_minutes(mps_version, item_no);
 CREATE INDEX idx_ct_line_data_created_at ON ct_line_data(created_at);
 
--- Insert default admin user (password: admin123)
-INSERT INTO sys_user (username, password, real_name, email, enabled)
-VALUES ('admin', '$2a$10$gE4boVDgo9xJa7zrH4FPAOMz6Xq59S/gHQXRgnHfA4WYOCx2moKUW', 'System Admin', 'admin@capics.com', true);
-
+-- Insert system roles. Do not seed default admin credentials in schema.
 INSERT INTO sys_role (role_code, role_name, description)
 VALUES ('ADMIN', 'Administrator', 'System administrator with full access');
-
-INSERT INTO sys_user_role (user_id, role_id)
-SELECT u.id, r.id FROM sys_user u, sys_role r WHERE u.username = 'admin' AND r.role_code = 'ADMIN';
 
 -- Insert default line configs
 INSERT INTO line_config (line_code, line_name, working_days_per_week, shifts_per_day, hours_per_shift)

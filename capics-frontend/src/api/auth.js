@@ -39,7 +39,7 @@ export function authApi(token) {
     login: (username, password) =>
       api('/auth/login', {
         method: 'POST',
-        body: { username, password }
+        body: JSON.stringify({ username, password })
       }),
 
     logout: () =>
