@@ -123,8 +123,67 @@
         <div v-if="aiLoading" class="state-panel">AI正在分析当前MRP差异...</div>
         <div v-else-if="aiError" class="state-panel error">{{ aiError }}</div>
         <div v-else-if="aiResult?.analysis" class="ai-analysis-content">
-          <pre class="ai-analysis-text">{{ aiResult.analysis }}</pre>
-          <p v-if="aiResult.note" class="ai-analysis-note">{{ aiResult.note }}</p>
+          <div class="ai-analysis-grid">
+            <div>
+              <pre class="ai-analysis-text">{{ aiResult.analysis }}</pre>
+              <p v-if="aiResult.note" class="ai-analysis-note">{{ aiResult.note }}</p>
+            </div>
+            <aside class="ai-evidence-panel">
+              <div class="evidence-block">
+                <h3 class="evidence-title">互联网信号</h3>
+                <ul v-if="aiExternalSignals.length" class="signal-list">
+                  <li v-for="(signal, idx) in aiExternalSignals" :key="`${idx}-${signal.title || signal.note}`" class="signal-item">
+                    <a
+                      v-if="signal.link"
+                      :href="signal.link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="signal-title"
+                    >
+                      {{ signal.title || '未命名信号' }}
+                    </a>
+                    <div v-else class="signal-title">{{ signal.title || signal.note || '未命名信号' }}</div>
+                    <div class="signal-meta">
+                      <span v-if="signal.query">查询：{{ signal.query }}</span>
+                      <span v-if="signal.publishedAt">时间：{{ signal.publishedAt }}</span>
+                    </div>
+                  </li>
+                </ul>
+                <div v-else class="signal-empty">本次未抓取到外部信号。</div>
+              </div>
+
+              <div class="evidence-block">
+                <h3 class="evidence-title">系统内产能风险</h3>
+                <div v-if="hasInternalRisk" class="risk-grid">
+                  <div class="risk-item">
+                    <div class="risk-label">产能风险</div>
+                    <div class="risk-value">{{ aiInternalRisk.capacityRiskLevel || '--' }} / {{ formatRiskScore(aiInternalRisk.capacityRiskScore) }}</div>
+                  </div>
+                  <div class="risk-item">
+                    <div class="risk-label">市场风险</div>
+                    <div class="risk-value">{{ aiInternalRisk.marketRiskLevel || '--' }} / {{ formatRiskScore(aiInternalRisk.marketRiskScore) }}</div>
+                  </div>
+                  <div class="risk-item">
+                    <div class="risk-label">供应链风险</div>
+                    <div class="risk-value">{{ aiInternalRisk.supplyRiskLevel || '--' }} / {{ formatRiskScore(aiInternalRisk.supplyRiskScore) }}</div>
+                  </div>
+                  <div class="risk-item">
+                    <div class="risk-label">冲击度</div>
+                    <div class="risk-value">{{ formatRiskPercent(aiInternalRisk.periodShockPercent) }}</div>
+                  </div>
+                  <div class="risk-item">
+                    <div class="risk-label">变化率</div>
+                    <div class="risk-value">{{ formatRiskPercent(aiInternalRisk.totalDeltaRatePercent) }}</div>
+                  </div>
+                  <div class="risk-item">
+                    <div class="risk-label">集中度</div>
+                    <div class="risk-value">{{ formatRiskPercent(aiInternalRisk.top3ConcentrationPercent) }}</div>
+                  </div>
+                </div>
+                <div v-else class="signal-empty">暂无系统内风险上下文。</div>
+              </div>
+            </aside>
+          </div>
         </div>
         <div v-else class="state-panel">点击“AI分析差异”生成分析结论。</div>
       </section>
@@ -269,6 +328,17 @@ const fileB = createFileState()
 
 const fileALabel = computed(() => (fileA.fileName && fileA.version ? `${fileA.fileName} / ${fileA.version}` : '未选择文件'))
 const fileBLabel = computed(() => (fileB.fileName && fileB.version ? `${fileB.fileName} / ${fileB.version}` : '未选择文件'))
+const aiExternalSignals = computed(() => {
+  const signals = aiResult.value?.externalSignals
+  if (!Array.isArray(signals)) return []
+  return signals.filter((item) => item && typeof item === 'object')
+})
+const aiInternalRisk = computed(() => {
+  const risk = aiResult.value?.internalRisk
+  if (!risk || typeof risk !== 'object') return {}
+  return risk
+})
+const hasInternalRisk = computed(() => Object.keys(aiInternalRisk.value).length > 0)
 
 function resetCompareResult() {
   compareResult.value = null
@@ -328,6 +398,18 @@ function formatDelta(value) {
   const numeric = Number(value || 0)
   if (numeric > 0) return `+${formatQty(numeric)}`
   return formatQty(numeric)
+}
+
+function formatRiskScore(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '--'
+  return `${Math.round(num)}/100`
+}
+
+function formatRiskPercent(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '--'
+  return `${num.toFixed(1)}%`
 }
 
 function getDeltaIntensityClass(value) {
@@ -651,6 +733,13 @@ loadCreatedByOptions()
   margin-top: 0.8rem;
 }
 
+.ai-analysis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+
 .ai-analysis-text {
   margin: 0;
   white-space: pre-wrap;
@@ -667,6 +756,95 @@ loadCreatedByOptions()
   margin-top: 0.55rem;
   color: #7a4b00;
   font-size: 0.84rem;
+}
+
+.ai-evidence-panel {
+  border: 1px solid #e2ebf7;
+  background: #f9fbfe;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.evidence-block {
+  background: white;
+  border: 1px solid #e8eef8;
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.evidence-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #224063;
+}
+
+.signal-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.signal-item {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #d8e3f2;
+}
+
+.signal-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.signal-title {
+  display: inline-block;
+  color: #1f4d88;
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+
+.signal-title:hover {
+  text-decoration: underline;
+}
+
+.signal-meta {
+  margin-top: 0.2rem;
+  display: grid;
+  gap: 0.1rem;
+  color: #6c7d92;
+  font-size: 0.78rem;
+}
+
+.signal-empty {
+  color: #7a8ba0;
+  font-size: 0.84rem;
+}
+
+.risk-grid {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.risk-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  background: #f4f8fd;
+}
+
+.risk-label {
+  color: #4f637d;
+  font-size: 0.82rem;
+}
+
+.risk-value {
+  color: #163f74;
+  font-weight: 700;
+  font-size: 0.83rem;
 }
 
 .view-toggle {
@@ -1039,6 +1217,10 @@ loadCreatedByOptions()
 
 @media (max-width: 980px) {
   .compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-analysis-grid {
     grid-template-columns: 1fr;
   }
 
