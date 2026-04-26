@@ -1,10 +1,13 @@
 package com.capics.dto;
 
+import java.util.List;
+
 public class LoginResponse {
     private String token;
     private String username;
     private String realName;
     private Long id;
+    private List<String> roleCodes;
 
     public LoginResponse() {
     }
@@ -46,5 +49,13 @@ public class LoginResponse {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public List<String> getRoleCodes() {
+        return this.roleCodes;
+    }
+
+    public void setRoleCodes(List<String> roleCodes) {
+        this.roleCodes = roleCodes;
     }
 }

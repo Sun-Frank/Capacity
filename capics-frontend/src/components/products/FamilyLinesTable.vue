@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="table-wrapper">
     <table>
       <thead>
@@ -8,7 +8,7 @@
           <th>描述</th>
           <th>创建人/修改人</th>
           <th>创建/修改时间</th>
-          <th>操作</th>
+          <th v-if="canEdit">操作</th>
         </tr>
       </thead>
       <tbody>
@@ -18,12 +18,12 @@
           <td>{{ f.description || '-' }}</td>
           <td>{{ f.updatedBy || f.createdBy || '-' }}</td>
           <td>{{ formatDate(f.updatedAt || f.createdAt) }}</td>
-          <td>
+          <td v-if="canEdit">
             <button class="btn btn-small" @click="$emit('edit', f)">编辑</button>
           </td>
         </tr>
         <tr v-if="familyLines.length === 0">
-          <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+          <td :colspan="canEdit ? 6 : 5" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
         </tr>
       </tbody>
     </table>
@@ -35,6 +35,10 @@ defineProps({
   familyLines: {
     type: Array,
     default: () => []
+  },
+  canEdit: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -42,9 +46,10 @@ defineEmits(['edit'])
 
 const formatDate = (value) => {
   if (!value) return '-'
-  const [datePart, timePart] = value.split('T')
+  const [datePart, timePart] = String(value).split('T')
+  if (!datePart) return '-'
   const [year, month, day] = datePart.split('-')
   const time = timePart ? timePart.substring(0, 5) : ''
-  return `${year}/${month}/${day} ${time}`
+  return `${year}/${month}/${day} ${time}`.trim()
 }
 </script>

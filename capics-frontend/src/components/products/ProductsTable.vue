@@ -11,7 +11,7 @@
           <th>CT(秒)</th>
           <th>OEE(%)</th>
           <th>人数</th>
-          <th>操作</th>
+          <th v-if="canEdit">操作</th>
         </tr>
       </thead>
       <tbody>
@@ -19,7 +19,7 @@
           <td>{{ p.itemNumber }}</td>
           <td>{{ p.lineCode }}</td>
 
-          <template v-if="isEditing(p)">
+          <template v-if="canEdit && isEditing(p)">
             <td><input class="table-input" v-model="editForm.familyCode" /></td>
             <td>{{ p.pf || '-' }}</td>
             <td><input class="table-input" v-model="editForm.description" /></td>
@@ -39,13 +39,13 @@
             <td>{{ p.cycleTime }}</td>
             <td>{{ formatOee(p.oee) }}</td>
             <td>{{ p.workerCount }}</td>
-            <td>
+            <td v-if="canEdit">
               <button class="btn btn-small" @click="startEdit(p)">编辑</button>
             </td>
           </template>
         </tr>
         <tr v-if="products.length === 0">
-          <td colspan="9" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+          <td :colspan="canEdit ? 9 : 8" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
         </tr>
       </tbody>
     </table>
@@ -53,12 +53,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   products: {
     type: Array,
     default: () => []
+  },
+  canEdit: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -73,11 +77,18 @@ const editForm = ref({
   workerCount: null
 })
 
+watch(() => props.canEdit, (canEdit) => {
+  if (!canEdit) {
+    editingKey.value = ''
+  }
+})
+
 const rowKey = (p) => `${p.itemNumber}::${p.lineCode}`
 
 const isEditing = (p) => editingKey.value === rowKey(p)
 
 const startEdit = (p) => {
+  if (!props.canEdit) return
   editingKey.value = rowKey(p)
   editForm.value = {
     familyCode: p.familyCode || '',
@@ -94,6 +105,7 @@ const cancelEdit = () => {
 }
 
 const saveEdit = (p) => {
+  if (!props.canEdit) return
   emit('save', {
     itemNumber: p.itemNumber,
     lineCode: p.lineCode,
@@ -113,8 +125,8 @@ const saveEdit = (p) => {
 const formatOee = (value) => {
   if (value === null || value === undefined) return '-'
   const num = parseFloat(value)
-  if (isNaN(num)) return '-'
-  return num.toFixed(2) + '%'
+  if (Number.isNaN(num)) return '-'
+  return `${num.toFixed(2)}%`
 }
 </script>
 

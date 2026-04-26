@@ -12,8 +12,8 @@
           class="form-input search-input"
           placeholder="搜索生产线 / 物料号 / 主备线 / 修改人"
         />
-        <button class="btn btn-secondary" @click="startAdd" :disabled="isSaving || editingId !== null">新增一条</button>
-        <button class="btn btn-primary" @click="showImport = true">导入数据</button>
+        <button v-if="canManageMasterData" class="btn btn-secondary" @click="startAdd" :disabled="isSaving || editingId !== null">新增一条</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showImport = true">导入数据</button>
         <button class="btn" @click="handleDownloadTemplate">模板下载</button>
         <button class="btn" @click="handleExportCtLines">数据导出</button>
       </div>
@@ -80,7 +80,7 @@
               <td>{{ row.colW || '-' }}</td>
               <td>{{ row.colX || '-' }}</td>
               <td>
-                <button class="btn btn-small" @click="startEdit(row)">编辑</button>
+                <button v-if="canManageMasterData" class="btn btn-small" @click="startEdit(row)">编辑</button>
               </td>
             </template>
           </tr>
@@ -111,8 +111,9 @@ import ImportModal from '@/components/common/ImportModal.vue'
 import { createCtLine, downloadCtLineTemplate, getCtLineImportTask, getCtLines, startCtLineImportTask, updateCtLine } from '@/api/ctLine'
 import { downloadCsv } from '@/utils/export'
 
-const { token } = useAuth()
+const { token, hasAnyRole } = useAuth()
 const { showToast } = useToast()
+const canManageMasterData = computed(() => hasAnyRole(['MASTERDATA', 'ADMIN']))
 
 const rows = ref([])
 const showImport = ref(false)
@@ -167,6 +168,10 @@ const loadRows = async () => {
 }
 
 const startEdit = (row) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   isAdding.value = false
   editingId.value = row.id
   editForm.value = {
@@ -186,6 +191,10 @@ const cancelEdit = () => {
 }
 
 const startAdd = () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   editingId.value = null
   isAdding.value = true
   addForm.value = {
@@ -213,6 +222,10 @@ const validateRequiredFields = (form) => {
 }
 
 const saveAdd = async () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!validateRequiredFields(addForm.value)) {
     return
   }
@@ -234,6 +247,10 @@ const saveAdd = async () => {
 }
 
 const saveEdit = async (id) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!validateRequiredFields(editForm.value)) {
     return
   }
@@ -261,6 +278,10 @@ const saveEdit = async (id) => {
 }
 
 const handleImport = async ({ file }) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!file) {
     showToast('请选择文件', 'warning')
     return

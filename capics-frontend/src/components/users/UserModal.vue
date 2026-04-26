@@ -1,8 +1,8 @@
-<template>
+﻿<template>
   <div v-if="show" class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h3>{{ user ? '编辑用户' : '添加用户' }}</h3>
+        <h3>{{ user ? '编辑用户' : '新增用户' }}</h3>
         <button class="modal-close" @click="$emit('close')">&times;</button>
       </div>
       <form @submit.prevent="handleSubmit">
@@ -27,6 +27,14 @@
           <select v-model="form.enabled" class="form-input">
             <option :value="true">启用</option>
             <option :value="false">禁用</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>用户组</label>
+          <select v-model="form.roleCode" class="form-input">
+            <option value="PLAN">计划</option>
+            <option value="MASTERDATA">主数据</option>
+            <option value="ADMIN">管理员</option>
           </select>
         </div>
         <div class="modal-footer">
@@ -58,30 +66,37 @@ const form = ref({
   password: '',
   realName: '',
   email: '',
-  enabled: true
+  enabled: true,
+  roleCode: 'PLAN'
 })
 
 const isSubmitting = ref(false)
 
-watch(() => props.user, (newUser) => {
-  if (newUser) {
-    form.value = {
-      username: newUser.username || '',
-      password: '',
-      realName: newUser.realName || '',
-      email: newUser.email || '',
-      enabled: newUser.enabled !== undefined ? newUser.enabled : true
+watch(
+  () => props.user,
+  (newUser) => {
+    if (newUser) {
+      form.value = {
+        username: newUser.username || '',
+        password: '',
+        realName: newUser.realName || '',
+        email: newUser.email || '',
+        enabled: newUser.enabled !== undefined ? newUser.enabled : true,
+        roleCode: newUser.roleCode || 'PLAN'
+      }
+    } else {
+      form.value = {
+        username: '',
+        password: '',
+        realName: '',
+        email: '',
+        enabled: true,
+        roleCode: 'PLAN'
+      }
     }
-  } else {
-    form.value = {
-      username: '',
-      password: '',
-      realName: '',
-      email: '',
-      enabled: true
-    }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+)
 
 const handleSubmit = async () => {
   isSubmitting.value = true

@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface SysRoleRepository extends JpaRepository<SysRole, Long> {
     Optional<SysRole> findByRoleCode(String roleCode);
     List<SysRole> findByIdIn(Collection<Long> ids);
+    List<SysRole> findByRoleCodeIn(Collection<String> roleCodes);
 }

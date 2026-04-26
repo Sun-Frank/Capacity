@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +53,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/users/**").hasRole("ADMIN")
                 .antMatchers("/api/system/ai-config/**").hasRole("ADMIN")
                 .antMatchers("/api/auth/reset-password").hasRole("ADMIN")
+                .antMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
+                .antMatchers(HttpMethod.GET, "/api/routings/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
+                .antMatchers(HttpMethod.GET, "/api/lines/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
+                .antMatchers(HttpMethod.GET, "/api/ct-lines/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
+                .antMatchers("/api/products/**").hasAnyRole("MASTERDATA", "ADMIN")
+                .antMatchers("/api/routings/**").hasAnyRole("MASTERDATA", "ADMIN")
+                .antMatchers("/api/lines/**").hasAnyRole("MASTERDATA", "ADMIN")
+                .antMatchers("/api/ct-lines/**").hasAnyRole("MASTERDATA", "ADMIN")
                 .anyRequest().authenticated()
             .and()
             .sessionManagement()

@@ -2,11 +2,11 @@
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">用户管理</h1>
-      <p class="page-subtitle">用户账号管理</p>
+      <p class="page-subtitle">用户账号与权限分组维护</p>
     </div>
     <div class="table-wrapper">
       <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-        <button class="btn btn-primary" @click="showAddModal">添加用户</button>
+        <button class="btn btn-primary" @click="showAddModal">新增用户</button>
       </div>
       <table>
         <thead>
@@ -14,6 +14,7 @@
             <th>用户名</th>
             <th>姓名</th>
             <th>邮箱</th>
+            <th>用户组</th>
             <th>状态</th>
             <th>操作</th>
           </tr>
@@ -23,6 +24,7 @@
             <td>{{ user.username }}</td>
             <td>{{ user.realName }}</td>
             <td>{{ user.email }}</td>
+            <td>{{ roleLabel(user.roleCode) }}</td>
             <td>{{ user.enabled ? '启用' : '禁用' }}</td>
             <td>
               <button class="btn btn-small" @click="editUser(user)">编辑</button>
@@ -31,7 +33,7 @@
             </td>
           </tr>
           <tr v-if="users.length === 0">
-            <td colspan="5" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+            <td colspan="6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -93,6 +95,14 @@ const newPassword = ref('')
 const isSubmitting = ref(false)
 
 const currentUserId = userId
+
+const roleLabel = (roleCode) => {
+  const code = String(roleCode || '').toUpperCase()
+  if (code === 'ADMIN') return '管理员'
+  if (code === 'MASTERDATA') return '主数据'
+  if (code === 'PLAN') return '计划'
+  return code || '-'
+}
 
 const loadUsers = async () => {
   try {

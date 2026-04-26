@@ -18,8 +18,8 @@ const ROUTES = [
   { path: '/capacity-assessment-monthly', name: 'CapacityAssessmentMonthly' },
   { path: '/capacity-realtime', name: 'CapacityRealtime' },
   { path: '/capacity-realtime-monthly', name: 'CapacityRealtimeMonthly' },
-  { path: '/users', name: 'Users' },
-  { path: '/ai-config', name: 'AiConfig' },
+  { path: '/users', name: 'Users', allowHomeRedirect: true },
+  { path: '/ai-config', name: 'AiConfig', allowHomeRedirect: true },
   { path: '/fusion-workbench', name: 'FusionWorkbench' },
   { path: '/ct-line', name: 'CtLine' }
 ]
@@ -80,7 +80,16 @@ async function verifyRoute(page, route) {
     await page.waitForTimeout(2000)
 
     const currentUrl = page.url()
+    const currentPath = new URL(currentUrl).pathname
     assert(!currentUrl.endsWith('/login'), `${route.name} redirected to login`)
+
+    if (route.allowHomeRedirect) {
+      const isAllowed = currentPath === route.path
+      const isBlockedToHome = currentPath === '/'
+      assert(isAllowed || isBlockedToHome, `${route.name} unexpected redirect: ${currentPath}`)
+    } else {
+      assert.equal(currentPath, route.path, `${route.name} unexpected redirect: ${currentPath}`)
+    }
 
     const mainVisible = await page.locator('main, .app-layout, .page-container, .content-area, body').first().isVisible()
     assert(mainVisible, `${route.name} main container is not visible`)
@@ -95,6 +104,7 @@ async function verifyRoute(page, route) {
       route,
       ok: consoleMessages.length === 0 && pageErrors.length === 0 && requestFailures.length === 0 && blockingErrorCount === 0,
       currentUrl,
+      currentPath,
       consoleMessages,
       pageErrors,
       requestFailures,

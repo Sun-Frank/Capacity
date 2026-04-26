@@ -250,6 +250,12 @@ CREATE INDEX idx_ct_line_data_created_at ON ct_line_data(created_at);
 INSERT INTO sys_role (role_code, role_name, description)
 VALUES ('ADMIN', 'Administrator', 'System administrator with full access');
 
+INSERT INTO sys_role (role_code, role_name, description)
+VALUES ('PLAN', 'Planning', 'Planning user with all features except system config');
+
+INSERT INTO sys_role (role_code, role_name, description)
+VALUES ('MASTERDATA', 'Master Data', 'Master data user with planning permissions and master-data maintenance rights');
+
 -- Insert default line configs
 INSERT INTO line_config (line_code, line_name, working_days_per_week, shifts_per_day, hours_per_shift)
 VALUES

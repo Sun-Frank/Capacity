@@ -23,12 +23,12 @@
           placeholder="搜索编码族..."
           @input="handleFamilySearch"
         />
-        <button class="btn btn-primary" @click="showImportModal('family')">导入编码族</button>
-        <button class="btn btn-primary" @click="showCreateFamily = true">新增编码族</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal('family')">导入编码族</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showCreateFamily = true">新增编码族</button>
         <button class="btn" @click="handleDownloadFamilyTemplate">模板下载</button>
         <button class="btn" @click="handleExportFamilies">数据导出</button>
       </div>
-      <FamiliesTable :families="families" @edit="handleEditFamily" />
+      <FamiliesTable :families="families" :can-edit="canManageMasterData" @edit="handleEditFamily" />
     </div>
 
     <div v-if="productTab === 'family-lines'">
@@ -40,12 +40,12 @@
           placeholder="搜索编码族..."
           @input="handleFamilyLineSearch"
         />
-        <button class="btn btn-primary" @click="showImportModal('family-line')">导入编码族定线</button>
-        <button class="btn btn-primary" @click="showCreateFamilyLine = true">新增编码族定线</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal('family-line')">导入编码族定线</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showCreateFamilyLine = true">新增编码族定线</button>
         <button class="btn" @click="handleDownloadFamilyLineTemplate">模板下载</button>
         <button class="btn" @click="handleExportFamilyLines">数据导出</button>
       </div>
-      <FamilyLinesTable :family-lines="familyLines" @edit="handleEditFamilyLine" />
+      <FamilyLinesTable :family-lines="familyLines" :can-edit="canManageMasterData" @edit="handleEditFamilyLine" />
     </div>
 
     <div v-if="productTab === 'products'">
@@ -57,12 +57,12 @@
           placeholder="搜索物料号..."
           @input="handleProductSearch"
         />
-        <button class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
-        <button class="btn btn-primary" @click="showCreateProduct = true">新增产品</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal('product')">导入产品</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showCreateProduct = true">新增产品</button>
         <button class="btn" @click="handleDownloadProductTemplate">模板下载</button>
         <button class="btn" @click="handleExportProducts">数据导出</button>
       </div>
-      <ProductsTable :products="products" @save="handleUpdateProduct" />
+      <ProductsTable :products="products" :can-edit="canManageMasterData" @save="handleUpdateProduct" />
     </div>
 
     <ImportModal
@@ -217,7 +217,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import {
@@ -253,8 +253,9 @@ import EditFamilyLineModal from '@/components/products/EditFamilyLineModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { downloadCsv } from '@/utils/export'
 
-const { token, currentUser } = useAuth()
+const { token, currentUser, hasAnyRole } = useAuth()
 const { showToast } = useToast()
+const canManageMasterData = computed(() => hasAnyRole(['MASTERDATA', 'ADMIN']))
 
 const productTab = ref('families')
 const families = ref([])
@@ -346,11 +347,19 @@ const handleFamilyLineSearch = async () => {
 }
 
 const showImportModal = (type) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   importType.value = type
   showImport.value = true
 }
 
 const handleImport = async ({ file }) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!file) {
     showToast('请选择文件', 'warning')
     return
@@ -430,6 +439,10 @@ const handleEditFamily = (family) => {
 }
 
 const handleUpdateFamily = async (formData) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   const result = await updateFamily(
     token.value,
     editingFamily.value.familyCode,
@@ -452,6 +465,10 @@ const handleEditFamilyLine = (familyLine) => {
 }
 
 const handleUpdateFamilyLine = async (formData) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   const result = await updateFamilyLine(
     token.value,
     editingFamilyLine.value.familyCode,
@@ -469,6 +486,10 @@ const handleUpdateFamilyLine = async (formData) => {
 }
 
 const handleUpdateProduct = async ({ itemNumber, lineCode, data, done }) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   const result = await updateProduct(token.value, itemNumber, lineCode, data, currentUser.value)
   if (!result?.success) {
     showToast(`更新失败: ${result?.message || '未知错误'}`, 'error')
@@ -509,6 +530,10 @@ const resetCreateProduct = () => {
 }
 
 const handleCreateFamily = async () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!createFamilyForm.value.familyCode || !createFamilyForm.value.lineCode) {
     showToast('编码族和生产线不能为空', 'warning')
     return
@@ -532,6 +557,10 @@ const handleCreateFamily = async () => {
 }
 
 const handleCreateFamilyLine = async () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!createFamilyLineForm.value.familyCode || !createFamilyLineForm.value.lineCode) {
     showToast('编码族和生产线不能为空', 'warning')
     return
@@ -555,6 +584,10 @@ const handleCreateFamilyLine = async () => {
 }
 
 const handleCreateProduct = async () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!createProductForm.value.itemNumber || !createProductForm.value.lineCode || !createProductForm.value.familyCode) {
     showToast('物料号、生产线、编码族不能为空', 'warning')
     return

@@ -7,8 +7,8 @@
 
     <div class="table-wrapper">
       <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-        <button class="btn btn-primary" @click="showAddModal">添加产线</button>
-        <button class="btn btn-primary" @click="showImportModal">批量导入</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showAddModal">添加产线</button>
+        <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">批量导入</button>
         <button class="btn" @click="handleDownloadTemplate">模板下载</button>
       </div>
 
@@ -21,7 +21,7 @@
             <th>每天班次</th>
             <th>每班时长(小时)</th>
             <th>状态</th>
-            <th>操作</th>
+            <th v-if="canManageMasterData">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -32,12 +32,12 @@
             <td>{{ line.shiftsPerDay }}</td>
             <td>{{ line.hoursPerShift }}</td>
             <td>{{ line.isActive ? '启用' : '禁用' }}</td>
-            <td>
-              <button class="btn btn-small" @click="editLine(line)">编辑</button>
+            <td v-if="canManageMasterData">
+              <button v-if="canManageMasterData" class="btn btn-small" @click="editLine(line)">编辑</button>
             </td>
           </tr>
           <tr v-if="lines.length === 0">
-            <td colspan="7" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+            <td :colspan="canManageMasterData ? 7 : 6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -61,15 +61,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { getLines, createLine, updateLine, importLines, downloadLineTemplate } from '@/api/line'
 import EditLineModal from '@/components/lines/EditLineModal.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
 
-const { token, currentUser } = useAuth()
+const { token, currentUser, hasAnyRole } = useAuth()
 const { showToast } = useToast()
+const canManageMasterData = computed(() => hasAnyRole(['MASTERDATA', 'ADMIN']))
 const lines = ref([])
 const showModal = ref(false)
 const selectedLine = ref(null)
@@ -86,15 +87,27 @@ const loadLines = async () => {
 }
 
 const showAddModal = () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   selectedLine.value = null
   showModal.value = true
 }
 
 const showImportModal = () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   showImport.value = true
 }
 
 const editLine = (line) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   selectedLine.value = line
   showModal.value = true
 }
@@ -105,6 +118,10 @@ const closeModal = () => {
 }
 
 const handleConfirm = async (formData) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   try {
     const username = currentUser.value || 'system'
     const lineData = {
@@ -126,6 +143,10 @@ const handleConfirm = async (formData) => {
 }
 
 const handleImport = async ({ file }) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!file) {
     showToast('请选择文件', 'warning')
     return

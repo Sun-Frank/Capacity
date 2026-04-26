@@ -1,7 +1,5 @@
 package com.capics.dto;
 
-import java.time.LocalDateTime;
-
 public class SysUserDto {
     private Long id;
     private String username;
@@ -13,6 +11,7 @@ public class SysUserDto {
     private String createdAt;
     private String updatedBy;
     private String updatedAt;
+    private String roleCode;
 
     public Long getId() {
         return this.id;
@@ -92,5 +91,13 @@ public class SysUserDto {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getRoleCode() {
+        return this.roleCode;
+    }
+
+    public void setRoleCode(String roleCode) {
+        this.roleCode = roleCode;
     }
 }

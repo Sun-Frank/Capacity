@@ -12,7 +12,7 @@
         class="form-input"
         style="width: 200px;"
       >
-      <button class="btn btn-primary" @click="showImportModal">导入工艺路线</button>
+      <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">导入工艺路线</button>
       <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
       <button class="btn" @click="handleExportRoutings">数据导出</button>
     </div>
@@ -91,8 +91,9 @@ import { downloadCsv } from '@/utils/export'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
-const { token, currentUser } = useAuth()
+const { token, currentUser, hasAnyRole } = useAuth()
 const { showToast } = useToast()
+const canManageMasterData = computed(() => hasAnyRole(['MASTERDATA', 'ADMIN']))
 
 const routings = ref([])
 const expandedGroups = ref(new Set())
@@ -147,6 +148,10 @@ const loadRoutings = async () => {
 }
 
 const showImportModal = () => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   showImport.value = true
 }
 const handleDownloadRoutingTemplate = async () => {
@@ -186,6 +191,10 @@ const handleExportRoutings = () => {
 }
 
 const handleImport = async ({ file }) => {
+  if (!canManageMasterData.value) {
+    showToast('当前账号无主数据维护权限', 'warning')
+    return
+  }
   if (!file) {
     showToast('请选择文件', 'warning')
     return

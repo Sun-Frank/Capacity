@@ -11,10 +11,14 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
@@ -66,7 +70,15 @@ public class AuthService {
         SysUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return new LoginResponse(token, user.getUsername(), user.getRealName(), user.getId());
+        LoginResponse response = new LoginResponse(token, user.getUsername(), user.getRealName(), user.getId());
+        List<String> roleCodes = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(v -> v != null && !v.trim().isEmpty())
+                .map(v -> v.startsWith("ROLE_") ? v.substring(5) : v)
+                .distinct()
+                .collect(Collectors.toList());
+        response.setRoleCodes(roleCodes);
+        return response;
     }
 
     public SysUser getCurrentUser() {

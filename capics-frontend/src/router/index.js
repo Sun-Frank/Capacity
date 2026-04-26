@@ -70,12 +70,14 @@ const routes = [
       {
         path: 'users',
         name: 'Users',
-        component: () => import('@/views/UsersView.vue')
+        component: () => import('@/views/UsersView.vue'),
+        meta: { allowedRoles: ['ADMIN'] }
       },
       {
         path: 'ai-config',
         name: 'AiConfig',
-        component: () => import('@/views/AiConfigView.vue')
+        component: () => import('@/views/AiConfigView.vue'),
+        meta: { allowedRoles: ['ADMIN'] }
       },
       {
         path: 'fusion-workbench',
@@ -100,6 +102,27 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('capics_token')
   if (to.meta.requiresAuth !== false && !token) {
     next('/login')
+    return
+  }
+
+  const allowedRoles = to.meta?.allowedRoles
+  if (token && Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+    let roleCodes = []
+    try {
+      roleCodes = JSON.parse(localStorage.getItem('capics_role_codes') || '[]')
+    } catch (e) {
+      roleCodes = []
+    }
+    const normalized = roleCodes.map((v) => String(v || '').trim().toUpperCase())
+    const matched = allowedRoles.some((role) => normalized.includes(String(role || '').trim().toUpperCase()))
+    if (!matched) {
+      next('/')
+      return
+    }
+  }
+
+  if (token && to.path === '/login') {
+    next('/')
   } else {
     next()
   }
