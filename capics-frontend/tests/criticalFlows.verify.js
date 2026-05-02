@@ -50,6 +50,15 @@ async function clickIfExists(locator) {
   return false
 }
 
+function isIgnorableRequestFailure(request, errorText) {
+  const url = request.url()
+  const method = request.method()
+  if (errorText?.includes('ERR_ABORTED') && method === 'GET' && url.includes('/api/')) {
+    return true
+  }
+  return false
+}
+
 async function selectFirstUsable(select) {
   const values = await select.locator('option').evaluateAll((nodes) =>
     nodes
@@ -76,7 +85,7 @@ async function verifyProducts(page) {
   if ((await primaryButtons.count()) >= 2) {
     await primaryButtons.nth(1).click()
     await page.waitForSelector('.modal-overlay', { timeout: 5000 })
-    await page.locator('.modal-close').first().click()
+    await clickIfExists(page.getByRole('button', { name: /取消|鍙栨秷/ }))
   }
 
   assert(await page.locator('table, .table-wrapper').first().isVisible(), 'Products table should be visible')
@@ -180,6 +189,30 @@ async function verifyAiConfig(page) {
   return screenshot(page, 'ai-config-critical')
 }
 
+async function verifyFeishuConfig(page) {
+  const state = await gotoRoute(page, '/feishu-config', { allowHomeRedirect: true })
+  if (state.redirectedHome) {
+    return screenshot(page, 'feishu-config-critical')
+  }
+
+  assert(await page.locator('body').isVisible(), 'Feishu config should render')
+  return screenshot(page, 'feishu-config-critical')
+}
+
+async function verifyNotebook(page) {
+  await gotoRoute(page, '/notebook')
+  await clickIfExists(page.getByRole('button', { name: /新建记事|鏂板缓璁颁簨/ }))
+  assert(await page.locator('.markdown-editor, textarea').first().isVisible(), 'Notebook editor should be visible')
+  assert(await page.locator('.markdown-help').first().isVisible(), 'Notebook Markdown help should be visible')
+  return screenshot(page, 'notebook-critical')
+}
+
+async function verifyMeetingMinutes(page) {
+  await gotoRoute(page, '/meeting-minutes')
+  assert(await page.locator('body').isVisible(), 'Meeting minutes should render')
+  return screenshot(page, 'meeting-minutes-critical')
+}
+
 async function verifyFusionWorkbench(page) {
   await gotoRoute(page, '/fusion-workbench')
   assert(await page.locator('body').isVisible(), 'Fusion workbench should render')
@@ -209,7 +242,12 @@ async function runScenario(page, name, fn) {
     }
   }
   const onPageError = (err) => pageErrors.push(err.message)
-  const onRequestFailed = (req) => requestFailures.push(`${req.method()} ${req.url()} :: ${req.failure()?.errorText ?? 'unknown'}`)
+  const onRequestFailed = (req) => {
+    const errorText = req.failure()?.errorText ?? 'unknown'
+    if (!isIgnorableRequestFailure(req, errorText)) {
+      requestFailures.push(`${req.method()} ${req.url()} :: ${errorText}`)
+    }
+  }
 
   page.on('console', onConsole)
   page.on('pageerror', onPageError)
@@ -217,7 +255,14 @@ async function runScenario(page, name, fn) {
 
   try {
     const shot = await fn(page)
-    return { name, ok: true, screenshot: shot, consoleErrors, pageErrors, requestFailures }
+    return {
+      name,
+      ok: consoleErrors.length === 0 && pageErrors.length === 0 && requestFailures.length === 0,
+      screenshot: shot,
+      consoleErrors,
+      pageErrors,
+      requestFailures
+    }
   } catch (error) {
     return {
       name,
@@ -257,6 +302,9 @@ async function main() {
       ['capacity-realtime-month', (p) => verifyRealtimeCapacity(p, '/capacity-realtime-monthly', 'capacity-realtime-month')],
       ['users', verifyUsers],
       ['ai-config', verifyAiConfig],
+      ['feishu-config', verifyFeishuConfig],
+      ['notebook', verifyNotebook],
+      ['meeting-minutes', verifyMeetingMinutes],
       ['fusion-workbench', verifyFusionWorkbench],
       ['ct-line', verifyCtLine]
     ]

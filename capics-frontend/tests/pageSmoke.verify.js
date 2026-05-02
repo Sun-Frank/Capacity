@@ -20,6 +20,9 @@ const ROUTES = [
   { path: '/capacity-realtime-monthly', name: 'CapacityRealtimeMonthly' },
   { path: '/users', name: 'Users', allowHomeRedirect: true },
   { path: '/ai-config', name: 'AiConfig', allowHomeRedirect: true },
+  { path: '/feishu-config', name: 'FeishuConfig', allowHomeRedirect: true },
+  { path: '/notebook', name: 'Notebook' },
+  { path: '/meeting-minutes', name: 'MeetingMinutes' },
   { path: '/fusion-workbench', name: 'FusionWorkbench' },
   { path: '/ct-line', name: 'CtLine' }
 ]

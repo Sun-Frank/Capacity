@@ -27,12 +27,25 @@
       </div>
       <h3 class="section-title preview-title">预览</h3>
       <pre class="markdown-preview">{{ form.content }}</pre>
+      <div class="markdown-help">
+        <div class="markdown-help-title">Markdown 速查</div>
+        <div class="markdown-help-grid">
+          <span><code># 标题</code> 一级标题</span>
+          <span><code>## 标题</code> 二级标题</span>
+          <span><code>- 内容</code> 无序列表</span>
+          <span><code>1. 内容</code> 有序列表</span>
+          <span><code>**重点**</code> 加粗</span>
+          <span><code>`代码`</code> 行内代码</span>
+          <span><code>[文字](链接)</code> 超链接</span>
+          <span><code>&gt; 引用</code> 引用说明</span>
+        </div>
+      </div>
     </section>
   </div>
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { deleteNotebookNote, getNotebookNotes, saveNotebookNote } from '@/api/notebook'
@@ -45,6 +58,22 @@ const form = ref({ id: null, title: '', content: '' })
 const saveState = ref('')
 let saveTimer = null
 let suppressAutoSave = false
+let lastSavedSignature = ''
+
+const buildSignature = (note) => JSON.stringify({
+  id: note?.id || null,
+  title: note?.title || '',
+  content: note?.content || ''
+})
+
+const applyFormSilently = async (note, selectedNote = note) => {
+  suppressAutoSave = true
+  selected.value = selectedNote
+  form.value = { id: null, title: '', content: '', ...(note || {}) }
+  lastSavedSignature = buildSignature(form.value)
+  await nextTick()
+  suppressAutoSave = false
+}
 
 const load = async () => {
   const res = await getNotebookNotes(token.value)
@@ -52,13 +81,15 @@ const load = async () => {
 }
 
 const newNote = () => {
-  selected.value = null
-  form.value = { id: null, title: '', content: '' }
+  if (saveTimer) clearTimeout(saveTimer)
+  saveState.value = ''
+  applyFormSilently({ id: null, title: '', content: '' }, null)
 }
 
 const selectNote = (note) => {
-  selected.value = note
-  form.value = { ...note }
+  if (saveTimer) clearTimeout(saveTimer)
+  saveState.value = ''
+  applyFormSilently(note, note)
 }
 
 const saveNote = async (silent = false) => {
@@ -68,12 +99,14 @@ const saveNote = async (silent = false) => {
   }
   saveState.value = '保存中...'
   const res = await saveNotebookNote(token.value, form.value)
-  saveState.value = '已保存'
   if (!silent) showToast(res?.message || '保存成功', 'success')
-  suppressAutoSave = true
   await load()
-  if (res?.data) selectNote(res.data)
-  suppressAutoSave = false
+  if (res?.data) {
+    await applyFormSilently(res.data, res.data)
+  } else {
+    lastSavedSignature = buildSignature(form.value)
+  }
+  saveState.value = '已保存'
 }
 
 const removeNote = async () => {
@@ -85,9 +118,15 @@ const removeNote = async () => {
 
 watch(form, () => {
   if (suppressAutoSave || !form.value.title) return
+  const currentSignature = buildSignature(form.value)
+  if (currentSignature === lastSavedSignature) return
   saveState.value = '等待自动保存...'
   if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => saveNote(true).catch(() => { saveState.value = '自动保存失败' }), 1200)
+  saveTimer = setTimeout(() => {
+    saveNote(true).catch((error) => {
+      saveState.value = `自动保存失败：${error?.message || '请检查网络或重新登录'}`
+    })
+  }, 1200)
 }, { deep: true })
 
 onMounted(load)
@@ -146,6 +185,40 @@ onBeforeUnmount(() => { if (saveTimer) clearTimeout(saveTimer) })
   font-family: var(--font-mono);
 }
 
+.markdown-help {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+}
+
+.markdown-help-title {
+  margin-bottom: var(--space-2);
+  font-weight: 800;
+  color: var(--info-text);
+}
+
+.markdown-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.markdown-help code {
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 2px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
 .preview-title {
   margin: var(--space-4) 0 var(--space-2);
 }
@@ -163,6 +236,10 @@ onBeforeUnmount(() => { if (saveTimer) clearTimeout(saveTimer) })
   .two-column-page {
     grid-template-columns: 1fr;
     overflow: auto;
+  }
+
+  .markdown-help-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
