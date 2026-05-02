@@ -21,12 +21,12 @@
       <input v-model.trim="form.title" class="form-input title-input" placeholder="标题" />
       <textarea v-model="form.content" class="markdown-editor" placeholder="支持 Markdown，输入后会自动保存到服务器"></textarea>
       <div class="toolbar">
-        <button class="btn btn-primary" @click="saveNote">立即保存</button>
+        <button class="btn btn-primary" @click="saveNote(false)">立即保存</button>
         <button v-if="form.id" class="btn btn-danger" @click="removeNote">删除</button>
         <span class="save-state">{{ saveState }}</span>
       </div>
       <h3 class="section-title preview-title">预览</h3>
-      <pre class="markdown-preview">{{ form.content }}</pre>
+      <div class="markdown-preview" v-html="previewHtml"></div>
       <div class="markdown-help">
         <div class="markdown-help-title">Markdown 速查</div>
         <div class="markdown-help-grid">
@@ -45,11 +45,12 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { deleteNotebookNote, getNotebookNotes, saveNotebookNote } from '@/api/notebook'
+import { renderMarkdown } from '@/utils/markdown'
 
 const router = useRouter()
 const { token, handleLogout } = useAuth()
@@ -58,6 +59,7 @@ const notes = ref([])
 const selected = ref(null)
 const form = ref({ id: null, title: '', content: '' })
 const saveState = ref('')
+const previewHtml = computed(() => renderMarkdown(form.value.content))
 let saveTimer = null
 let suppressAutoSave = false
 let lastSavedSignature = ''
@@ -111,6 +113,10 @@ const selectNote = (note) => {
 }
 
 const saveNote = async (silent = false) => {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
   if (!form.value.title) {
     if (!silent) showToast('标题不能为空', 'warning')
     return
@@ -147,6 +153,7 @@ watch(form, () => {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
     saveNote(true).catch((error) => {
+      if (error?.status === 401 || error?.status === 403) return
       saveState.value = `自动保存失败：${error?.message || '请检查网络或重新登录'}`
     })
   }, 1200)
@@ -247,12 +254,50 @@ onBeforeUnmount(() => { if (saveTimer) clearTimeout(saveTimer) })
 }
 
 .markdown-preview {
-  white-space: pre-wrap;
   background: var(--surface-soft);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   min-height: 160px;
+}
+
+.markdown-preview :deep(h1),
+.markdown-preview :deep(h2),
+.markdown-preview :deep(h3) {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-strong);
+}
+
+.markdown-preview :deep(p),
+.markdown-preview :deep(ul),
+.markdown-preview :deep(ol),
+.markdown-preview :deep(blockquote) {
+  margin: 0 0 var(--space-3);
+}
+
+.markdown-preview :deep(ul),
+.markdown-preview :deep(ol) {
+  padding-left: var(--space-5);
+}
+
+.markdown-preview :deep(blockquote) {
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--primary);
+  background: var(--surface);
+  color: var(--color-text-muted);
+}
+
+.markdown-preview :deep(code) {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  font-family: var(--font-mono);
+}
+
+.markdown-preview :deep(a) {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {
