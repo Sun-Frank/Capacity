@@ -9,7 +9,12 @@ function headers(token, json = false) {
 
 async function parse(res) {
   const data = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(data?.message || `API error (HTTP ${res.status})`)
+  if (!res.ok) {
+    const error = new Error(data?.message || `API error (HTTP ${res.status})`)
+    error.status = res.status
+    error.data = data
+    throw error
+  }
   return data
 }
 

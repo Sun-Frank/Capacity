@@ -46,11 +46,13 @@
 
 <script setup>
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { deleteNotebookNote, getNotebookNotes, saveNotebookNote } from '@/api/notebook'
 
-const { token } = useAuth()
+const router = useRouter()
+const { token, handleLogout } = useAuth()
 const { showToast } = useToast()
 const notes = ref([])
 const selected = ref(null)
@@ -76,8 +78,24 @@ const applyFormSilently = async (note, selectedNote = note) => {
 }
 
 const load = async () => {
-  const res = await getNotebookNotes(token.value)
-  notes.value = res?.data || []
+  try {
+    const res = await getNotebookNotes(token.value)
+    notes.value = res?.data || []
+  } catch (error) {
+    if (await handleAuthExpired(error)) return
+    showToast(`加载记事失败：${error?.message || '请检查网络'}`, 'error')
+  }
+}
+
+const handleAuthExpired = async (error) => {
+  if (error?.status !== 401 && error?.status !== 403) return false
+  if (saveTimer) clearTimeout(saveTimer)
+  suppressAutoSave = true
+  saveState.value = '登录已过期，请重新登录'
+  showToast('登录已过期，请重新登录后再保存记事', 'warning')
+  await handleLogout()
+  router.replace('/login')
+  return true
 }
 
 const newNote = () => {
@@ -98,15 +116,20 @@ const saveNote = async (silent = false) => {
     return
   }
   saveState.value = '保存中...'
-  const res = await saveNotebookNote(token.value, form.value)
-  if (!silent) showToast(res?.message || '保存成功', 'success')
-  await load()
-  if (res?.data) {
-    await applyFormSilently(res.data, res.data)
-  } else {
-    lastSavedSignature = buildSignature(form.value)
+  try {
+    const res = await saveNotebookNote(token.value, form.value)
+    if (!silent) showToast(res?.message || '保存成功', 'success')
+    await load()
+    if (res?.data) {
+      await applyFormSilently(res.data, res.data)
+    } else {
+      lastSavedSignature = buildSignature(form.value)
+    }
+    saveState.value = '已保存'
+  } catch (error) {
+    if (await handleAuthExpired(error)) return
+    throw error
   }
-  saveState.value = '已保存'
 }
 
 const removeNote = async () => {
