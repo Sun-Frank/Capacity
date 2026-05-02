@@ -61,7 +61,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(versions));
     }
 
-    // 鑾峰彇鏈€鏂板鍏ョ殑MRP鏂囦欢淇℃伅
+    // 閼惧嘲褰囬張鈧弬鏉款嚤閸忋儳娈慚RP閺傚洣娆㈡穱鈩冧紖
     @GetMapping("/latest-file")
     public ResponseEntity<ApiResponse> getLatestMrpFile() {
         Map<String, String> fileInfo = mrpPlanService.getLatestMrpFileInfo();
@@ -109,7 +109,7 @@ public class MrpController {
 
     @GetMapping("/plans/template")
     public ResponseEntity<Resource> downloadMrpTemplate() throws IOException {
-        String fileName = "MRP瀵煎叆妯℃澘-v2.xlsx";
+        String fileName = "MRP导入模板-v2.xlsx";
         File localFile = new File("import_templates", fileName);
         Resource resource;
         if (localFile.exists()) {
@@ -171,7 +171,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 鍛ㄦ姤琛?- 鎸夊鍏ヤ汉+鏂囦欢鍚嶏紝澶氱増鏈姣?
+    // 閸涖劍濮ょ悰?- 閹稿顕遍崗銉ゆ眽+閺傚洣娆㈤崥宥忕礉婢舵氨澧楅張顒€顕В?
     @GetMapping("/reports/weekly/by-file")
     public ResponseEntity<ApiResponse> getWeeklyReportByFile(
             @RequestParam String createdBy,
@@ -180,7 +180,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 鏈堟姤琛?- 鎸夊鍏ヤ汉+鏂囦欢鍚嶏紝澶氱増鏈姣?
+    // 閺堝牊濮ょ悰?- 閹稿顕遍崗銉ゆ眽+閺傚洣娆㈤崥宥忕礉婢舵氨澧楅張顒€顕В?
     @GetMapping("/reports/monthly/by-file")
     public ResponseEntity<ApiResponse> getMonthlyReportByFile(
             @RequestParam String createdBy,
@@ -189,7 +189,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 鍗曠増鏈懆闇€姹傛眹鎬?- 鎸夊鍏ヤ汉+鏂囦欢鍚?鐗堟湰
+    // 閸楁洜澧楅張顒€鎳嗛棁鈧Ч鍌涚湽閹?- 閹稿顕遍崗銉ゆ眽+閺傚洣娆㈤崥?閻楀牊婀?
     @GetMapping("/reports/weekly/single")
     public ResponseEntity<ApiResponse> getWeeklyDemandSingle(
             @RequestParam String createdBy,
@@ -199,7 +199,7 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success(report));
     }
 
-    // 鍗曠増鏈湀闇€姹傛眹鎬?- 鎸夊鍏ヤ汉+鏂囦欢鍚?鐗堟湰
+    // 閸楁洜澧楅張顒佹箑闂団偓濮瑰倹鐪归幀?- 閹稿顕遍崗銉ゆ眽+閺傚洣娆㈤崥?閻楀牊婀?
     @GetMapping("/reports/monthly/single")
     public ResponseEntity<ApiResponse> getMonthlyDemandSingle(
             @RequestParam String createdBy,

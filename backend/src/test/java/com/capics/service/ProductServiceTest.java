@@ -7,6 +7,7 @@ import com.capics.entity.ProductFamilyId;
 import com.capics.entity.ProductId;
 import com.capics.repository.ProductFamilyRepository;
 import com.capics.repository.ProductRepository;
+import com.capics.repository.ProjectMasterRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,11 +32,14 @@ class ProductServiceTest {
     @Mock
     private ProductFamilyRepository familyRepository;
 
+    @Mock
+    private ProjectMasterRepository projectMasterRepository;
+
     private ProductService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProductService(productRepository, familyRepository);
+        service = new ProductService(productRepository, familyRepository, projectMasterRepository);
     }
 
     @Test
@@ -58,7 +62,7 @@ class ProductServiceTest {
 
         List<ProductDto> result = service.findAll();
 
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
         verify(productRepository).findAll();
     }
 

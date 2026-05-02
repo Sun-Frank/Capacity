@@ -5,7 +5,11 @@ import com.capics.dto.BomExpandDto;
 import com.capics.dto.RoutingDto;
 import com.capics.dto.RoutingItemDto;
 import com.capics.service.RoutingService;
-import org.springframework.core.io.ClassPathResource;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,14 +17,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/routings")
@@ -34,33 +37,27 @@ public class RoutingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse> getAll() {
-        List<RoutingDto> routings = routingService.findAll();
-        return ResponseEntity.ok(ApiResponse.success(routings));
+        return ResponseEntity.ok(ApiResponse.success(routingService.findAll()));
     }
 
-    // 获取完整的工艺路线信息（每个组件一行）
     @GetMapping("/full")
     public ResponseEntity<ApiResponse> getAllFull() {
-        List<RoutingItemDto> items = routingService.findAllItems();
-        return ResponseEntity.ok(ApiResponse.success(items));
+        return ResponseEntity.ok(ApiResponse.success(routingService.findAllItems()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getById(@PathVariable Long id) {
-        RoutingDto routing = routingService.findById(id);
-        return ResponseEntity.ok(ApiResponse.success(routing));
+        return ResponseEntity.ok(ApiResponse.success(routingService.findById(id)));
     }
 
     @GetMapping("/product/{productNumber}")
     public ResponseEntity<ApiResponse> getByProductNumber(@PathVariable String productNumber) {
-        RoutingDto routing = routingService.findByProductNumber(productNumber);
-        return ResponseEntity.ok(ApiResponse.success(routing));
+        return ResponseEntity.ok(ApiResponse.success(routingService.findByProductNumber(productNumber)));
     }
 
     @GetMapping("/by-product/{productNumber}")
     public ResponseEntity<ApiResponse> getItemsByProduct(@PathVariable String productNumber) {
-        List<RoutingItemDto> items = routingService.getByProductNumber(productNumber);
-        return ResponseEntity.ok(ApiResponse.success(items));
+        return ResponseEntity.ok(ApiResponse.success(routingService.getByProductNumber(productNumber)));
     }
 
     @PostMapping("/expand")
@@ -78,8 +75,7 @@ public class RoutingController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id, @RequestBody RoutingDto dto) {
         dto.setId(id);
-        RoutingDto updated = routingService.save(dto);
-        return ResponseEntity.ok(ApiResponse.success("Updated", updated));
+        return ResponseEntity.ok(ApiResponse.success("Updated", routingService.save(dto)));
     }
 
     @DeleteMapping("/{id}")
@@ -88,15 +84,13 @@ public class RoutingController {
         return ResponseEntity.ok(ApiResponse.success("Deleted"));
     }
 
-    // 检查导入文件中的重复成品物料号
     @PostMapping("/import/check")
     public ResponseEntity<ApiResponse> checkImportDuplicates(@RequestParam("file") MultipartFile file) throws IOException {
         List<Map<String, String>> duplicates = routingService.checkDuplicates(file);
         if (duplicates.isEmpty()) {
             return ResponseEntity.ok(ApiResponse.success("No duplicates found", null));
-        } else {
-            return ResponseEntity.ok(new ApiResponse(false, "Found " + duplicates.size() + " duplicate(s)", duplicates));
         }
+        return ResponseEntity.ok(new ApiResponse(false, "Found " + duplicates.size() + " duplicate(s)", duplicates));
     }
 
     @PostMapping("/import")
@@ -110,40 +104,54 @@ public class RoutingController {
 
     @GetMapping("/template")
     public ResponseEntity<Resource> downloadRoutingTemplate() throws IOException {
-        String fileName = "工艺路线导入模板.xlsx";
-        File localFile = new File("import_templates", fileName);
-        Resource resource;
-        if (localFile.exists()) {
-            resource = new org.springframework.core.io.FileSystemResource(localFile);
-        } else {
-            resource = new ClassPathResource("import_templates/" + fileName);
-        }
-        if (!resource.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+        ByteArrayResource resource = new ByteArrayResource(buildBomTemplateBytes());
+        String encoded = URLEncoder.encode("BOM结构导入模板.xlsx", StandardCharsets.UTF_8).replace("+", "%20");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(resource.contentLength())
                 .body(resource);
     }
 
-    // 获取按生产线分组的工艺路线组件数据
     @GetMapping("/items/grouped")
     public ResponseEntity<ApiResponse> getItemsGroupedByLine() {
-        Map<String, List<RoutingItemDto>> grouped = routingService.findAllItemsGroupedByLine();
-        return ResponseEntity.ok(ApiResponse.success(grouped));
+        return ResponseEntity.ok(ApiResponse.success(routingService.findAllItemsGroupedByLine()));
     }
 
-    // 更新组件的生产线
     @PutMapping("/items/{id}/line")
-    public ResponseEntity<ApiResponse> updateItemLine(
-            @PathVariable Long id,
-            @RequestBody UpdateLineRequest request) {
-        RoutingItemDto updated = routingService.updateRoutingItemLineCode(
-                id, request.getLineCode(), request.getUpdatedBy());
+    public ResponseEntity<ApiResponse> updateItemLine(@PathVariable Long id, @RequestBody UpdateLineRequest request) {
+        RoutingItemDto updated = routingService.updateRoutingItemLineCode(id, request.getLineCode(), request.getUpdatedBy());
         return ResponseEntity.ok(ApiResponse.success("Updated", updated));
+    }
+
+    @PostMapping("/items")
+    public ResponseEntity<ApiResponse> saveItem(@RequestBody RoutingItemDto dto) {
+        return ResponseEntity.ok(ApiResponse.success("Saved", routingService.saveItem(dto, dto.getUpdatedBy())));
+    }
+
+    private byte[] buildBomTemplateBytes() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Data");
+            Row header = sheet.createRow(0);
+            header.createCell(0).setCellValue("成品物料号*");
+            header.createCell(1).setCellValue("成品描述");
+            header.createCell(2).setCellValue("组件物料号*");
+            header.createCell(3).setCellValue("BOM层级*");
+            header.createCell(4).setCellValue("BOM用量");
+
+            Row sample = sheet.createRow(1);
+            sample.createCell(0).setCellValue("FG-1001");
+            sample.createCell(1).setCellValue("Product description");
+            sample.createCell(2).setCellValue("COMP-1001");
+            sample.createCell(3).setCellValue(1);
+            sample.createCell(4).setCellValue(1);
+
+            for (int i = 0; i <= 4; i++) {
+                sheet.autoSizeColumn(i);
+            }
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        }
     }
 
     public static class BomExpandRequest {

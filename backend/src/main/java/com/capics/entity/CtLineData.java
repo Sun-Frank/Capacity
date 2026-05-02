@@ -35,6 +35,12 @@ public class CtLineData {
     @Column(name = "col_x", length = 255)
     private String colX;
 
+    @Column(name = "finished_item_number", length = 50)
+    private String finishedItemNumber;
+
+    @Column(name = "product_description", length = 255)
+    private String productDescription;
+
     @Column(name = "created_by", length = 50)
     private String createdBy;
 
@@ -130,6 +136,22 @@ public class CtLineData {
         this.colX = colX;
     }
 
+    public String getFinishedItemNumber() {
+        return finishedItemNumber;
+    }
+
+    public void setFinishedItemNumber(String finishedItemNumber) {
+        this.finishedItemNumber = finishedItemNumber;
+    }
+
+    public String getProductDescription() {
+        return productDescription;
+    }
+
+    public void setProductDescription(String productDescription) {
+        this.productDescription = productDescription;
+    }
+
     public String getCreatedBy() {
         return createdBy;
     }
@@ -162,4 +184,3 @@ public class CtLineData {
         this.updatedAt = updatedAt;
     }
 }
-

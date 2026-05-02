@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="page">
     <div class="page-header">
-      <h1 class="page-title">工艺路线</h1>
+      <h1 class="page-title">BOM结构</h1>
       <p class="page-subtitle">成品BOM定义</p>
     </div>
     <div style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center;">
@@ -12,11 +12,21 @@
         class="form-input"
         style="width: 200px;"
       >
-      <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">导入工艺路线</button>
+      <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">导入BOM结构</button>
+      <button v-if="canManageMasterData" class="btn btn-primary" @click="startAddItem">新增BOM行</button>
       <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
       <button class="btn" @click="handleExportRoutings">数据导出</button>
     </div>
     <div class="table-wrapper">
+      <div v-if="isAddingItem" class="bom-add-row">
+        <input v-model.trim="itemForm.productNumber" class="form-input" placeholder="成品物料号*" />
+        <input v-model.trim="itemForm.routingDescription" class="form-input" placeholder="成品描述" />
+        <input v-model.trim="itemForm.componentNumber" class="form-input" placeholder="组件物料号*" />
+        <input v-model.number="itemForm.bomLevel" type="number" class="form-input" placeholder="BOM层级*" />
+        <input v-model.number="itemForm.bomQuantity" type="number" step="0.0001" class="form-input" placeholder="BOM用量" />
+        <button class="btn btn-primary" @click="saveItem">保存</button>
+        <button class="btn" @click="cancelAddItem">取消</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -45,15 +55,15 @@
               <tr class="child-header">
                 <td></td>
                 <td class="child-cell">组件物料号</td>
-                <td>生产线</td>
                 <td>BOM层级</td>
+                <td>BOM用量</td>
               </tr>
               <!-- 子数据 -->
               <tr v-for="(item, idx) in group.items" :key="idx" class="child-row">
                 <td></td>
                 <td class="child-cell">{{ item.componentNumber }}</td>
-                <td>{{ item.lineCode }}</td>
                 <td>{{ item.bomLevel }}</td>
+                <td>{{ item.bomQuantity || 1 }}</td>
               </tr>
             </template>
           </template>
@@ -86,7 +96,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate } from '@/api/routing'
+import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate, saveRoutingItem } from '@/api/routing'
 import { downloadCsv } from '@/utils/export'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -104,6 +114,47 @@ const showConfirmModal = ref(false)
 const confirmTitle = ref('')
 const confirmItems = ref([])
 const pendingFile = ref(null)
+const isAddingItem = ref(false)
+const itemForm = ref({
+  productNumber: '',
+  routingDescription: '',
+  componentNumber: '',
+  bomLevel: 1,
+  bomQuantity: 1
+})
+
+const startAddItem = () => {
+  isAddingItem.value = true
+  itemForm.value = {
+    productNumber: '',
+    routingDescription: '',
+    componentNumber: '',
+    bomLevel: 1,
+    bomQuantity: 1
+  }
+}
+
+const cancelAddItem = () => {
+  isAddingItem.value = false
+}
+
+const saveItem = async () => {
+  if (!itemForm.value.productNumber || !itemForm.value.componentNumber || !itemForm.value.bomLevel) {
+    showToast('成品物料号、组件物料号、BOM层级不能为空', 'warning')
+    return
+  }
+  const result = await saveRoutingItem(token.value, {
+    ...itemForm.value,
+    updatedBy: currentUser.value || 'system'
+  })
+  if (result?.success === false) {
+    showToast(result.message || '保存失败', 'error')
+    return
+  }
+  showToast(result?.message || '保存成功', 'success')
+  isAddingItem.value = false
+  await loadRoutings()
+}
 
 // 按成品物料号分组
 const groupedRoutings = computed(() => {
@@ -160,7 +211,7 @@ const handleDownloadRoutingTemplate = async () => {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = '工艺路线导入模板.xlsx'
+    a.download = 'BOM结构导入模板.xlsx'
     document.body.appendChild(a)
     a.click()
     a.remove()
@@ -176,17 +227,17 @@ const handleExportRoutings = () => {
     { key: 'productNumber', label: '成品物料号' },
     { key: 'routingDescription', label: '描述' },
     { key: 'componentNumber', label: '组件物料号' },
-    { key: 'lineCode', label: '生产线' },
-    { key: 'bomLevel', label: 'BOM层级' }
+    { key: 'bomLevel', label: 'BOM层级' },
+    { key: 'bomQuantity', label: 'BOM用量' }
   ]
   const rows = (routings.value || []).map(r => ({
     productNumber: r.productNumber || '',
     routingDescription: r.routingDescription || '',
     componentNumber: r.componentNumber || '',
-    lineCode: r.lineCode || '',
-    bomLevel: r.bomLevel ?? ''
+    bomLevel: r.bomLevel ?? '',
+    bomQuantity: r.bomQuantity ?? ''
   }))
-  downloadCsv('工艺路线.csv', headers, rows)
+  downloadCsv('BOM结构.csv', headers, rows)
   showToast('导出成功', 'success')
 }
 
@@ -203,9 +254,8 @@ const handleImport = async ({ file }) => {
   // 检查重复
   try {
     const checkResult = await checkRoutingImportDuplicates(token.value, file)
-    console.log('Check result:', checkResult)
     if (checkResult.success === false && checkResult.data && checkResult.data.length > 0) {
-      confirmTitle.value = `发现 ${checkResult.data.length} 条已存在的工艺路线，点击确定将覆盖这些数据`
+      confirmTitle.value = `发现 ${checkResult.data.length} 条已存在的BOM结构，点击确定将覆盖这些数据`
       confirmItems.value = checkResult.data.map(d => d.productNumber)
       pendingFile.value = file
       showConfirmModal.value = true
@@ -303,6 +353,14 @@ onMounted(() => {
 .child-cell {
   padding-left: 2rem !important;
   color: var(--muted-foreground);
+}
+
+.bom-add-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 1.2fr 0.8fr 0.8fr auto auto;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: center;
 }
 </style>
 

@@ -49,6 +49,7 @@ public class LineConfigService {
         if (repository.existsById(dto.getLineCode())) {
             entity = repository.findById(dto.getLineCode()).get();
             entity.setLineName(dto.getLineName());
+            entity.setProcessSegment(dto.getProcessSegment());
             entity.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek());
             entity.setShiftsPerDay(dto.getShiftsPerDay());
             entity.setHoursPerShift(dto.getHoursPerShift());
@@ -145,6 +146,15 @@ public class LineConfigService {
                 if (idxLineName != null) {
                     String lineName = getCellValueAsString(row.getCell(idxLineName));
                     entity.setLineName((lineName == null || lineName.trim().isEmpty()) ? null : lineName.trim());
+                }
+                Integer idxProcessSegment = findColumnIndex(
+                        headerMap,
+                        "process segment", "process_segment",
+                        "\u5de5\u827a\u6bb5"
+                );
+                if (idxProcessSegment != null) {
+                    String processSegment = getCellValueAsString(row.getCell(idxProcessSegment));
+                    entity.setProcessSegment((processSegment == null || processSegment.trim().isEmpty()) ? null : processSegment.trim());
                 }
                 if (idxWorkingDays != null) {
                     Integer value = getCellValueAsInteger(row.getCell(idxWorkingDays));
@@ -285,6 +295,7 @@ public class LineConfigService {
         LineConfigDto dto = new LineConfigDto();
         dto.setLineCode(entity.getLineCode());
         dto.setLineName(entity.getLineName());
+        dto.setProcessSegment(entity.getProcessSegment());
         dto.setWorkingDaysPerWeek(entity.getWorkingDaysPerWeek());
         dto.setShiftsPerDay(entity.getShiftsPerDay());
         dto.setHoursPerShift(entity.getHoursPerShift());
@@ -300,6 +311,7 @@ public class LineConfigService {
         LineConfig entity = new LineConfig();
         entity.setLineCode(dto.getLineCode());
         entity.setLineName(dto.getLineName());
+        entity.setProcessSegment(dto.getProcessSegment());
         entity.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek());
         entity.setShiftsPerDay(dto.getShiftsPerDay());
         entity.setHoursPerShift(dto.getHoursPerShift());

@@ -10,6 +10,7 @@
         <button v-if="canManageMasterData" class="btn btn-primary" @click="showAddModal">添加产线</button>
         <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">批量导入</button>
         <button class="btn" @click="handleDownloadTemplate">模板下载</button>
+        <button class="btn" @click="handleExportLines">数据导出</button>
       </div>
 
       <table>
@@ -17,6 +18,7 @@
           <tr>
             <th>生产线编码</th>
             <th>生产线名称</th>
+            <th>工艺段</th>
             <th>每周工作天数</th>
             <th>每天班次</th>
             <th>每班时长(小时)</th>
@@ -28,6 +30,7 @@
           <tr v-for="line in lines" :key="line.lineCode">
             <td>{{ line.lineCode }}</td>
             <td>{{ line.lineName || '-' }}</td>
+            <td>{{ line.processSegment || '-' }}</td>
             <td>{{ line.workingDaysPerWeek }}</td>
             <td>{{ line.shiftsPerDay }}</td>
             <td>{{ line.hoursPerShift }}</td>
@@ -37,7 +40,7 @@
             </td>
           </tr>
           <tr v-if="lines.length === 0">
-            <td :colspan="canManageMasterData ? 7 : 6" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+            <td :colspan="canManageMasterData ? 8 : 7" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -67,6 +70,7 @@ import { useToast } from '@/composables/useToast'
 import { getLines, createLine, updateLine, importLines, downloadLineTemplate } from '@/api/line'
 import EditLineModal from '@/components/lines/EditLineModal.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
+import { downloadCsv } from '@/utils/export'
 
 const { token, currentUser, hasAnyRole } = useAuth()
 const { showToast } = useToast()
@@ -184,6 +188,22 @@ const handleDownloadTemplate = async () => {
   } catch (err) {
     showToast(err?.message || '模板下载失败', 'error')
   }
+}
+
+const handleExportLines = () => {
+  downloadCsv('生产线配置.csv', [
+    { key: 'lineCode', label: '生产线编码' },
+    { key: 'lineName', label: '生产线名称' },
+    { key: 'processSegment', label: '工艺段' },
+    { key: 'workingDaysPerWeek', label: '每周工作天数' },
+    { key: 'shiftsPerDay', label: '每天班次' },
+    { key: 'hoursPerShift', label: '每班时长(小时)' },
+    { key: 'isActiveText', label: '状态' }
+  ], (lines.value || []).map((line) => ({
+    ...line,
+    isActiveText: line.isActive ? '启用' : '禁用'
+  })))
+  showToast('导出成功', 'success')
 }
 
 onMounted(() => {

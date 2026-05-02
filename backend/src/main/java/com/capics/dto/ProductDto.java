@@ -16,6 +16,7 @@ public class ProductDto {
     private String updatedBy;
     private String updatedAt;
     private String pf;
+    private Boolean descriptionExistsInProjectMaster;
 
     public String getItemNumber() {
         return this.itemNumber;
@@ -119,5 +120,13 @@ public class ProductDto {
 
     public void setPf(String pf) {
         this.pf = pf;
+    }
+
+    public Boolean getDescriptionExistsInProjectMaster() {
+        return this.descriptionExistsInProjectMaster;
+    }
+
+    public void setDescriptionExistsInProjectMaster(Boolean descriptionExistsInProjectMaster) {
+        this.descriptionExistsInProjectMaster = descriptionExistsInProjectMaster;
     }
 }

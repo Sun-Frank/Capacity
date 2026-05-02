@@ -82,7 +82,8 @@ const typeLabel = computed(() => {
     family: '编码族',
     product: '产品',
     mrp: 'MRP',
-    routing: '工艺路线',
+    routing: 'BOM结构',
+    'project-master': '项目主数据',
     line: '生产线配置',
     'ct-line': '产线-产品'
   }

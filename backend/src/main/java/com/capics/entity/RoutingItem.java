@@ -18,7 +18,7 @@ public class RoutingItem {
     @Column(length = 50, nullable = false)
     private String componentNumber;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 50)
     private String lineCode;
 
     @Column

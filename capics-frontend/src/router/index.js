@@ -80,6 +80,22 @@ const routes = [
         meta: { allowedRoles: ['ADMIN'] }
       },
       {
+        path: 'feishu-config',
+        name: 'FeishuConfig',
+        component: () => import('@/views/FeishuConfigView.vue'),
+        meta: { allowedRoles: ['ADMIN'] }
+      },
+      {
+        path: 'notebook',
+        name: 'Notebook',
+        component: () => import('@/views/NotebookView.vue')
+      },
+      {
+        path: 'meeting-minutes',
+        name: 'MeetingMinutes',
+        component: () => import('@/views/MeetingMinutesView.vue')
+      },
+      {
         path: 'fusion-workbench',
         name: 'FusionWorkbench',
         component: () => import('@/views/FusionWorkbenchView.vue')

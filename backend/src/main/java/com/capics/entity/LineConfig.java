@@ -15,6 +15,9 @@ public class LineConfig {
     @Column(name = "line_name", length = 100)
     private String lineName;
 
+    @Column(name = "process_segment", length = 100)
+    private String processSegment;
+
     @Column
     private Integer workingDaysPerWeek = 5;
 
@@ -68,6 +71,14 @@ public class LineConfig {
 
     public void setLineName(String lineName) {
         this.lineName = lineName;
+    }
+
+    public String getProcessSegment() {
+        return this.processSegment;
+    }
+
+    public void setProcessSegment(String processSegment) {
+        this.processSegment = processSegment;
     }
 
     public void setWorkingDaysPerWeek(Integer workingDaysPerWeek) {

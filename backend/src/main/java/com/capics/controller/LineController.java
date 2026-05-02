@@ -115,28 +115,31 @@ public class LineController {
             Row header = sheet.createRow(0);
             header.createCell(0).setCellValue("Line Code*");
             header.createCell(1).setCellValue("Line Name");
-            header.createCell(2).setCellValue("Working Days Per Week");
-            header.createCell(3).setCellValue("Shifts Per Day");
-            header.createCell(4).setCellValue("Hours Per Shift");
-            header.createCell(5).setCellValue("Is Active");
+            header.createCell(2).setCellValue("Process Segment");
+            header.createCell(3).setCellValue("Working Days Per Week");
+            header.createCell(4).setCellValue("Shifts Per Day");
+            header.createCell(5).setCellValue("Hours Per Shift");
+            header.createCell(6).setCellValue("Is Active");
 
             Row sample1 = sheet.createRow(1);
             sample1.createCell(0).setCellValue("ASSY2001");
-            sample1.createCell(1).setCellValue("ASSY浜х嚎1");
-            sample1.createCell(2).setCellValue(5);
-            sample1.createCell(3).setCellValue(2);
-            sample1.createCell(4).setCellValue(8);
-            sample1.createCell(5).setCellValue("true");
+            sample1.createCell(1).setCellValue("ASSY Line 1");
+            sample1.createCell(2).setCellValue("FA");
+            sample1.createCell(3).setCellValue(5);
+            sample1.createCell(4).setCellValue(2);
+            sample1.createCell(5).setCellValue(8);
+            sample1.createCell(6).setCellValue("true");
 
             Row sample2 = sheet.createRow(2);
             sample2.createCell(0).setCellValue("DIP2001");
-            sample2.createCell(1).setCellValue("DIP浜х嚎1");
-            sample2.createCell(2).setCellValue(5);
-            sample2.createCell(3).setCellValue(2);
-            sample2.createCell(4).setCellValue(8);
-            sample2.createCell(5).setCellValue("true");
+            sample2.createCell(1).setCellValue("DIP Line 1");
+            sample2.createCell(2).setCellValue("PCBA");
+            sample2.createCell(3).setCellValue(5);
+            sample2.createCell(4).setCellValue(2);
+            sample2.createCell(5).setCellValue(8);
+            sample2.createCell(6).setCellValue("true");
 
-            for (int i = 0; i <= 5; i++) {
+            for (int i = 0; i <= 6; i++) {
                 sheet.autoSizeColumn(i);
             }
 

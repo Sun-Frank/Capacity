@@ -70,4 +70,44 @@
   /* Layout */
   --sidebar-width: 268px;
   --topbar-height: 64px;
+
+  /* Design system aliases */
+  --color-brand-primary: var(--primary);
+  --color-brand-primary-hover: var(--primary-hover);
+  --color-brand-accent: var(--brand-cyan);
+  --color-text: var(--foreground);
+  --color-text-strong: #0f2238;
+  --color-text-muted: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-light);
+
+  --surface-elevated: rgba(255, 255, 255, 0.92);
+  --surface-glass: rgba(255, 255, 255, 0.78);
+  --surface-card: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 251, 255, 0.96) 100%);
+  --surface-toolbar: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 249, 255, 0.96) 100%);
+  --surface-table-header: linear-gradient(180deg, #f7fbff 0%, #e9f2ff 100%);
+  --surface-row-hover: #f3f8ff;
+
+  --success-bg: #ecfdf3;
+  --success-border: #86efac;
+  --success-text: #166534;
+  --warning-bg: #fff7ed;
+  --warning-border: #fdba74;
+  --warning-text: #9a3412;
+  --error-bg: #fff1f2;
+  --error-border: #fda4af;
+  --error-text: #be123c;
+  --info-bg: #eff6ff;
+  --info-border: #bfdbfe;
+  --info-text: #1d4ed8;
+
+  --control-height-sm: 32px;
+  --control-height-md: 40px;
+  --control-height-lg: 48px;
+  --control-padding-x: 0.9rem;
+  --focus-ring: 0 0 0 3px rgba(0, 101, 189, 0.2);
+  --transition-fast: 140ms ease;
+  --transition-base: 200ms ease;
+  --z-sticky: 20;
+  --z-modal: 1000;
 }

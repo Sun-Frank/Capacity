@@ -63,6 +63,17 @@ export function updateRoutingItemLine(token, id, lineCode, updatedBy) {
   }).then(res => res.json())
 }
 
+export function saveRoutingItem(token, payload) {
+  return fetch(`${API_BASE}/routings/items`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  }).then(res => res.json())
+}
+
 export async function downloadRoutingTemplate(token) {
   const res = await fetch(`${API_BASE}/routings/template`, {
     headers: { 'Authorization': `Bearer ${token}` }

@@ -29,10 +29,34 @@ async function parseJsonSafe(res) {
   }
 }
 
-export function getCtLines(token) {
-  return fetchWithTimeout(`${API_BASE}/ct-lines`, {
+function clearAuthAndRedirect() {
+  localStorage.removeItem('capics_token')
+  localStorage.removeItem('capics_user')
+  localStorage.removeItem('capics_username')
+  localStorage.removeItem('capics_user_id')
+  localStorage.removeItem('capics_role_codes')
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
+}
+
+async function assertJsonResponse(res, fallbackMessage) {
+  const json = await parseJsonSafe(res)
+  if (res.status === 401 || res.status === 403) {
+    clearAuthAndRedirect()
+    throw new Error('登录已过期或无权限，请重新登录')
+  }
+  if (!res.ok) {
+    throw new Error(json?.message || `${fallbackMessage} (HTTP ${res.status})`)
+  }
+  return json || { success: false, message: fallbackMessage }
+}
+
+export async function getCtLines(token) {
+  const res = await fetchWithTimeout(`${API_BASE}/ct-lines`, {
     headers: { Authorization: `Bearer ${token}` }
-  }).then((res) => res.json())
+  })
+  return assertJsonResponse(res, 'Load failed')
 }
 
 export async function createCtLine(token, payload) {
@@ -45,11 +69,7 @@ export async function createCtLine(token, payload) {
     body: JSON.stringify(payload)
   })
 
-  const json = await parseJsonSafe(res)
-  if (!res.ok) {
-    throw new Error(json?.message || `Create failed (HTTP ${res.status})`)
-  }
-  return json || { success: false, message: 'Create failed' }
+  return assertJsonResponse(res, 'Create failed')
 }
 
 export async function importCtLines(token, file) {
@@ -66,11 +86,7 @@ export async function importCtLines(token, file) {
     IMPORT_TIMEOUT_MS
   )
 
-  const json = await parseJsonSafe(res)
-  if (!res.ok) {
-    throw new Error(json?.message || `Import failed (HTTP ${res.status})`)
-  }
-  return json || { success: false, message: 'Import failed' }
+  return assertJsonResponse(res, 'Import failed')
 }
 
 export async function startCtLineImportTask(token, file) {
@@ -87,11 +103,7 @@ export async function startCtLineImportTask(token, file) {
     TASK_CREATE_TIMEOUT_MS
   )
 
-  const json = await parseJsonSafe(res)
-  if (!res.ok) {
-    throw new Error(json?.message || `Create import task failed (HTTP ${res.status})`)
-  }
-  return json || { success: false, message: 'Create import task failed' }
+  return assertJsonResponse(res, 'Create import task failed')
 }
 
 export async function getCtLineImportTask(token, taskId) {
@@ -103,11 +115,7 @@ export async function getCtLineImportTask(token, taskId) {
     REQUEST_TIMEOUT_MS
   )
 
-  const json = await parseJsonSafe(res)
-  if (!res.ok) {
-    throw new Error(json?.message || `Query import task failed (HTTP ${res.status})`)
-  }
-  return json || { success: false, message: 'Query import task failed' }
+  return assertJsonResponse(res, 'Query import task failed')
 }
 
 export async function updateCtLine(token, id, payload) {
@@ -120,11 +128,7 @@ export async function updateCtLine(token, id, payload) {
     body: JSON.stringify(payload)
   })
 
-  const json = await parseJsonSafe(res)
-  if (!res.ok) {
-    throw new Error(json?.message || `Save failed (HTTP ${res.status})`)
-  }
-  return json || { success: false, message: 'Save failed' }
+  return assertJsonResponse(res, 'Save failed')
 }
 
 export async function downloadCtLineTemplate(token) {

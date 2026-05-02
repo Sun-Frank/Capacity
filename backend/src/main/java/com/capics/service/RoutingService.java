@@ -57,7 +57,7 @@ public class RoutingService {
             for (RoutingItem item : items) {
                 RoutingItemDto dto = toItemDto(item);
                 dto.setProductNumber(routing.getProductNumber());
-                dto.setRoutingDescription(routing.getDescription());
+                dto.setRoutingDescription(resolveProductDescription(routing.getProductNumber(), routing.getDescription()));
                 result.add(dto);
             }
         }
@@ -122,6 +122,43 @@ public class RoutingService {
         return toDto(entity);
     }
 
+    @Transactional
+    public RoutingItemDto saveItem(RoutingItemDto dto, String operator) {
+        if (dto.getProductNumber() == null || dto.getProductNumber().trim().isEmpty()) {
+            throw new IllegalArgumentException("productNumber is required");
+        }
+        if (dto.getComponentNumber() == null || dto.getComponentNumber().trim().isEmpty()) {
+            throw new IllegalArgumentException("componentNumber is required");
+        }
+        if (dto.getBomLevel() == null) {
+            throw new IllegalArgumentException("bomLevel is required");
+        }
+
+        Routing routing = routingRepository.findAllByProductNumber(dto.getProductNumber().trim()).stream()
+                .findFirst()
+                .orElseGet(() -> {
+                    Routing created = new Routing();
+                    created.setProductNumber(dto.getProductNumber().trim());
+                    created.setDescription(resolveProductDescription(dto.getProductNumber().trim(), dto.getRoutingDescription()));
+                    created.setCreatedBy(operator);
+                    return routingRepository.save(created);
+                });
+
+        RoutingItem item = dto.getId() == null
+                ? new RoutingItem()
+                : routingItemRepository.findById(dto.getId()).orElse(new RoutingItem());
+        item.setRoutingId(routing.getId());
+        item.setComponentNumber(dto.getComponentNumber().trim());
+        item.setBomLevel(dto.getBomLevel());
+        item.setBomQuantity(dto.getBomQuantity() == null ? BigDecimal.ONE : dto.getBomQuantity());
+        item = routingItemRepository.save(item);
+
+        RoutingItemDto result = toItemDto(item);
+        result.setProductNumber(routing.getProductNumber());
+        result.setRoutingDescription(resolveProductDescription(routing.getProductNumber(), routing.getDescription()));
+        return result;
+    }
+
     public void delete(Long id) {
         routingRepository.deleteById(id);
     }
@@ -176,8 +213,8 @@ public class RoutingService {
                 String productNumber = getCellValueAsString(row.getCell(0));
                 String description = getCellValueAsString(row.getCell(1));
                 String componentNumber = getCellValueAsString(row.getCell(2));
-                String lineCode = getCellValueAsString(row.getCell(3));
-                Integer bomLevel = getCellValueAsInteger(row.getCell(4));
+                Integer bomLevel = getCellValueAsInteger(row.getCell(3));
+                BigDecimal bomQuantity = getCellValueAsBigDecimal(row.getCell(4));
 
                 // 如果有成品物料号
                 if (productNumber != null && !productNumber.isEmpty()) {
@@ -185,14 +222,12 @@ public class RoutingService {
                     if (processedProductNumbers.contains(productNumber)) {
                         // 已在本次导入中处理过，只处理组件
                         if (componentNumber != null && !componentNumber.isEmpty()
-                                && lineCode != null && !lineCode.isEmpty()
                                 && bomLevel != null) {
                             RoutingItem item = new RoutingItem();
                             item.setRoutingId(currentRouting.getId());
                             item.setComponentNumber(componentNumber);
-                            item.setLineCode(lineCode);
                             item.setBomLevel(bomLevel);
-                            item.setBomQuantity(BigDecimal.ONE);
+                            item.setBomQuantity(bomQuantity == null ? BigDecimal.ONE : bomQuantity);
                             routingItemRepository.save(item);
                         }
                         continue;
@@ -215,7 +250,7 @@ public class RoutingService {
 
                     Routing routing = new Routing();
                     routing.setProductNumber(productNumber);
-                    routing.setDescription(description);
+                    routing.setDescription(resolveProductDescription(productNumber, description));
                     routing.setCreatedBy(createdBy);
                     currentRouting = routingRepository.save(routing);
                     processedProductNumbers.add(productNumber);
@@ -225,14 +260,12 @@ public class RoutingService {
                 // 如果有组件物料号、生产线编码、BOM层级，添加工艺路线组件
                 if (currentRouting != null
                         && componentNumber != null && !componentNumber.isEmpty()
-                        && lineCode != null && !lineCode.isEmpty()
                         && bomLevel != null) {
                     RoutingItem item = new RoutingItem();
                     item.setRoutingId(currentRouting.getId());
                     item.setComponentNumber(componentNumber);
-                    item.setLineCode(lineCode);
                     item.setBomLevel(bomLevel);
-                    item.setBomQuantity(BigDecimal.ONE);
+                    item.setBomQuantity(bomQuantity == null ? BigDecimal.ONE : bomQuantity);
                     routingItemRepository.save(item);
                 }
             }
@@ -266,9 +299,7 @@ public class RoutingService {
             component.setLineCode(item.getLineCode());
             component.setQuantity(quantity.multiply(item.getBomQuantity()));
 
-            Product product = productRepository.findById(
-                    new ProductId(item.getComponentNumber(), item.getLineCode())
-            ).orElse(null);
+            Product product = productRepository.findByItemNumber(item.getComponentNumber()).stream().findFirst().orElse(null);
 
             if (product != null) {
                 component.setCt(product.getCycleTime());
@@ -302,6 +333,18 @@ public class RoutingService {
             return (int) cell.getNumericCellValue();
         }
         return null;
+    }
+
+    private BigDecimal getCellValueAsBigDecimal(Cell cell) {
+        String value = getCellValueAsString(cell);
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim().replace(",", ""));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private RoutingDto toDto(Routing entity) {
@@ -338,5 +381,15 @@ public class RoutingService {
         dto.setBomQuantity(entity.getBomQuantity());
         dto.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null);
         return dto;
+    }
+
+    private String resolveProductDescription(String productNumber, String fallback) {
+        if (productNumber != null) {
+            List<Product> products = productRepository.findByItemNumber(productNumber);
+            if (!products.isEmpty() && products.get(0).getDescription() != null) {
+                return products.get(0).getDescription();
+            }
+        }
+        return fallback;
     }
 }

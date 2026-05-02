@@ -2,6 +2,8 @@
 backend/target/
 capics-frontend/dist/
 backend/compile.log
+*.log
+backend/logs/
 
 # Frontend dependencies
 capics-frontend/node_modules/

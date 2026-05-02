@@ -24,6 +24,30 @@ public class MeetingMinutes {
     private String remark;
 
     @Column(length = 50)
+    private String productNumber;
+
+    @Column(length = 255)
+    private String productDescription;
+
+    @Column(length = 50)
+    private String lineCode;
+
+    @Column(length = 100)
+    private String adjustmentField;
+
+    @Column(length = 255)
+    private String beforeValue;
+
+    @Column(length = 255)
+    private String afterValue;
+
+    @Column(length = 100)
+    private String ownerName;
+
+    @Column(length = 50)
+    private String status;
+
+    @Column(length = 50)
     private String updatedBy;
 
     @Column
@@ -77,6 +101,70 @@ public class MeetingMinutes {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public String getProductNumber() {
+        return this.productNumber;
+    }
+
+    public void setProductNumber(String productNumber) {
+        this.productNumber = productNumber;
+    }
+
+    public String getProductDescription() {
+        return this.productDescription;
+    }
+
+    public void setProductDescription(String productDescription) {
+        this.productDescription = productDescription;
+    }
+
+    public String getLineCode() {
+        return this.lineCode;
+    }
+
+    public void setLineCode(String lineCode) {
+        this.lineCode = lineCode;
+    }
+
+    public String getAdjustmentField() {
+        return this.adjustmentField;
+    }
+
+    public void setAdjustmentField(String adjustmentField) {
+        this.adjustmentField = adjustmentField;
+    }
+
+    public String getBeforeValue() {
+        return this.beforeValue;
+    }
+
+    public void setBeforeValue(String beforeValue) {
+        this.beforeValue = beforeValue;
+    }
+
+    public String getAfterValue() {
+        return this.afterValue;
+    }
+
+    public void setAfterValue(String afterValue) {
+        this.afterValue = afterValue;
+    }
+
+    public String getOwnerName() {
+        return this.ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getStatus() {
+        return this.status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getUpdatedBy() {

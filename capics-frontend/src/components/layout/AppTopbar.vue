@@ -30,7 +30,7 @@ const pageTitles = {
   '/products': '产品主数据',
   '/mrp': 'MRP计划管理',
   '/mrp-compare': 'MRP对比',
-  '/routing': '工艺路线',
+  '/routing': 'BOM结构',
   '/ct-line': '产线-产品',
   '/lines': '生产线配置',
   '/product-line': '产线一览',
@@ -39,8 +39,11 @@ const pageTitles = {
   '/capacity-realtime': '动态产能模拟（周）',
   '/capacity-realtime-monthly': '动态产能模拟（月）',
   '/fusion-workbench': '融合工作台',
+  '/notebook': '记事本',
+  '/meeting-minutes': '会议纪要',
   '/users': '用户管理',
-  '/ai-config': 'AI后端环境配置'
+  '/ai-config': 'AI后端环境配置',
+  '/feishu-config': '飞书配置'
 }
 
 const pageSubtitles = {
@@ -48,7 +51,7 @@ const pageSubtitles = {
   '/products': '基础主数据维护',
   '/mrp': 'MRP导入与版本管理',
   '/mrp-compare': '按产品描述汇总两个文件的数量差异',
-  '/routing': '产品工艺路径管理',
+  '/routing': '产品BOM结构维护',
   '/ct-line': '产线与产品参数映射',
   '/lines': '线体基础参数维护',
   '/product-line': '产线关联数据总览',
@@ -57,8 +60,11 @@ const pageSubtitles = {
   '/capacity-realtime': '可编辑仿真结果（周）',
   '/capacity-realtime-monthly': '可编辑仿真结果（月）',
   '/fusion-workbench': '融合分析与协同',
+  '/notebook': 'Markdown 记事实时保存在服务器',
+  '/meeting-minutes': '按产品维度维护动态模拟调整事项',
   '/users': '系统账号与权限管理',
-  '/ai-config': 'AI Agent 连接参数维护'
+  '/ai-config': 'AI Agent 连接参数维护',
+  '/feishu-config': '飞书开放平台参数与发送测试'
 }
 
 const pageTitle = computed(() => pageTitles[route.path] || '')

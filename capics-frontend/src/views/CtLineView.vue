@@ -24,6 +24,8 @@
             <th>序号</th>
             <th>生产线</th>
             <th>物料号</th>
+            <th>成品料号</th>
+            <th>产品描述</th>
             <th>主备线</th>
             <th>CT(秒)</th>
             <th>OEE</th>
@@ -36,9 +38,11 @@
         <tbody>
           <tr v-if="isAdding">
             <td>-</td>
-            <td><input v-model.trim="addForm.colB" class="form-input" /></td>
-            <td><input v-model.trim="addForm.colC" class="form-input" /></td>
-            <td><input v-model.trim="addForm.colD" class="form-input" /></td>
+              <td><input v-model.trim="addForm.colB" class="form-input" /></td>
+              <td><input v-model.trim="addForm.colC" class="form-input" /></td>
+              <td>-</td>
+              <td>-</td>
+              <td><input v-model.trim="addForm.colD" class="form-input" /></td>
             <td><input v-model.trim="addForm.colF" class="form-input" /></td>
             <td><input v-model.trim="addForm.colI" class="form-input" /></td>
             <td><input v-model.trim="addForm.colP" class="form-input" /></td>
@@ -56,6 +60,8 @@
               <td>{{ index + 1 }}</td>
               <td><input v-model.trim="editForm.colB" class="form-input" /></td>
               <td><input v-model.trim="editForm.colC" class="form-input" /></td>
+              <td>{{ row.finishedItemNumber || '-' }}</td>
+              <td>{{ row.productDescription || '-' }}</td>
               <td><input v-model.trim="editForm.colD" class="form-input" /></td>
               <td><input v-model.trim="editForm.colF" class="form-input" /></td>
               <td><input v-model.trim="editForm.colI" class="form-input" /></td>
@@ -73,6 +79,8 @@
               <td>{{ index + 1 }}</td>
               <td>{{ row.colB }}</td>
               <td>{{ row.colC }}</td>
+              <td>{{ row.finishedItemNumber || '-' }}</td>
+              <td>{{ row.productDescription || '-' }}</td>
               <td>{{ row.colD }}</td>
               <td>{{ row.colF }}</td>
               <td>{{ row.colI }}</td>
@@ -85,7 +93,7 @@
             </template>
           </tr>
           <tr v-if="filteredRows.length === 0">
-            <td colspan="10" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
+            <td colspan="12" style="text-align: center; color: var(--muted-foreground);">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -379,6 +387,8 @@ const handleExportCtLines = () => {
   const headers = [
     { key: 'colB', label: '生产线' },
     { key: 'colC', label: '物料号' },
+    { key: 'finishedItemNumber', label: '成品料号' },
+    { key: 'productDescription', label: '产品描述' },
     { key: 'colD', label: '主备线' },
     { key: 'colF', label: 'CT(秒)' },
     { key: 'colI', label: 'OEE' },
@@ -389,6 +399,8 @@ const handleExportCtLines = () => {
   const exportRows = (rows.value || []).map((r) => ({
     colB: r.colB || '',
     colC: r.colC || '',
+    finishedItemNumber: r.finishedItemNumber || '',
+    productDescription: r.productDescription || '',
     colD: r.colD || '',
     colF: r.colF || '',
     colI: r.colI || '',

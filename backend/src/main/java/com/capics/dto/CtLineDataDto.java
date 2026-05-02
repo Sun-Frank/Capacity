@@ -10,6 +10,8 @@ public class CtLineDataDto {
     private String colP;
     private String colW;
     private String colX;
+    private String finishedItemNumber;
+    private String productDescription;
     private String createdBy;
     private String createdAt;
     private String updatedBy;
@@ -87,6 +89,22 @@ public class CtLineDataDto {
         this.colX = colX;
     }
 
+    public String getFinishedItemNumber() {
+        return finishedItemNumber;
+    }
+
+    public void setFinishedItemNumber(String finishedItemNumber) {
+        this.finishedItemNumber = finishedItemNumber;
+    }
+
+    public String getProductDescription() {
+        return productDescription;
+    }
+
+    public void setProductDescription(String productDescription) {
+        this.productDescription = productDescription;
+    }
+
     public String getCreatedBy() {
         return createdBy;
     }
@@ -119,4 +137,3 @@ public class CtLineDataDto {
         this.updatedAt = updatedAt;
     }
 }
-

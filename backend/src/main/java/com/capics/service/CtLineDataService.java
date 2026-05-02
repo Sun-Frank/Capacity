@@ -3,7 +3,13 @@ package com.capics.service;
 import com.capics.dto.CtLineDataDto;
 import com.capics.dto.CtLineImportTaskDto;
 import com.capics.entity.CtLineData;
+import com.capics.entity.Product;
+import com.capics.entity.Routing;
+import com.capics.entity.RoutingItem;
 import com.capics.repository.CtLineDataRepository;
+import com.capics.repository.ProductRepository;
+import com.capics.repository.RoutingItemRepository;
+import com.capics.repository.RoutingRepository;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -46,14 +52,23 @@ public class CtLineDataService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final CtLineDataRepository repository;
+    private final RoutingItemRepository routingItemRepository;
+    private final RoutingRepository routingRepository;
+    private final ProductRepository productRepository;
     private final DataFormatter dataFormatter = new DataFormatter();
     private final Map<String, ImportTaskState> importTasks = new ConcurrentHashMap<>();
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public CtLineDataService(CtLineDataRepository repository) {
+    public CtLineDataService(CtLineDataRepository repository,
+                             RoutingItemRepository routingItemRepository,
+                             RoutingRepository routingRepository,
+                             ProductRepository productRepository) {
         this.repository = repository;
+        this.routingItemRepository = routingItemRepository;
+        this.routingRepository = routingRepository;
+        this.productRepository = productRepository;
     }
 
     public Map<String, Object> getCtLinePageData() {
@@ -172,6 +187,7 @@ public class CtLineDataService {
                 entity.setColP(colP.trim());
                 entity.setColW(isBlank(colW) ? null : colW.trim());
                 entity.setColX(isBlank(colX) ? null : colX.trim());
+                enrichFinishedProduct(entity);
                 entity.setUpdatedBy(createdBy);
                 toSave.add(entity);
 
@@ -201,6 +217,7 @@ public class CtLineDataService {
         entity.setColP(input.getColP().trim());
         entity.setColW(isBlank(input.getColW()) ? null : input.getColW().trim());
         entity.setColX(isBlank(input.getColX()) ? null : input.getColX().trim());
+        enrichFinishedProduct(entity);
         entity.setCreatedBy(createdBy);
         entity.setUpdatedBy(createdBy);
 
@@ -224,6 +241,7 @@ public class CtLineDataService {
         entity.setColP(input.getColP().trim());
         entity.setColW(isBlank(input.getColW()) ? null : input.getColW().trim());
         entity.setColX(isBlank(input.getColX()) ? null : input.getColX().trim());
+        enrichFinishedProduct(entity);
         entity.setUpdatedBy(updatedBy);
 
         CtLineData saved = repository.saveAndFlush(entity);
@@ -314,6 +332,8 @@ public class CtLineDataService {
         dto.setColP(entity.getColP());
         dto.setColW(entity.getColW());
         dto.setColX(entity.getColX());
+        dto.setFinishedItemNumber(entity.getFinishedItemNumber());
+        dto.setProductDescription(entity.getProductDescription());
         dto.setCreatedBy(entity.getCreatedBy());
         dto.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().toString() : null);
         dto.setUpdatedBy(entity.getUpdatedBy());
@@ -336,6 +356,30 @@ public class CtLineDataService {
 
     private String composeLineItemKey(String colB, String colC) {
         return (colB == null ? "" : colB.trim()) + "||" + (colC == null ? "" : colC.trim());
+    }
+
+    private void enrichFinishedProduct(CtLineData entity) {
+        if (isBlank(entity.getColC())) {
+            entity.setFinishedItemNumber(null);
+            entity.setProductDescription(null);
+            return;
+        }
+        List<RoutingItem> matches = routingItemRepository.findFirstMaintainedByComponentNumber(entity.getColC().trim());
+        if (matches.isEmpty()) {
+            entity.setFinishedItemNumber(null);
+            entity.setProductDescription(null);
+            return;
+        }
+        RoutingItem item = matches.get(0);
+        Routing routing = routingRepository.findById(item.getRoutingId()).orElse(null);
+        if (routing == null) {
+            entity.setFinishedItemNumber(null);
+            entity.setProductDescription(null);
+            return;
+        }
+        entity.setFinishedItemNumber(routing.getProductNumber());
+        Product product = productRepository.findByItemNumber(routing.getProductNumber()).stream().findFirst().orElse(null);
+        entity.setProductDescription(product != null ? product.getDescription() : routing.getDescription());
     }
 
     private CtLineImportTaskDto toTaskDto(ImportTaskState state) {

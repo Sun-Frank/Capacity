@@ -12,12 +12,15 @@ DROP TABLE IF EXISTS line_config CASCADE;
 DROP TABLE IF EXISTS ct_line_data CASCADE;
 DROP TABLE IF EXISTS mrp_plan CASCADE;
 DROP TABLE IF EXISTS product CASCADE;
+DROP TABLE IF EXISTS project_master CASCADE;
 DROP TABLE IF EXISTS product_family CASCADE;
 DROP TABLE IF EXISTS family_line CASCADE;
 DROP TABLE IF EXISTS sys_user_role CASCADE;
 DROP TABLE IF EXISTS sys_role CASCADE;
 DROP TABLE IF EXISTS sys_user CASCADE;
 DROP TABLE IF EXISTS ai_agent_config CASCADE;
+DROP TABLE IF EXISTS notebook_note CASCADE;
+DROP TABLE IF EXISTS feishu_config CASCADE;
 
 -- System User Tables
 CREATE TABLE sys_user (
@@ -59,6 +62,25 @@ CREATE TABLE ai_agent_config (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE feishu_config (
+    id INTEGER PRIMARY KEY,
+    api_url VARCHAR(255),
+    app_id VARCHAR(120),
+    app_secret TEXT,
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE notebook_note (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    created_by VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Product Family Table (编码族)
 CREATE TABLE product_family (
     family_code VARCHAR(50) NOT NULL,
@@ -91,7 +113,7 @@ CREATE TABLE family_line (
 -- Product Master Data Table (产品主数据)
 CREATE TABLE product (
     item_number VARCHAR(50) NOT NULL,
-    line_code VARCHAR(50) NOT NULL,
+    line_code VARCHAR(50) NOT NULL DEFAULT 'MASTER',
     family_code VARCHAR(50),
     cycle_time DECIMAL(10,2),
     oee DECIMAL(5,2),
@@ -104,6 +126,20 @@ CREATE TABLE product (
     updated_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY (item_number, line_code),
     FOREIGN KEY (family_code, line_code) REFERENCES product_family(family_code, line_code)
+);
+
+CREATE TABLE project_master (
+    id BIGSERIAL PRIMARY KEY,
+    customer VARCHAR(100),
+    product_platform VARCHAR(100),
+    vehicle_config VARCHAR(100),
+    product_description VARCHAR(255) NOT NULL,
+    bws VARCHAR(100),
+    version VARCHAR(50),
+    created_by VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- MRP Plan Table
@@ -143,7 +179,7 @@ CREATE TABLE routing_item (
     id BIGSERIAL PRIMARY KEY,
     routing_id BIGINT NOT NULL REFERENCES routing(id) ON DELETE CASCADE,
     component_number VARCHAR(50) NOT NULL,
-    line_code VARCHAR(50) NOT NULL,
+    line_code VARCHAR(50),
     bom_level INTEGER,
     bom_quantity DECIMAL(10,2) DEFAULT 1,
     created_at TIMESTAMP DEFAULT NOW()
@@ -153,6 +189,7 @@ CREATE TABLE routing_item (
 CREATE TABLE line_config (
     line_code VARCHAR(50) PRIMARY KEY,
     line_name VARCHAR(100),
+    process_segment VARCHAR(100),
     working_days_per_week INTEGER DEFAULT 5,
     shifts_per_day INTEGER DEFAULT 2,
     hours_per_shift DECIMAL(4,1) DEFAULT 8.0,
@@ -174,6 +211,8 @@ CREATE TABLE ct_line_data (
     col_p VARCHAR(255) NOT NULL,
     col_w VARCHAR(255),
     col_x VARCHAR(255),
+    finished_item_number VARCHAR(50),
+    product_description VARCHAR(255),
     created_by VARCHAR(50),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_by VARCHAR(50),
@@ -209,6 +248,14 @@ CREATE TABLE meeting_minutes (
     item_no INTEGER NOT NULL,
     minutes VARCHAR(2000),
     remark VARCHAR(255),
+    product_number VARCHAR(50),
+    product_description VARCHAR(255),
+    line_code VARCHAR(50),
+    adjustment_field VARCHAR(100),
+    before_value VARCHAR(255),
+    after_value VARCHAR(255),
+    owner_name VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'OPEN',
     updated_by VARCHAR(50),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -241,6 +288,7 @@ CREATE INDEX idx_routing_product ON routing(product_number);
 CREATE INDEX idx_routing_item_routing ON routing_item(routing_id);
 CREATE INDEX idx_product_family_code ON product_family(family_code);
 CREATE INDEX idx_product_item ON product(item_number);
+CREATE INDEX idx_project_master_description ON project_master(product_description);
 CREATE INDEX idx_line_profile_class ON line_profile(line_class);
 CREATE INDEX idx_manpower_plan_class_date ON manpower_plan(line_class, plan_date);
 CREATE INDEX idx_meeting_minutes_version_item ON meeting_minutes(mps_version, item_no);

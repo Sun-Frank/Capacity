@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class LineConfigDto {
     private String lineCode;
     private String lineName;
+    private String processSegment;
     private Integer workingDaysPerWeek;
     private Integer shiftsPerDay;
     private BigDecimal hoursPerShift;
@@ -32,6 +33,14 @@ public class LineConfigDto {
 
     public void setLineName(String lineName) {
         this.lineName = lineName;
+    }
+
+    public String getProcessSegment() {
+        return this.processSegment;
+    }
+
+    public void setProcessSegment(String processSegment) {
+        this.processSegment = processSegment;
     }
 
     public void setWorkingDaysPerWeek(Integer workingDaysPerWeek) {

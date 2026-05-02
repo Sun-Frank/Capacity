@@ -14,4 +14,5 @@ public interface ProductRepository extends JpaRepository<Product, ProductId> {
     List<Product> findByFamilyCode(String familyCode);
     List<Product> findByFamilyCodeAndLineCode(String familyCode, String lineCode);
     List<Product> findByItemNumberContainingIgnoreCase(String itemNumber);
+    List<Product> findByItemNumberContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String itemNumber, String description);
 }

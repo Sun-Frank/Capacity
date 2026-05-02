@@ -6,6 +6,14 @@ public class MeetingMinutesDto {
     private Integer itemNo;
     private String minutes;
     private String remark;
+    private String productNumber;
+    private String productDescription;
+    private String lineCode;
+    private String adjustmentField;
+    private String beforeValue;
+    private String afterValue;
+    private String ownerName;
+    private String status;
     private String updatedBy;
     private String updatedAt;
 
@@ -47,6 +55,70 @@ public class MeetingMinutesDto {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public String getProductNumber() {
+        return this.productNumber;
+    }
+
+    public void setProductNumber(String productNumber) {
+        this.productNumber = productNumber;
+    }
+
+    public String getProductDescription() {
+        return this.productDescription;
+    }
+
+    public void setProductDescription(String productDescription) {
+        this.productDescription = productDescription;
+    }
+
+    public String getLineCode() {
+        return this.lineCode;
+    }
+
+    public void setLineCode(String lineCode) {
+        this.lineCode = lineCode;
+    }
+
+    public String getAdjustmentField() {
+        return this.adjustmentField;
+    }
+
+    public void setAdjustmentField(String adjustmentField) {
+        this.adjustmentField = adjustmentField;
+    }
+
+    public String getBeforeValue() {
+        return this.beforeValue;
+    }
+
+    public void setBeforeValue(String beforeValue) {
+        this.beforeValue = beforeValue;
+    }
+
+    public String getAfterValue() {
+        return this.afterValue;
+    }
+
+    public void setAfterValue(String afterValue) {
+        this.afterValue = afterValue;
+    }
+
+    public String getOwnerName() {
+        return this.ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public String getStatus() {
+        return this.status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getUpdatedBy() {

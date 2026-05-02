@@ -18,14 +18,19 @@
       <li class="nav-item"><router-link to="/capacity-realtime-monthly" class="nav-link" :class="{ active: $route.path === '/capacity-realtime-monthly' }">动态产能模拟（月）</router-link></li>
       <li class="nav-item"><router-link to="/fusion-workbench" class="nav-link" :class="{ active: $route.path === '/fusion-workbench' }">融合工作台</router-link></li>
 
+      <li class="nav-section">会议</li>
+      <li class="nav-item"><router-link to="/notebook" class="nav-link" :class="{ active: $route.path === '/notebook' }">记事本</router-link></li>
+      <li class="nav-item"><router-link to="/meeting-minutes" class="nav-link" :class="{ active: $route.path === '/meeting-minutes' }">会议纪要</router-link></li>
+
       <li class="nav-section">主数据</li>
       <li class="nav-item"><router-link to="/products" class="nav-link" :class="{ active: $route.path === '/products' }">产品主数据</router-link></li>
-      <li class="nav-item"><router-link to="/routing" class="nav-link" :class="{ active: $route.path === '/routing' }">工艺路线</router-link></li>
+      <li class="nav-item"><router-link to="/routing" class="nav-link" :class="{ active: $route.path === '/routing' }">BOM结构</router-link></li>
       <li class="nav-item"><router-link to="/ct-line" class="nav-link" :class="{ active: $route.path === '/ct-line' }">产线-产品</router-link></li>
       <li class="nav-item"><router-link to="/lines" class="nav-link" :class="{ active: $route.path === '/lines' }">生产线配置</router-link></li>
 
       <li v-if="isAdmin" class="nav-section">系统</li>
       <li v-if="isAdmin" class="nav-item"><router-link to="/ai-config" class="nav-link" :class="{ active: $route.path === '/ai-config' }">AI环境配置</router-link></li>
+      <li v-if="isAdmin" class="nav-item"><router-link to="/feishu-config" class="nav-link" :class="{ active: $route.path === '/feishu-config' }">飞书配置</router-link></li>
       <li v-if="isAdmin" class="nav-item"><router-link to="/users" class="nav-link" :class="{ active: $route.path === '/users' }">用户管理</router-link></li>
     </ul>
   </aside>

@@ -32,10 +32,18 @@ public class MeetingMinutesService {
         MeetingMinutes entity = dto.getId() == null
                 ? new MeetingMinutes()
                 : meetingMinutesRepository.findById(dto.getId()).orElse(new MeetingMinutes());
-        entity.setMpsVersion(dto.getMpsVersion());
-        entity.setItemNo(dto.getItemNo());
+        entity.setMpsVersion(dto.getMpsVersion() == null || dto.getMpsVersion().isBlank() ? "manual" : dto.getMpsVersion());
+        entity.setItemNo(dto.getItemNo() == null ? 0 : dto.getItemNo());
         entity.setMinutes(dto.getMinutes());
         entity.setRemark(dto.getRemark());
+        entity.setProductNumber(dto.getProductNumber());
+        entity.setProductDescription(dto.getProductDescription());
+        entity.setLineCode(dto.getLineCode());
+        entity.setAdjustmentField(dto.getAdjustmentField());
+        entity.setBeforeValue(dto.getBeforeValue());
+        entity.setAfterValue(dto.getAfterValue());
+        entity.setOwnerName(dto.getOwnerName());
+        entity.setStatus(dto.getStatus() == null || dto.getStatus().isBlank() ? "OPEN" : dto.getStatus());
         entity.setUpdatedBy(dto.getUpdatedBy());
         return toDto(meetingMinutesRepository.save(entity));
     }
@@ -51,6 +59,14 @@ public class MeetingMinutesService {
         dto.setItemNo(entity.getItemNo());
         dto.setMinutes(entity.getMinutes());
         dto.setRemark(entity.getRemark());
+        dto.setProductNumber(entity.getProductNumber());
+        dto.setProductDescription(entity.getProductDescription());
+        dto.setLineCode(entity.getLineCode());
+        dto.setAdjustmentField(entity.getAdjustmentField());
+        dto.setBeforeValue(entity.getBeforeValue());
+        dto.setAfterValue(entity.getAfterValue());
+        dto.setOwnerName(entity.getOwnerName());
+        dto.setStatus(entity.getStatus());
         dto.setUpdatedBy(entity.getUpdatedBy());
         dto.setUpdatedAt(entity.getUpdatedAt() == null ? null : entity.getUpdatedAt().toString());
         return dto;
