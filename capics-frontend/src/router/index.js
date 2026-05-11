@@ -86,6 +86,12 @@ const routes = [
         meta: { allowedRoles: ['ADMIN'] }
       },
       {
+        path: 'wms-bom-config',
+        name: 'WmsBomConfig',
+        component: () => import('@/views/WmsBomConfigView.vue'),
+        meta: { allowedRoles: ['ADMIN'] }
+      },
+      {
         path: 'notebook',
         name: 'Notebook',
         component: () => import('@/views/NotebookView.vue')

@@ -7,12 +7,13 @@
 - 部署目录：`/opt/capics/deploy`
 
 ## 文档信息
-- 更新日期：2026-04-25
-- 文档版本：v1.2.2
+- 更新日期：2026-05-12
+- 文档版本：v1.3.0
 
 ## 版本记录
 | 版本 | 日期 | 说明 |
 |---|---|---|
+| v1.3.0 | 2026-05-12 | 增加 WMS BOM 抓取导入运行依赖说明。 |
 | v1.2.2 | 2026-04-25 | 统一补齐文档更新日期与版本记录。 |
 Local Debug Deploy (Windows)
 1) Prepare local env file:
@@ -62,6 +63,23 @@ At minimum, update:
 - `NGINX_SERVER_NAME`
 - `APP_CORS_ALLOWED_ORIGINS`
 - `DB_SCHEMA_MODE` (recommended: `incremental` in production)
+
+Optional WMS BOM fetch settings:
+- `WMS_BOM_PYTHON`：Python 可执行文件，默认 `python3`
+- `WMS_BOM_TIMEOUT_MINUTES`：WMS 抓取超时时间，默认 `45`
+- `WMS_CHROMEDRIVER`：ChromeDriver 可执行文件，默认 `chromedriver`
+
+## WMS BOM fetch dependencies
+
+The WMS BOM fetch feature calls a Python Selenium script from the backend. Install these on the server before using it:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y chromium-browser chromium-chromedriver python3-pip
+pip3 install -r deploy/wms-bom-requirements.txt
+```
+
+If ChromeDriver is not on `PATH`, set `WMS_CHROMEDRIVER` in `deploy/.env.prod`.
 
 ## 2) Run deploy
 

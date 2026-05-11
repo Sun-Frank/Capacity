@@ -4,7 +4,9 @@ import com.capics.dto.ApiResponse;
 import com.capics.dto.BomExpandDto;
 import com.capics.dto.RoutingDto;
 import com.capics.dto.RoutingItemDto;
+import com.capics.dto.WmsBomImportRequest;
 import com.capics.service.RoutingService;
+import com.capics.service.WmsBomImportService;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +33,11 @@ import java.util.Map;
 public class RoutingController {
 
     private final RoutingService routingService;
+    private final WmsBomImportService wmsBomImportService;
 
-    public RoutingController(RoutingService routingService) {
+    public RoutingController(RoutingService routingService, WmsBomImportService wmsBomImportService) {
         this.routingService = routingService;
+        this.wmsBomImportService = wmsBomImportService;
     }
 
     @GetMapping
@@ -100,6 +105,13 @@ public class RoutingController {
             @RequestParam(value = "overwrite", defaultValue = "false") boolean overwrite) throws IOException {
         int count = routingService.importFromExcel(file, createdBy, overwrite);
         return ResponseEntity.ok(ApiResponse.success("Imported " + count + " records"));
+    }
+
+    @PostMapping("/wms/import")
+    public ResponseEntity<ApiResponse> importFromWms(@RequestBody WmsBomImportRequest request, Principal principal)
+            throws IOException, InterruptedException {
+        String operator = principal == null ? "system" : principal.getName();
+        return ResponseEntity.ok(ApiResponse.success("Imported WMS BOM", wmsBomImportService.fetchAndImport(request, operator)));
     }
 
     @GetMapping("/template")

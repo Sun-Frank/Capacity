@@ -74,6 +74,23 @@ export function saveRoutingItem(token, payload) {
   }).then(res => res.json())
 }
 
+export async function importRoutingsFromWms(token, payload) {
+  const res = await fetch(`${API_BASE}/routings/wms/import`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.message || `WMS BOM导入失败 (HTTP ${res.status})`)
+  }
+  return data
+}
+
 export async function downloadRoutingTemplate(token) {
   const res = await fetch(`${API_BASE}/routings/template`, {
     headers: { 'Authorization': `Bearer ${token}` }

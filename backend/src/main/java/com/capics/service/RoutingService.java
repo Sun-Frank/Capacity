@@ -3,6 +3,7 @@ package com.capics.service;
 import com.capics.dto.BomExpandDto;
 import com.capics.dto.RoutingDto;
 import com.capics.dto.RoutingItemDto;
+import com.capics.dto.WmsBomRow;
 import com.capics.entity.Product;
 import com.capics.entity.ProductId;
 import com.capics.entity.Routing;
@@ -194,6 +195,53 @@ public class RoutingService {
         }
 
         return duplicates;
+    }
+
+    @Transactional
+    public ImportSummary importWmsRows(List<WmsBomRow> rows, String createdBy, boolean overwrite) {
+        if (rows == null || rows.isEmpty()) {
+            return new ImportSummary(0, 0);
+        }
+
+        Map<String, List<WmsBomRow>> grouped = rows.stream()
+                .filter(row -> !isBlank(row.getProductNumber()) && !isBlank(row.getComponentNumber()) && row.getBomLevel() != null)
+                .collect(Collectors.groupingBy(row -> row.getProductNumber().trim(), LinkedHashMap::new, Collectors.toList()));
+
+        int productCount = 0;
+        int itemCount = 0;
+        for (Map.Entry<String, List<WmsBomRow>> entry : grouped.entrySet()) {
+            String productNumber = entry.getKey();
+            List<Routing> existing = routingRepository.findAllByProductNumber(productNumber);
+            if (!existing.isEmpty()) {
+                if (!overwrite) {
+                    continue;
+                }
+                for (Routing routing : existing) {
+                    routingItemRepository.deleteByRoutingId(routing.getId());
+                    routingRepository.delete(routing);
+                }
+            }
+
+            Routing routing = new Routing();
+            routing.setProductNumber(productNumber);
+            routing.setDescription(resolveProductDescription(productNumber, null));
+            routing.setCreatedBy(createdBy);
+            routing = routingRepository.save(routing);
+            productCount++;
+
+            for (WmsBomRow row : entry.getValue()) {
+                RoutingItem item = new RoutingItem();
+                item.setRoutingId(routing.getId());
+                item.setComponentNumber(row.getComponentNumber().trim());
+                item.setLineCode(trimToNull(row.getLineCode()));
+                item.setBomLevel(row.getBomLevel());
+                item.setBomQuantity(row.getBomQuantity() == null ? BigDecimal.ONE : row.getBomQuantity());
+                routingItemRepository.save(item);
+                itemCount++;
+            }
+        }
+
+        return new ImportSummary(productCount, itemCount);
     }
 
     @Transactional
@@ -391,5 +439,35 @@ public class RoutingService {
             }
         }
         return fallback;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    public static class ImportSummary {
+        private final int productCount;
+        private final int itemCount;
+
+        public ImportSummary(int productCount, int itemCount) {
+            this.productCount = productCount;
+            this.itemCount = itemCount;
+        }
+
+        public int getProductCount() {
+            return productCount;
+        }
+
+        public int getItemCount() {
+            return itemCount;
+        }
     }
 }

@@ -37,6 +37,12 @@ public interface MrpPlanRepository extends JpaRepository<MrpPlan, Long> {
 
     List<MrpPlan> findByCreatedByAndFileNameAndVersion(String createdBy, String fileName, String version);
 
+    @Query("SELECT DISTINCT m.itemNumber FROM MrpPlan m WHERE m.createdBy = :createdBy AND m.fileName = :fileName AND m.version = :version AND m.itemNumber IS NOT NULL ORDER BY m.itemNumber")
+    List<String> findDistinctItemNumbersByCreatedByAndFileNameAndVersion(
+            @Param("createdBy") String createdBy,
+            @Param("fileName") String fileName,
+            @Param("version") String version);
+
     List<MrpPlan> findByCreatedByAndFileName(String createdBy, String fileName);
 
     boolean existsByCreatedByAndFileName(String createdBy, String fileName);

@@ -31,6 +31,7 @@
       <li v-if="isAdmin" class="nav-section">系统</li>
       <li v-if="isAdmin" class="nav-item"><router-link to="/ai-config" class="nav-link" :class="{ active: $route.path === '/ai-config' }">AI环境配置</router-link></li>
       <li v-if="isAdmin" class="nav-item"><router-link to="/feishu-config" class="nav-link" :class="{ active: $route.path === '/feishu-config' }">飞书配置</router-link></li>
+      <li v-if="isAdmin" class="nav-item"><router-link to="/wms-bom-config" class="nav-link" :class="{ active: $route.path === '/wms-bom-config' }">WMS BOM配置</router-link></li>
       <li v-if="isAdmin" class="nav-item"><router-link to="/users" class="nav-link" :class="{ active: $route.path === '/users' }">用户管理</router-link></li>
     </ul>
   </aside>

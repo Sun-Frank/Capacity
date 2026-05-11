@@ -54,6 +54,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/api/system/feishu-config/send").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
                 .antMatchers("/api/system/ai-config/**").hasRole("ADMIN")
                 .antMatchers("/api/system/feishu-config/**").hasRole("ADMIN")
+                .antMatchers("/api/system/wms-bom-config/**").hasRole("ADMIN")
                 .antMatchers("/api/auth/reset-password").hasRole("ADMIN")
                 .antMatchers(HttpMethod.GET, "/api/products/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")
                 .antMatchers(HttpMethod.GET, "/api/project-master/**").hasAnyRole("PLAN", "MASTERDATA", "ADMIN")

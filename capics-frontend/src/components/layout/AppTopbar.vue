@@ -43,7 +43,8 @@ const pageTitles = {
   '/meeting-minutes': '会议纪要',
   '/users': '用户管理',
   '/ai-config': 'AI后端环境配置',
-  '/feishu-config': '飞书配置'
+  '/feishu-config': '飞书配置',
+  '/wms-bom-config': 'WMS BOM配置'
 }
 
 const pageSubtitles = {
@@ -64,7 +65,8 @@ const pageSubtitles = {
   '/meeting-minutes': '按产品维度维护动态模拟调整事项',
   '/users': '系统账号与权限管理',
   '/ai-config': 'AI Agent 连接参数维护',
-  '/feishu-config': '飞书开放平台参数与发送测试'
+  '/feishu-config': '飞书开放平台参数与发送测试',
+  '/wms-bom-config': 'WMS 系统登录与抓取参数维护'
 }
 
 const pageTitle = computed(() => pageTitles[route.path] || '')

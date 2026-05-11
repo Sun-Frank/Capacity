@@ -21,6 +21,7 @@ const ROUTES = [
   { path: '/users', name: 'Users', allowHomeRedirect: true },
   { path: '/ai-config', name: 'AiConfig', allowHomeRedirect: true },
   { path: '/feishu-config', name: 'FeishuConfig', allowHomeRedirect: true },
+  { path: '/wms-bom-config', name: 'WmsBomConfig', allowHomeRedirect: true },
   { path: '/notebook', name: 'Notebook' },
   { path: '/meeting-minutes', name: 'MeetingMinutes' },
   { path: '/fusion-workbench', name: 'FusionWorkbench' },

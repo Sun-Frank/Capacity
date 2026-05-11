@@ -19,6 +19,40 @@
       <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
       <button class="btn" @click="handleExportRoutings">数据导出</button>
     </div>
+    <section v-if="canManageMasterData" class="wms-import-panel">
+      <div class="wms-import-heading">
+        <strong>从WMS抓取BOM结构</strong>
+        <span>按 MRP 计划中选择的导入人、文件、版本提取成品料号，抓取后自动导入 BOM结构。</span>
+      </div>
+      <div class="wms-import-controls">
+        <BaseSelect
+          v-model="wmsCreatedBy"
+          :options="mrpCreatedBys.map(c => ({ value: c, label: c }))"
+          placeholder="选择导入人"
+          @update:modelValue="onWmsCreatedByChange"
+        />
+        <BaseSelect
+          v-model="wmsFileName"
+          :options="wmsFileNames.map(f => ({ value: f, label: f }))"
+          placeholder="选择MRP文件"
+          :disabled="!wmsCreatedBy"
+          @update:modelValue="onWmsFileNameChange"
+        />
+        <BaseSelect
+          v-model="wmsVersion"
+          :options="wmsVersions.map(v => ({ value: v, label: v }))"
+          placeholder="选择版本"
+          :disabled="!wmsFileName"
+        />
+        <label class="overwrite-check">
+          <input v-model="wmsOverwrite" type="checkbox" />
+          覆盖已有BOM
+        </label>
+        <button class="btn btn-primary" :disabled="isWmsImporting || !wmsCreatedBy || !wmsFileName || !wmsVersion" @click="handleWmsImport">
+          {{ isWmsImporting ? '抓取导入中...' : '抓取并导入BOM' }}
+        </button>
+      </div>
+    </section>
     <div class="table-wrapper">
       <div v-if="isAddingItem" class="bom-add-row">
         <input v-model.trim="itemForm.productNumber" class="form-input" placeholder="成品物料号*" />
@@ -98,10 +132,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate, saveRoutingItem } from '@/api/routing'
+import { getFileNamesByCreatedBy, getCreatedBys, getVersionsByCreatedByAndFileName } from '@/api/mrp'
+import { getRoutingsFull, importRoutings, checkRoutingImportDuplicates, downloadRoutingTemplate, saveRoutingItem, importRoutingsFromWms } from '@/api/routing'
 import { downloadCsv } from '@/utils/export'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import BaseSelect from '@/components/common/BaseSelect.vue'
 
 const { token, currentUser, hasAnyRole } = useAuth()
 const { showToast } = useToast()
@@ -118,6 +154,14 @@ const confirmTitle = ref('')
 const confirmItems = ref([])
 const pendingFile = ref(null)
 const isAddingItem = ref(false)
+const isWmsImporting = ref(false)
+const mrpCreatedBys = ref([])
+const wmsCreatedBy = ref('')
+const wmsFileNames = ref([])
+const wmsFileName = ref('')
+const wmsVersions = ref([])
+const wmsVersion = ref('')
+const wmsOverwrite = ref(true)
 const itemForm = ref({
   productNumber: '',
   routingDescription: '',
@@ -161,6 +205,64 @@ const saveItem = async () => {
 
 const handleSearch = () => {
   appliedSearchKeyword.value = searchKeyword.value.trim()
+}
+
+const loadMrpCreatedBys = async () => {
+  try {
+    const res = await getCreatedBys(token.value)
+    mrpCreatedBys.value = res.data || []
+  } catch (err) {
+    console.error('Load MRP created bys failed:', err)
+  }
+}
+
+const onWmsCreatedByChange = async () => {
+  wmsFileName.value = ''
+  wmsVersions.value = []
+  wmsVersion.value = ''
+  if (!wmsCreatedBy.value) {
+    wmsFileNames.value = []
+    return
+  }
+  const res = await getFileNamesByCreatedBy(token.value, wmsCreatedBy.value)
+  wmsFileNames.value = res.data || []
+}
+
+const onWmsFileNameChange = async () => {
+  wmsVersion.value = ''
+  if (!wmsCreatedBy.value || !wmsFileName.value) {
+    wmsVersions.value = []
+    return
+  }
+  const res = await getVersionsByCreatedByAndFileName(token.value, wmsCreatedBy.value, wmsFileName.value)
+  wmsVersions.value = res.data || []
+}
+
+const handleWmsImport = async () => {
+  if (!wmsCreatedBy.value || !wmsFileName.value || !wmsVersion.value) {
+    showToast('请选择MRP导入人、文件和版本', 'warning')
+    return
+  }
+  const confirmed = window.confirm(`确定从WMS抓取版本“${wmsVersion.value}”对应成品料号，并导入BOM结构吗？`)
+  if (!confirmed) {
+    return
+  }
+  isWmsImporting.value = true
+  try {
+    const res = await importRoutingsFromWms(token.value, {
+      createdBy: wmsCreatedBy.value,
+      fileName: wmsFileName.value,
+      version: wmsVersion.value,
+      overwrite: wmsOverwrite.value
+    })
+    const data = res.data || {}
+    showToast(`WMS BOM导入完成：${data.productCount || 0} 个成品，${data.itemCount || 0} 条组件`, 'success')
+    await loadRoutings()
+  } catch (err) {
+    showToast(err.message || 'WMS BOM导入失败', 'error')
+  } finally {
+    isWmsImporting.value = false
+  }
 }
 
 // 按成品物料号分组
@@ -310,6 +412,7 @@ const doImport = async (file, overwrite = false) => {
 
 onMounted(() => {
   loadRoutings()
+  loadMrpCreatedBys()
 })
 </script>
 
@@ -368,6 +471,47 @@ onMounted(() => {
   gap: 10px;
   margin-bottom: 14px;
   align-items: center;
+}
+
+.wms-import-panel {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.wms-import-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.8rem;
+}
+
+.wms-import-heading span {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.wms-import-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr)) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.overwrite-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1100px) {
+  .wms-import-controls {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>
 

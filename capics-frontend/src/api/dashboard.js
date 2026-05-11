@@ -1,3 +1,5 @@
+import { withSortedFileNames } from '../utils/sortFileNames'
+
 const API_BASE = '/api'
 
 export function getLoadingMatrix(token, type = 'static', dimension = 'week', createdBy = '', fileName = '', version = '') {
@@ -25,7 +27,7 @@ export function getFileNamesByCreatedBy(token, createdBy) {
   return fetch(
     `${API_BASE}/mrp/filters/${encodeURIComponent(createdBy)}/files`,
     { headers: { 'Authorization': `Bearer ${token}` } }
-  ).then(res => res.json())
+  ).then(res => res.json()).then(withSortedFileNames)
 }
 
 export function getVersionsByCreatedByAndFileName(token, createdBy, fileName) {

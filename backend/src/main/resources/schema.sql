@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS sys_user CASCADE;
 DROP TABLE IF EXISTS ai_agent_config CASCADE;
 DROP TABLE IF EXISTS notebook_note CASCADE;
 DROP TABLE IF EXISTS feishu_config CASCADE;
+DROP TABLE IF EXISTS wms_bom_config CASCADE;
 
 -- System User Tables
 CREATE TABLE sys_user (
@@ -67,6 +68,15 @@ CREATE TABLE feishu_config (
     api_url VARCHAR(255),
     app_id VARCHAR(120),
     app_secret TEXT,
+    updated_by VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE wms_bom_config (
+    id INTEGER PRIMARY KEY,
+    login_url VARCHAR(255),
+    username VARCHAR(120),
+    password_value TEXT,
     updated_by VARCHAR(50),
     updated_at TIMESTAMP DEFAULT NOW()
 );
