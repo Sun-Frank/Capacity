@@ -133,6 +133,22 @@ class MrpPlanServiceTest {
     }
 
     @Test
+    void deleteImportedFile_WithCreatedByAndFileName_DeletesMatchingImportBatch() {
+        when(repository.deleteByCreatedByAndFileName("admin", "MRP-260422.xlsx")).thenReturn(12L);
+
+        long deletedCount = service.deleteImportedFile(" admin ", " MRP-260422.xlsx ");
+
+        assertEquals(12L, deletedCount);
+        verify(repository).deleteByCreatedByAndFileName("admin", "MRP-260422.xlsx");
+    }
+
+    @Test
+    void deleteImportedFile_WithBlankFilter_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> service.deleteImportedFile("", "MRP-260422.xlsx"));
+        verify(repository, never()).deleteByCreatedByAndFileName(anyString(), anyString());
+    }
+
+    @Test
     void getAllVersions_ReturnsDistinctVersions() {
         when(repository.findAllVersions()).thenReturn(Arrays.asList("0303", "0310", "0317"));
 

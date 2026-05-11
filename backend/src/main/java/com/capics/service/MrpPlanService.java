@@ -13,6 +13,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -268,6 +269,16 @@ public class MrpPlanService {
 
     public List<MrpPlanDto> findByCreatedByAndFileName(String createdBy, String fileName) {
         return toDtoListWithProductDescription(repository.findByCreatedByAndFileName(createdBy, fileName));
+    }
+
+    @Transactional
+    public long deleteImportedFile(String createdBy, String fileName) {
+        String normalizedCreatedBy = trimToNull(createdBy);
+        String normalizedFileName = trimToNull(fileName);
+        if (normalizedCreatedBy == null || normalizedFileName == null) {
+            throw new IllegalArgumentException("createdBy and fileName are required");
+        }
+        return repository.deleteByCreatedByAndFileName(normalizedCreatedBy, normalizedFileName);
     }
 
     public List<Map<String, Object>> getWeeklyReportByCreatedByAndFileName(String createdBy, String fileName) {

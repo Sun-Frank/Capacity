@@ -41,6 +41,8 @@ public interface MrpPlanRepository extends JpaRepository<MrpPlan, Long> {
 
     boolean existsByCreatedByAndFileName(String createdBy, String fileName);
 
+    long deleteByCreatedByAndFileName(String createdBy, String fileName);
+
     @Query("SELECT m FROM MrpPlan m WHERE m.createdBy = :createdBy AND m.fileName = :fileName ORDER BY m.itemNumber, m.releaseDate")
     List<MrpPlan> findByCreatedByAndFileNameOrderByItemNumberAndReleaseDate(@Param("createdBy") String createdBy, @Param("fileName") String fileName);
 

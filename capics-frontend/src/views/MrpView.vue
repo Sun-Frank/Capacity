@@ -2,7 +2,7 @@
   <div class="page">
     <div class="page-header">
       <h1 class="page-title">MRP计划管理</h1>
-      <p class="page-subtitle">物料需求计划</p>
+      <p class="page-subtitle">物料需求计划维护、报表汇总与导入批次管理</p>
     </div>
 
     <BaseTabs
@@ -39,6 +39,7 @@
         />
         <button class="btn btn-primary" @click="loadMrpPlans">查询</button>
         <button class="btn" @click="showImportModal">导入MRP</button>
+        <button class="btn btn-danger" :disabled="!selectedCreatedBy || !selectedFileName" @click="handleDeleteImportedMrp">删除导入数据</button>
         <button class="btn" @click="handleDownloadMrpTemplate">模板下载</button>
       </div>
       <PlansTable :plans="mrpPlans" />
@@ -86,7 +87,7 @@
           @update:modelValue="onWeeklyFileNameChange"
         />
         <button class="btn btn-primary" :disabled="!weeklyCreatedBy || !weeklyFileName" @click="loadWeeklyDescriptionReportData">查询</button>
-        <button class="btn" :disabled="!weeklyDescriptionReport.length" @click="handleExportWeeklyDescriptionReport">导出描述分类周报表</button>
+        <button class="btn" :disabled="!weeklyDescriptionReport.length" @click="handleExportWeeklyDescriptionReport">导出描述汇总周报表</button>
       </div>
       <WeeklyDescriptionReportTable
         :columns="weeklyDescriptionColumns"
@@ -138,7 +139,7 @@
           @update:modelValue="onMonthlyFileNameChange"
         />
         <button class="btn btn-primary" :disabled="!monthlyCreatedBy || !monthlyFileName" @click="loadMonthlyDescriptionReportData">查询</button>
-        <button class="btn" :disabled="!monthlyDescriptionReport.length" @click="handleExportMonthlyDescriptionReport">导出描述分类月报表</button>
+        <button class="btn" :disabled="!monthlyDescriptionReport.length" @click="handleExportMonthlyDescriptionReport">导出描述汇总月报表</button>
       </div>
       <MonthlyDescriptionReportTable
         :columns="monthlyDescriptionColumns"
@@ -166,6 +167,7 @@ import { useToast } from '@/composables/useToast'
 import { aggregateReportByDescription } from '@/composables/useMrpDescriptionReport'
 import { downloadCsv } from '@/utils/export'
 import {
+  deleteImportedMrpPlans,
   downloadMrpTemplate,
   exportMonthlyReport,
   exportWeeklyReport,
@@ -254,6 +256,34 @@ const buildDescriptionRows = (columns, rows) => {
   })
 }
 
+const loadFileNames = async (createdBy) => {
+  if (!createdBy) {
+    fileNames.value = []
+    return []
+  }
+  const data = await getFileNamesByCreatedBy(token.value, createdBy)
+  fileNames.value = data.data || []
+  return fileNames.value
+}
+
+const refreshFileNameOptions = async (createdBy) => {
+  if (!createdBy) {
+    return []
+  }
+  const data = await getFileNamesByCreatedBy(token.value, createdBy)
+  const names = data.data || []
+  if (selectedCreatedBy.value === createdBy) {
+    fileNames.value = names
+  }
+  if (weeklyCreatedBy.value === createdBy) {
+    weeklyFileNames.value = names
+  }
+  if (monthlyCreatedBy.value === createdBy) {
+    monthlyFileNames.value = names
+  }
+  return names
+}
+
 const handleDownloadMrpTemplate = async () => {
   try {
     const blob = await downloadMrpTemplate(token.value)
@@ -281,6 +311,64 @@ const loadMrpPlans = async () => {
     mrpPlans.value = data.data || []
   } catch {
     showToast('加载MRP计划失败', 'error')
+  }
+}
+
+const handleDeleteImportedMrp = async () => {
+  if (!selectedCreatedBy.value || !selectedFileName.value) {
+    showToast('请选择导入人和文件后再删除', 'warning')
+    return
+  }
+
+  const deletedCreatedBy = selectedCreatedBy.value
+  const deletedFileName = selectedFileName.value
+  const confirmed = window.confirm(
+    `确定删除导入人“${deletedCreatedBy}”、文件“${deletedFileName}”下的全部MRP计划数据吗？此操作不可恢复。`
+  )
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    const result = await deleteImportedMrpPlans(token.value, deletedCreatedBy, deletedFileName)
+    const deletedCount = Number(result?.data || 0)
+    showToast(`已删除 ${deletedCount} 条MRP计划数据`, 'success')
+
+    mrpPlans.value = []
+    selectedFileName.value = ''
+    selectedVersion.value = ''
+    versions.value = []
+
+    if (weeklyCreatedBy.value === deletedCreatedBy && weeklyFileName.value === deletedFileName) {
+      weeklyFileName.value = ''
+      weeklyColumns.value = []
+      weeklyReport.value = []
+    }
+
+    if (monthlyCreatedBy.value === deletedCreatedBy && monthlyFileName.value === deletedFileName) {
+      monthlyFileName.value = ''
+      monthlyColumns.value = []
+      monthlyReport.value = []
+    }
+
+    await loadCreatedBys()
+    if (createdBys.value.includes(deletedCreatedBy)) {
+      selectedCreatedBy.value = deletedCreatedBy
+      await refreshFileNameOptions(deletedCreatedBy)
+    } else {
+      selectedCreatedBy.value = ''
+      fileNames.value = []
+      if (weeklyCreatedBy.value === deletedCreatedBy) {
+        weeklyCreatedBy.value = ''
+        weeklyFileNames.value = []
+      }
+      if (monthlyCreatedBy.value === deletedCreatedBy) {
+        monthlyCreatedBy.value = ''
+        monthlyFileNames.value = []
+      }
+    }
+  } catch (err) {
+    showToast('删除导入数据失败: ' + (err?.message || '未知错误'), 'error')
   }
 }
 
@@ -390,23 +478,23 @@ const handleExportMonthlyReport = async () => {
 
 const handleExportWeeklyDescriptionReport = () => {
   if (!weeklyDescriptionReport.value.length) {
-    showToast('暂无可导出数据', 'warning')
+    showToast('暂无可导出的描述汇总数据', 'warning')
     return
   }
-  const headers = buildDescriptionHeaders(weeklyDescriptionColumns.value, '周需求量')
+  const headers = buildDescriptionHeaders(weeklyDescriptionColumns.value, '周数量')
   const rows = buildDescriptionRows(weeklyDescriptionColumns.value, weeklyDescriptionReport.value)
-  downloadCsv('MRP-按描述分类汇总周报表.csv', headers, rows)
+  downloadCsv('MRP-描述分类汇总周报表.csv', headers, rows)
   showToast('导出成功', 'success')
 }
 
 const handleExportMonthlyDescriptionReport = () => {
   if (!monthlyDescriptionReport.value.length) {
-    showToast('暂无可导出数据', 'warning')
+    showToast('暂无可导出的描述汇总数据', 'warning')
     return
   }
-  const headers = buildDescriptionHeaders(monthlyDescriptionColumns.value, '月需求量')
+  const headers = buildDescriptionHeaders(monthlyDescriptionColumns.value, '月数量')
   const rows = buildDescriptionRows(monthlyDescriptionColumns.value, monthlyDescriptionReport.value)
-  downloadCsv('MRP-按描述分类汇总月报表.csv', headers, rows)
+  downloadCsv('MRP-描述分类汇总月报表.csv', headers, rows)
   showToast('导出成功', 'success')
 }
 
@@ -417,6 +505,8 @@ const onMonthlyCreatedByChange = async () => {
   if (monthlyCreatedBy.value) {
     const data = await getFileNamesByCreatedBy(token.value, monthlyCreatedBy.value)
     monthlyFileNames.value = data.data || []
+  } else {
+    monthlyFileNames.value = []
   }
 }
 
@@ -460,15 +550,6 @@ const handleImport = async ({ file, fileName }) => {
   }
 }
 
-const loadFileNames = async (createdBy) => {
-  if (!createdBy) {
-    fileNames.value = []
-    return
-  }
-  const data = await getFileNamesByCreatedBy(token.value, createdBy)
-  fileNames.value = data.data || []
-}
-
 onMounted(() => {
   loadCreatedBys().then(async () => {
     if (mrpPlansCache.value) {
@@ -505,8 +586,7 @@ onMounted(() => {
     }
 
     if (weeklyCreatedBy.value) {
-      await loadFileNames(weeklyCreatedBy.value)
-      weeklyFileNames.value = fileNames.value
+      weeklyFileNames.value = await refreshFileNameOptions(weeklyCreatedBy.value)
     }
   })
 })

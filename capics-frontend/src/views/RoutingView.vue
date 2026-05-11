@@ -8,10 +8,12 @@
       <input
         type="text"
         v-model="searchKeyword"
+        @keyup.enter="handleSearch"
         placeholder="搜索成品物料号..."
         class="form-input"
         style="width: 200px;"
       >
+      <button class="btn btn-primary" @click="handleSearch">查询</button>
       <button v-if="canManageMasterData" class="btn btn-primary" @click="showImportModal">导入BOM结构</button>
       <button v-if="canManageMasterData" class="btn btn-primary" @click="startAddItem">新增BOM行</button>
       <button class="btn" @click="handleDownloadRoutingTemplate">模板下载</button>
@@ -108,6 +110,7 @@ const canManageMasterData = computed(() => hasAnyRole(['MASTERDATA', 'ADMIN']))
 const routings = ref([])
 const expandedGroups = ref(new Set())
 const searchKeyword = ref('')
+const appliedSearchKeyword = ref('')
 const showImport = ref(false)
 const isImporting = ref(false)
 const showConfirmModal = ref(false)
@@ -156,9 +159,13 @@ const saveItem = async () => {
   await loadRoutings()
 }
 
+const handleSearch = () => {
+  appliedSearchKeyword.value = searchKeyword.value.trim()
+}
+
 // 按成品物料号分组
 const groupedRoutings = computed(() => {
-  const keyword = searchKeyword.value.toLowerCase().trim()
+  const keyword = appliedSearchKeyword.value.toLowerCase().trim()
   const filtered = keyword
     ? routings.value.filter(r => r.productNumber.toLowerCase().includes(keyword))
     : routings.value

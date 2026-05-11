@@ -87,6 +87,14 @@ public class MrpController {
         return ResponseEntity.ok(ApiResponse.success("Deleted"));
     }
 
+    @DeleteMapping("/plans/import")
+    public ResponseEntity<ApiResponse> deleteImportedPlans(
+            @RequestParam String createdBy,
+            @RequestParam String fileName) {
+        long deletedCount = mrpPlanService.deleteImportedFile(createdBy, fileName);
+        return ResponseEntity.ok(ApiResponse.success("Deleted " + deletedCount + " records", deletedCount));
+    }
+
     @PostMapping("/plans/import")
     public ResponseEntity<ApiResponse> importPlans(
             @RequestParam("file") MultipartFile file,

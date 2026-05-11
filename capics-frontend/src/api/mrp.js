@@ -1,5 +1,13 @@
 const API_BASE = '/api'
 
+async function parseJsonResponse(res, fallbackMessage) {
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(data?.message || `${fallbackMessage} (HTTP ${res.status})`)
+  }
+  return data
+}
+
 export function getVersions(token) {
   return fetch(`${API_BASE}/mrp/versions`, {
     headers: { 'Authorization': `Bearer ${token}` }
@@ -147,6 +155,19 @@ export function importMrpPlans(token, file, fileName, createdBy) {
 
     return data
   })
+}
+
+export function deleteImportedMrpPlans(token, createdBy, fileName) {
+  return fetch(
+    `${API_BASE}/mrp/plans/import?createdBy=${encodeURIComponent(createdBy)}&fileName=${encodeURIComponent(fileName)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    }
+  ).then((res) => parseJsonResponse(res, 'Delete imported MRP failed'))
 }
 
 export async function downloadMrpTemplate(token) {
